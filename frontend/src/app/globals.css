@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+/* ============================================
+   SABIA EMPRENDE — Light Theme
+   ============================================ */
+
+/* Font families */
+body {
+  font-family: var(--font-body), 'Montserrat', system-ui, -apple-system, sans-serif;
+}
+
+/* Headings use Playfair Display */
+h1, h2, h3, .font-heading {
+  font-family: var(--font-heading), 'Playfair Display', Georgia, serif;
+}

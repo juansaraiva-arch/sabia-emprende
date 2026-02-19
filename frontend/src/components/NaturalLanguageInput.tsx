@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
-import { BrainCircuit, Send, Loader2, Sparkles, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { nlpApi } from "@/lib/api";
+import { BrainCircuit, Send, Loader2, Sparkles, AlertTriangle, CheckCircle2, BookOpen, Check, X } from "lucide-react";
+import { nlpApi, accountingApi } from "@/lib/api";
 import type { StrategicAlert } from "@/lib/alerts";
 
 interface NaturalLanguageInputProps {
@@ -14,10 +14,10 @@ interface NaturalLanguageInputProps {
 const EXAMPLES = [
   "Mis ventas de enero fueron 50 mil",
   "Gaste 30 mil en mercancia",
-  "Mi alquiler cuesta 5 mil",
+  "Pague la luz 200 dolares",
+  "Me pago el cliente 5 mil",
   "Como esta mi negocio?",
   "Si subo el precio un 10%, que pasa?",
-  "Cuanto debo vender para no perder?",
 ];
 
 export default function NaturalLanguageInput({
@@ -27,17 +27,26 @@ export default function NaturalLanguageInput({
 }: NaturalLanguageInputProps) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
+  const [pendingPayload, setPendingPayload] = useState<any>(null);
 
   const handleSubmit = async (text?: string) => {
     const input = text || query;
     if (!input.trim()) return;
 
     setLoading(true);
+    setPendingPayload(null);
     try {
       const result = await nlpApi.interpret(input, societyId);
       setLastResult(result);
-      onResult?.(result);
+
+      // Si requiere confirmacion (asiento contable), guardar payload
+      if (result.data?.requires_confirmation && result.data?.confirm_payload) {
+        setPendingPayload(result.data.confirm_payload);
+      } else {
+        onResult?.(result);
+      }
     } catch (err) {
       setLastResult({
         understood: false,
@@ -47,6 +56,37 @@ export default function NaturalLanguageInput({
       setLoading(false);
       if (!text) setQuery("");
     }
+  };
+
+  const handleConfirmJournalEntry = async () => {
+    if (!pendingPayload) return;
+    setConfirming(true);
+    try {
+      const result = await accountingApi.createJournalEntry(pendingPayload);
+      setLastResult({
+        understood: true,
+        action: "journal_entry_created",
+        description: `Asiento #${result.data?.entry_number || ""} guardado correctamente. Total: $${result.data?.total_debe?.toLocaleString("es-PA") || "0"}`,
+        data: result.data,
+      });
+      setPendingPayload(null);
+      onResult?.({ action: "journal_entry_created", data: result.data });
+    } catch (err: any) {
+      setLastResult({
+        understood: false,
+        description: `Error al guardar asiento: ${err.message}`,
+      });
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  const handleCancelJournalEntry = () => {
+    setPendingPayload(null);
+    setLastResult({
+      understood: true,
+      description: "Asiento cancelado. Puedes intentar de nuevo.",
+    });
   };
 
   // Smart Prompt: placeholder dinámico basado en alertas
@@ -154,8 +194,63 @@ export default function NaturalLanguageInput({
         ))}
       </div>
 
+      {/* Journal Entry Preview (Fase 5) */}
+      {pendingPayload && lastResult?.data?.journal_entry_preview && (
+        <div className="p-4 rounded-xl border border-blue-200 bg-blue-50 space-y-3">
+          <div className="flex items-center gap-2">
+            <BookOpen size={16} className="text-blue-600" />
+            <p className="text-sm font-bold text-blue-800">
+              Previsualizacion del Asiento Contable
+            </p>
+          </div>
+          <p className="text-xs text-slate-600">
+            {lastResult.data.journal_entry_preview.concept_description} — {lastResult.data.journal_entry_preview.entry_date}
+          </p>
+
+          {/* Lines preview table */}
+          <div className="border border-blue-200 rounded-lg overflow-hidden bg-white">
+            <div className="grid grid-cols-12 gap-1 px-3 py-1.5 bg-blue-100 text-[10px] font-bold text-blue-700 uppercase">
+              <div className="col-span-3">Cuenta</div>
+              <div className="col-span-4">Detalle</div>
+              <div className="col-span-2 text-right">Debe</div>
+              <div className="col-span-2 text-right">Haber</div>
+            </div>
+            {lastResult.data.journal_entry_preview.lines.map((line: any, idx: number) => (
+              <div key={idx} className="grid grid-cols-12 gap-1 px-3 py-1.5 border-t border-blue-100 text-xs">
+                <div className="col-span-3 font-mono text-slate-500">{line.account_code}</div>
+                <div className="col-span-4 text-slate-600">{line.description}</div>
+                <div className="col-span-2 text-right font-medium">
+                  {line.debe > 0 ? `$${Number(line.debe).toLocaleString("es-PA", { minimumFractionDigits: 2 })}` : ""}
+                </div>
+                <div className="col-span-2 text-right font-medium">
+                  {line.haber > 0 ? `$${Number(line.haber).toLocaleString("es-PA", { minimumFractionDigits: 2 })}` : ""}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={handleConfirmJournalEntry}
+              disabled={confirming}
+              className="inline-flex items-center gap-1 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+            >
+              {confirming ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              Confirmar Asiento
+            </button>
+            <button
+              onClick={handleCancelJournalEntry}
+              className="inline-flex items-center gap-1 px-4 py-2 bg-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-300 transition-colors"
+            >
+              <X size={14} />
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Result */}
-      {lastResult && (
+      {lastResult && !pendingPayload && (
         <div
           className={`p-4 rounded-xl border ${
             lastResult.understood

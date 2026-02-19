@@ -17,6 +17,8 @@ import {
   CalendarDays,
 } from "lucide-react";
 import SmartTooltip from "@/components/SmartTooltip";
+import MultasDGICalculator from "@/components/MultasDGICalculator";
+import TaxReferenceTable from "@/components/TaxReferenceTable";
 
 // ============================================
 // TIPOS Y CONSTANTES
@@ -545,6 +547,28 @@ export default function WatchdogDashboard() {
           </div>
         )}
       </div>
+
+      {/* ====== SIMULADOR DE MULTAS ====== */}
+      <details className="rounded-xl border border-slate-200 overflow-hidden">
+        <summary className="px-5 py-4 cursor-pointer flex items-center gap-2 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors bg-white">
+          <AlertTriangle size={16} className="text-red-500" />
+          Simulador de Multas DGI
+        </summary>
+        <div className="px-5 pb-5 bg-white">
+          <MultasDGICalculator />
+        </div>
+      </details>
+
+      {/* ====== TABLA DE IMPUESTOS ====== */}
+      <details className="rounded-xl border border-slate-200 overflow-hidden">
+        <summary className="px-5 py-4 cursor-pointer flex items-center gap-2 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors bg-white">
+          <Receipt size={16} className="text-blue-500" />
+          Tabla de Referencia Fiscal Panama 2026
+        </summary>
+        <div className="px-5 pb-5 bg-white">
+          <TaxReferenceTable />
+        </div>
+      </details>
 
       {/* ====== LEGAL FOOTER ====== */}
       <p className="text-[10px] text-slate-400 italic border-t border-slate-100 pt-3">

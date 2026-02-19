@@ -80,11 +80,90 @@ class PayrollEntryCreate(BaseModel):
     gross_salary: float = Field(gt=0)
 
 
+class PayrollEntryCreateFull(BaseModel):
+    society_id: str
+    employee_name: str
+    contract_type: ContractType
+    gross_salary: float = Field(gt=0)
+    cedula: Optional[str] = None
+    entry_date: Optional[date] = None
+    exit_date: Optional[date] = None
+    exit_reason: Optional[str] = None
+    years_worked: int = Field(ge=0, default=0)
+
+
 class PayrollEntryResponse(PayrollEntryCreate):
     id: str
     employer_cost: float
     employee_net: float
     total_deductions: float
+
+
+class PayrollEntryFullResponse(BaseModel):
+    id: str
+    society_id: str
+    employee_name: str
+    contract_type: str
+    gross_salary: float
+    cedula: Optional[str] = None
+    entry_date: Optional[str] = None
+    exit_date: Optional[str] = None
+    exit_reason: Optional[str] = None
+    years_worked: int = 0
+    vacation_days_accrued: float = 0
+    vacation_days_taken: float = 0
+    xiii_mes_accumulated: float = 0
+    employer_cost: Optional[float] = None
+    employee_net: Optional[float] = None
+    total_deductions: Optional[float] = None
+    is_active: bool = True
+
+
+class AttendanceRecordCreate(BaseModel):
+    payroll_entry_id: str
+    society_id: str
+    record_date: date
+    record_type: str = Field(
+        description="Tipo: vacation_taken, justified_absence, unjustified_absence, holiday_worked, sunday_worked, compensatory_day"
+    )
+    hours: float = Field(ge=0, default=8)
+    surcharge_pct: float = Field(ge=0, default=0)
+    notes: Optional[str] = None
+
+
+# --- Contabilidad ---
+class AccountCreate(BaseModel):
+    society_id: str
+    account_code: str = Field(min_length=1, max_length=20)
+    account_name: str = Field(min_length=2, max_length=200)
+    account_type: str = Field(description="activo, pasivo, patrimonio, ingreso, costo_gasto")
+    parent_code: Optional[str] = None
+    level: int = Field(ge=1, le=5, default=3)
+    is_header: bool = False
+    normal_balance: str = Field(default="debe", description="debe o haber")
+
+
+class JournalLineCreate(BaseModel):
+    account_code: str
+    description: Optional[str] = None
+    debe: float = Field(ge=0, default=0)
+    haber: float = Field(ge=0, default=0)
+
+
+class JournalEntryCreate(BaseModel):
+    society_id: str
+    entry_date: date
+    description: str = Field(min_length=3, max_length=500)
+    reference: Optional[str] = None
+    source: str = "manual"
+    attachment_url: Optional[str] = None
+    lines: list[JournalLineCreate] = Field(min_length=2)
+
+
+class PeriodCloseRequest(BaseModel):
+    society_id: str
+    period_year: int = Field(ge=2020, le=2040)
+    period_month: int = Field(ge=1, le=12)
 
 
 # --- NLP ---

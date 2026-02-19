@@ -1,7 +1,9 @@
 """
 Router: Capa de Lenguaje Natural
 El usuario escribe en español plano y el sistema interpreta la acción financiera.
+Fase 5: Para intents contables, genera asientos de doble partida.
 """
+from datetime import date
 from fastapi import APIRouter, Header
 from app.database import get_supabase
 from app.models import NLPQuery, NLPResponse
@@ -12,8 +14,74 @@ from app.engines.financial_engine import (
     calcular_punto_equilibrio,
     diagnostico_juez_digital,
 )
+from app.engines.account_mapping import CONCEPT_TO_ACCOUNTS
+from app.engines.accounting_engine import validate_journal_entry, aggregate_to_financial_record
 
 router = APIRouter()
+
+# Mapeo de accion NLP → concepto contable
+NLP_ACTION_TO_CONCEPT = {
+    "register_expense": None,  # Se resuelve desde concept_key
+    "register_income": "venta_contado",
+    "register_loan": "prestamo_recibido",
+    "register_loan_payment": "pago_prestamo",
+    "register_purchase": "compra_mercancia_contado",
+}
+
+# Acciones que generan asientos contables
+ACCOUNTING_ACTIONS = {
+    "register_expense", "register_income", "register_loan",
+    "register_loan_payment", "register_purchase",
+}
+
+
+def _build_journal_entry_from_nlp(
+    action: str, data: dict, society_id: str, description: str, user_id: str
+) -> dict | None:
+    """
+    Construye un payload de asiento contable a partir de la interpretacion NLP.
+    Returns dict con entry preview o None si no se puede mapear.
+    """
+    amount = data.get("amount", 0)
+    if amount <= 0:
+        return None
+
+    # Determinar concepto contable
+    if action == "register_expense":
+        concept_key = data.get("concept_key", "servicios_publicos")
+    else:
+        concept_key = NLP_ACTION_TO_CONCEPT.get(action)
+
+    if not concept_key or concept_key not in CONCEPT_TO_ACCOUNTS:
+        return None
+
+    mapping = CONCEPT_TO_ACCOUNTS[concept_key]
+
+    # Resolver fecha
+    entry_date_str = data.get("resolved_date", date.today().isoformat())
+
+    # Construir lineas del asiento
+    lines = []
+    for line_template in mapping["lines"]:
+        line = {
+            "account_code": line_template["account_code"],
+            "description": line_template.get("description", ""),
+            "debe": round(amount, 2) if line_template.get("debe") else 0,
+            "haber": round(amount, 2) if line_template.get("haber") else 0,
+        }
+        lines.append(line)
+
+    return {
+        "society_id": society_id,
+        "entry_date": entry_date_str,
+        "description": description,
+        "reference": f"NLP: {data.get('concept_raw', concept_key)}",
+        "source": "nlp",
+        "attachment_url": None,
+        "lines": lines,
+        "concept_key": concept_key,
+        "concept_description": mapping["description"],
+    }
 
 
 @router.post("/interpret", response_model=NLPResponse)
@@ -51,7 +119,64 @@ async def interpret_natural_language(body: NLPQuery, x_user_id: str = Header(...
     action = interpretation["action"]
     data = interpretation["extracted_data"]
 
-    # 3. Ejecutar acción según intención
+    # 3a. Acciones contables (Fase 5) — generan asientos de doble partida
+    if action in ACCOUNTING_ACTIONS:
+        entry_preview = _build_journal_entry_from_nlp(
+            action, data, body.society_id, interpretation["description"], x_user_id
+        )
+        if entry_preview:
+            # Validar que cuadra
+            lines_for_validation = [
+                {"debe": l["debe"], "haber": l["haber"]}
+                for l in entry_preview["lines"]
+            ]
+            validation = validate_journal_entry(lines_for_validation)
+
+            if not validation["valid"]:
+                return NLPResponse(
+                    understood=True,
+                    action=action,
+                    description=f"Error al construir asiento: {validation['errors']}",
+                )
+
+            # Devolver preview para que el frontend confirme antes de guardar
+            return NLPResponse(
+                understood=True,
+                action=action,
+                description=interpretation["description"],
+                data={
+                    "requires_confirmation": True,
+                    "journal_entry_preview": {
+                        "entry_date": entry_preview["entry_date"],
+                        "description": entry_preview["description"],
+                        "reference": entry_preview["reference"],
+                        "source": entry_preview["source"],
+                        "concept_description": entry_preview["concept_description"],
+                        "total_debe": validation["total_debe"],
+                        "total_haber": validation["total_haber"],
+                        "lines": entry_preview["lines"],
+                    },
+                    "confirm_payload": {
+                        "society_id": body.society_id,
+                        "entry_date": entry_preview["entry_date"],
+                        "description": entry_preview["description"],
+                        "reference": entry_preview["reference"],
+                        "source": "nlp",
+                        "attachment_url": None,
+                        "lines": entry_preview["lines"],
+                    },
+                },
+            )
+        else:
+            # Fallback: no se pudo mapear, registrar directo en financial_records
+            return NLPResponse(
+                understood=True,
+                action=action,
+                description=interpretation["description"] + " (sin mapeo contable, registrado como gasto general)",
+                data={"amount": data.get("amount")},
+            )
+
+    # 3b. Ejecutar acción según intención (legacy: directo a financial_records)
     if action == "register_sales":
         record_data = {
             "society_id": body.society_id,

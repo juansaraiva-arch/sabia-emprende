@@ -221,6 +221,150 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
     titulo: "Planilla de la CSS",
     explicacion: "Declaracion mensual que el patrono presenta a la Caja de Seguro Social con las cuotas obrero-patronales. Debe pagarse dentro de los primeros 15 dias del mes siguiente.",
   },
+
+  // --- Contabilidad y Libros Legales ---
+  libro_diario: {
+    titulo: "Libro Diario",
+    explicacion: "Registro cronologico de todas las operaciones comerciales dia a dia. Cada operacion genera un asiento con columnas DEBE y HABER que siempre deben ser iguales.",
+  },
+  libro_mayor: {
+    titulo: "Libro Mayor",
+    explicacion: "Clasificacion de todos los movimientos por cuenta individual. Muestra el saldo acumulado de cada cuenta (Banco, Proveedores, Ventas, etc.) y es la base para el Balance General.",
+  },
+  balance_comprobacion: {
+    titulo: "Balance de Comprobacion",
+    explicacion: "Reporte de seguridad que verifica que tu contabilidad esta cuadrada: la suma de todos los debitos debe ser igual a la suma de todos los creditos.",
+  },
+  plan_cuentas: {
+    titulo: "Plan de Cuentas",
+    explicacion: "El mapa de tu negocio. Listado ordenado con codigos decimales (1.0 Activos, 2.0 Pasivos, 3.0 Patrimonio, 4.0 Ingresos, 5.0 Gastos) donde se clasifica cada dolar.",
+  },
+  partida_doble: {
+    titulo: "Partida Doble",
+    explicacion: "Principio fundamental de la contabilidad: cada operacion tiene dos lados iguales. Si entra dinero al banco (DEBE), sale de alguna fuente (HABER). Siempre DEBE = HABER.",
+  },
+  debe_debito: {
+    titulo: "DEBE (Debito)",
+    explicacion: "Columna izquierda de un asiento contable. Aqui registras el destino del dinero: lo que compras, lo que aumenta en tu banco, o los gastos que pagas.",
+  },
+  haber_credito: {
+    titulo: "HABER (Credito)",
+    explicacion: "Columna derecha de un asiento contable. Aqui registras el origen del recurso: de donde salio el dinero (tu banco, una venta, un prestamo).",
+  },
+  asiento_contable: {
+    titulo: "Asiento Contable",
+    explicacion: "Registro digital de un hecho economico. Cada vez que vendes, compras o pagas, la app crea un asiento que mueve dinero entre cuentas automaticamente.",
+  },
+  conciliacion: {
+    titulo: "Conciliacion Bancaria",
+    explicacion: "Proceso de verificar que lo que dice la app coincida exactamente con tu estado de cuenta bancario. Si hay diferencias, hay un registro faltante.",
+  },
+  sustento_legal: {
+    titulo: "Sustento Legal (Factura)",
+    explicacion: "Factura fiscal o documento que valida un gasto ante una auditoria de la DGI. Sin sustento, el gasto no es deducible de impuestos.",
+  },
+  periodo_contable: {
+    titulo: "Periodo Contable",
+    explicacion: "Ventana de tiempo (generalmente un mes) donde se acumulan las operaciones. Al cerrarse, los datos quedan bloqueados para garantizar la integridad ante la DGI.",
+  },
+  cierre_mensual: {
+    titulo: "Cierre Fiscal Mensual",
+    explicacion: "Proceso donde congelamos los numeros del mes para que los libros contables sean legales y esten listos para cualquier revision de la DGI.",
+  },
+  cuenta_nominal: {
+    titulo: "Cuentas Nominales",
+    explicacion: "Cuentas temporales de Ingresos y Gastos que se reinician cada ano fiscal. Te dicen si ganaste o perdiste dolares en el periodo.",
+  },
+  cuenta_real: {
+    titulo: "Cuentas Reales",
+    explicacion: "Cuentas permanentes de Activos, Pasivos y Patrimonio. Su saldo se arrastra de un periodo a otro y refleja la riqueza acumulada del negocio.",
+  },
+
+  // --- Nomina Avanzada ---
+  reserva_xiii_mes: {
+    titulo: "Reserva Pendiente XIII Mes",
+    explicacion: "Dinero que ya le debes al trabajador (8.33% mensual del salario). Se paga en 3 partidas: 15 de abril, 15 de agosto y 15 de diciembre. Debes tenerlo reservado.",
+  },
+  vacaciones_acumuladas: {
+    titulo: "Vacaciones Acumuladas",
+    explicacion: "Cada mes trabajado, el colaborador acumula 2.5 dias de vacaciones (30 dias por cada 11 meses). Este pasivo laboral debe estar contemplado en tu flujo de caja.",
+  },
+  prima_antiguedad: {
+    titulo: "Prima de Antiguedad",
+    explicacion: "Pago de una semana de salario por cada ano laborado en la empresa. Se provisiona al 1.92% mensual del salario bruto. Aplica en caso de terminacion laboral.",
+  },
+  fondo_cesantia: {
+    titulo: "Fondo de Cesantia",
+    explicacion: "Reserva trimestral del 2.25% del salario que garantiza la prima de antiguedad e indemnizacion del trabajador segun la Ley 462 de 2025.",
+  },
+  salario_neto: {
+    titulo: "Salario Neto",
+    explicacion: "El dinero real que el trabajador recibe en su mano despues de los descuentos de ley (CSS 9.75%, SE 1.25%, ISR segun tabla DGI).",
+  },
+  costo_patronal: {
+    titulo: "Costo Patronal Total",
+    explicacion: "Gasto total que la empresa asume por encima del sueldo: Seguro Social 13.25%, Educativo 1.5%, Riesgos 1.5%, XIII Mes 8.33%, Vacaciones y Prima. Factor real: 1.36x.",
+  },
+  pasivo_laboral: {
+    titulo: "Pasivo Laboral",
+    explicacion: "Deuda que la empresa acumula con el trabajador (XIII Mes, Vacaciones, Prima de Antiguedad) y que debe pagarse a futuro. Crece cada mes automaticamente.",
+  },
+  absentismo: {
+    titulo: "Ausentismo (Absenteeism)",
+    explicacion: "Porcentaje de dias no laborados que afectan la productividad. Verde <3%, Amarillo 5-8%, Rojo >8%. Un ausentismo alto destruye el margen de beneficio.",
+  },
+  dia_compensatorio: {
+    titulo: "Dia Compensatorio",
+    explicacion: "Dia de descanso adicional que debes dar al trabajador si laboro en su dia libre o en un feriado nacional. Es obligatorio por el Codigo de Trabajo de Panama.",
+  },
+  feriado_recargo: {
+    titulo: "Recargo por Feriado (150%)",
+    explicacion: "Si el personal trabaja en feriado nacional, se aplica un recargo del 150% (triple pago). En domingos el recargo es del 50%. Ley laboral Panama.",
+  },
+  liquidacion_laboral: {
+    titulo: "Liquidacion Laboral",
+    explicacion: "Calculo final cuando un trabajador sale de la empresa. Incluye: vacaciones proporcionales, XIII Mes proporcional, prima de antiguedad y posible indemnizacion.",
+  },
+
+  // --- Legal y Fiscal Avanzado ---
+  multa_dgi: {
+    titulo: "Multa DGI",
+    explicacion: "Sancion economica por incumplimiento fiscal. Persona Natural: $100 por declaracion tardia. Persona Juridica: $500. Recargos: 10% + 1% interes mensual sobre saldo adeudado.",
+  },
+  isr_panama: {
+    titulo: "ISR (Impuesto sobre la Renta)",
+    explicacion: "Impuesto anual sobre la utilidad neta. Persona Natural: 0% hasta $11k, 15% hasta $50k, 25% excedente. Persona Juridica: 25% fijo sobre utilidad neta.",
+  },
+  gap_fiscal: {
+    titulo: "Gap Fiscal (Brecha)",
+    explicacion: "Diferencia entre lo declarado en tu contabilidad y lo que el fisco espera. Genera riesgo de auditoria, multas e intereses. SABIA EMPRENDE te ayuda a cerrarlo.",
+  },
+  paz_y_salvo: {
+    titulo: "Paz y Salvo DGI/Municipal",
+    explicacion: "Certificacion de que no existen deudas pendientes con la DGI o el Municipio. Vigencia 30 dias. Sin el, no puedes contratar con el Estado ni hacer tramites bancarios.",
+  },
+  planilla_03: {
+    titulo: "Planilla 03",
+    explicacion: "Informe anual detallado de las remuneraciones pagadas a todos los empleados en el ano fiscal. Obligatorio ante la DGI.",
+  },
+  compliance: {
+    titulo: "Compliance (Cumplimiento)",
+    explicacion: "Estado de tu relacion legal con la DGI y el Municipio. Estar en verde significa cero riesgo de multas. La app te ayuda a mantener este estatus.",
+  },
+
+  // --- Valoracion Avanzada ---
+  opco_propco: {
+    titulo: "OpCo / PropCo",
+    explicacion: "OpCo es el valor de la operacion del negocio. PropCo es el valor del inmueble. Si eres dueno del local, se separan para saber si el negocio es rentable por si solo.",
+  },
+  ebitda_contable: {
+    titulo: "EBITDA Contable",
+    explicacion: "Tu utilidad operativa calculada directamente desde los libros legales para asegurar que tu estrategia se basa en dolares reales, no en supuestos o estimaciones.",
+  },
+  patrimonio_neto: {
+    titulo: "Patrimonio Neto Real",
+    explicacion: "Valor Operativo del negocio + Valor del Edificio (si aplica) - Deuda Total. Es lo que realmente recibirias en el bolsillo si vendieras el negocio hoy.",
+  },
 };
 
 // ============================================

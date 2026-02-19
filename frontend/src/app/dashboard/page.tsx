@@ -14,12 +14,16 @@ import {
   SlidersHorizontal,
   FlaskConical,
   Gem,
-  Leaf,
   Scale,
   FileText,
+  BookOpen,
+  FolderTree,
+  BookMarked,
+  CheckSquare,
+  Lock,
 } from "lucide-react";
-import Link from "next/link";
 import type { FinancialRecord } from "@/lib/calculations";
+import SabiaLogo from "@/components/SabiaLogo";
 import BottomNavBar from "@/components/BottomNavBar";
 import DataEntryWizard from "@/components/DataEntryWizard";
 import NaturalLanguageInput from "@/components/NaturalLanguageInput";
@@ -39,6 +43,13 @@ import ValoracionTab from "@/components/ValoracionTab";
 import LegalSimplifierButton from "@/components/LegalSimplifierButton";
 import SmartTooltip from "@/components/SmartTooltip";
 import AlertsSidebar, { AlertBellButton } from "@/components/AlertsSidebar";
+import WelcomePopup from "@/components/WelcomePopup";
+import BalanceGeneralCard from "@/components/BalanceGeneralCard";
+import ChartOfAccounts from "@/components/accounting/ChartOfAccounts";
+import LibroDiario from "@/components/accounting/LibroDiario";
+import LibroMayor from "@/components/accounting/LibroMayor";
+import BalanceComprobacion from "@/components/accounting/BalanceComprobacion";
+import PeriodClosingPanel from "@/components/accounting/PeriodClosingPanel";
 import { computeAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
 import {
   MOCK_RECORD,
@@ -53,6 +64,8 @@ import {
 // ============================================
 
 type Section = "datos" | "negocio" | "legal";
+type DatosMode = "flash" | "contabilidad";
+type ContabilidadTab = "plan_cuentas" | "libro_diario" | "libro_mayor" | "balance_comprobacion" | "cierre_periodo";
 type NegocioTab =
   | "cascada"
   | "mandibulas"
@@ -71,6 +84,8 @@ type LegalTab = "boveda" | "vigilante" | "auditoria";
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState<Section>("datos");
+  const [datosMode, setDatosMode] = useState<DatosMode>("flash");
+  const [activeContabilidadTab, setActiveContabilidadTab] = useState<ContabilidadTab>("libro_diario");
   const [activeNegocioTab, setActiveNegocioTab] = useState<NegocioTab>("cascada");
   const [activeLegalTab, setActiveLegalTab] = useState<LegalTab>("boveda");
 
@@ -110,6 +125,25 @@ export default function Dashboard() {
     setActiveNegocioTab("mandibulas");
   };
 
+  // Welcome popup (primera vez)
+  const [showWelcome, setShowWelcome] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !localStorage.getItem("sabia_welcomed");
+    }
+    return false;
+  });
+
+  const handleWelcomeDismiss = () => {
+    localStorage.setItem("sabia_welcomed", "true");
+    setShowWelcome(false);
+  };
+
+  const handleLogoClick = () => {
+    setActiveSection("datos");
+    setActiveNegocioTab("cascada");
+    setActiveLegalTab("boveda");
+  };
+
   // Alertas estrategicas
   const [alertsSidebarOpen, setAlertsSidebarOpen] = useState(false);
   const strategicAlerts = useMemo(
@@ -137,9 +171,9 @@ export default function Dashboard() {
     { key: "equilibrio", label: "Supervivencia", icon: <TrendingUp size={14} /> },
     { key: "oxigeno", label: "Oxigeno", icon: <Wind size={14} /> },
     { key: "simulador", label: "Simulador", icon: <SlidersHorizontal size={14} /> },
-    { key: "lab", label: "Precios", icon: <FlaskConical size={14} /> },
-    { key: "valoracion", label: "Valoracion", icon: <Gem size={14} /> },
-    { key: "nomina", label: "Nomina", icon: <DollarSign size={14} /> },
+    { key: "lab", label: "Estrategia de Precios", icon: <FlaskConical size={14} /> },
+    { key: "valoracion", label: "Valor del Negocio", icon: <Gem size={14} /> },
+    { key: "nomina", label: "Costo Real de Personal", icon: <DollarSign size={14} /> },
   ];
 
   const legalTabs: { key: LegalTab; label: string; icon: React.ReactNode }[] = [
@@ -153,11 +187,10 @@ export default function Dashboard() {
       {/* ====== TOP BAR ====== */}
       <header className="bg-white border-b border-slate-200 px-4 py-3 lg:px-6 lg:py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 lg:gap-3 hover:opacity-90 transition-opacity">
-            <div className="flex items-center justify-center w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-emerald-100">
-              <Leaf size={18} className="text-emerald-600" />
-            </div>
-            <div>
+          <button onClick={handleLogoClick} className="flex items-center gap-2 lg:gap-3 hover:opacity-90 transition-opacity">
+            <SabiaLogo size={36} iconOnly className="lg:hidden" />
+            <SabiaLogo size={44} iconOnly className="hidden lg:block" />
+            <div className="text-left">
               <h1 className="text-sm lg:text-base font-extrabold text-slate-800">
                 SABIA EMPRENDE
               </h1>
@@ -165,7 +198,7 @@ export default function Dashboard() {
                 Tu Aliado Estrategico
               </p>
             </div>
-          </Link>
+          </button>
 
           <div className="flex items-center gap-2">
             {diagnosis && (
@@ -201,9 +234,77 @@ export default function Dashboard() {
                 <NaturalLanguageInput societyId={societyId} onResult={handleNLPResult} topAlert={topAlert} />
               </div>
             </details>
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 lg:p-6">
-              <DataEntryWizard onRecordSaved={handleRecordSaved} onBulkRecordsSaved={handleBulkRecordsSaved} />
+
+            {/* Mode switcher: Diagnostico Flash vs Contabilidad Formal */}
+            <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200">
+              <button
+                onClick={() => setDatosMode("flash")}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+                  datosMode === "flash"
+                    ? "bg-violet-600 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-50"
+                }`}
+              >
+                <Zap size={14} />
+                Diagnostico Flash
+              </button>
+              <button
+                onClick={() => setDatosMode("contabilidad")}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+                  datosMode === "contabilidad"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-50"
+                }`}
+              >
+                <BookOpen size={14} />
+                Contabilidad Formal
+              </button>
             </div>
+
+            {/* Diagnostico Flash mode (original) */}
+            {datosMode === "flash" && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 lg:p-6">
+                <DataEntryWizard onRecordSaved={handleRecordSaved} onBulkRecordsSaved={handleBulkRecordsSaved} onNavigateHome={handleLogoClick} />
+              </div>
+            )}
+
+            {/* Contabilidad Formal mode (new) */}
+            {datosMode === "contabilidad" && (
+              <div className="space-y-4">
+                {/* Sub-tabs */}
+                <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
+                  {([
+                    { key: "plan_cuentas" as ContabilidadTab, label: "Plan de Cuentas", icon: <FolderTree size={14} /> },
+                    { key: "libro_diario" as ContabilidadTab, label: "Libro Diario", icon: <BookOpen size={14} /> },
+                    { key: "libro_mayor" as ContabilidadTab, label: "Libro Mayor", icon: <BookMarked size={14} /> },
+                    { key: "balance_comprobacion" as ContabilidadTab, label: "Balance Comprobacion", icon: <CheckSquare size={14} /> },
+                    { key: "cierre_periodo" as ContabilidadTab, label: "Cierre y Reportes", icon: <Lock size={14} /> },
+                  ]).map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveContabilidadTab(tab.key)}
+                      className={`flex items-center gap-1.5 px-3 lg:px-4 py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+                        activeContabilidadTab === tab.key
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      {tab.icon}
+                      <span className="hidden sm:inline">{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Content */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6 min-h-[400px]">
+                  {activeContabilidadTab === "plan_cuentas" && <ChartOfAccounts societyId={societyId} />}
+                  {activeContabilidadTab === "libro_diario" && <LibroDiario societyId={societyId} />}
+                  {activeContabilidadTab === "libro_mayor" && <LibroMayor societyId={societyId} />}
+                  {activeContabilidadTab === "balance_comprobacion" && <BalanceComprobacion societyId={societyId} />}
+                  {activeContabilidadTab === "cierre_periodo" && <PeriodClosingPanel societyId={societyId} />}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -271,6 +372,8 @@ export default function Dashboard() {
                           </div>
                         </div>
                       </div>
+                      {/* Tarjeta B: Balance General */}
+                      <BalanceGeneralCard record={currentRecord} />
                     </div>
                   ) : (<EmptyState text="Carga datos en 'Mi Contabilidad' para ver la cascada." />)}
                 </div>
@@ -282,7 +385,7 @@ export default function Dashboard() {
               {activeNegocioTab === "simulador" && <SimuladorEstrategico record={currentRecord} />}
               {activeNegocioTab === "lab" && <LabPrecios />}
               {activeNegocioTab === "valoracion" && <ValoracionTab record={currentRecord} />}
-              {activeNegocioTab === "nomina" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Costo Real de Personal — Panama 2026</h2><PayrollEngine /></div>)}
+              {activeNegocioTab === "nomina" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Costo Real de Personal — Panama 2026</h2><PayrollEngine societyId={societyId} /></div>)}
             </div>
           </div>
         )}
@@ -326,6 +429,14 @@ export default function Dashboard() {
         isOpen={alertsSidebarOpen}
         onClose={() => setAlertsSidebarOpen(false)}
       />
+
+      {/* Welcome Popup (primera vez) */}
+      {showWelcome && (
+        <WelcomePopup
+          onDismiss={handleWelcomeDismiss}
+          onStart={() => { handleWelcomeDismiss(); setActiveSection("datos"); }}
+        />
+      )}
     </main>
   );
 }

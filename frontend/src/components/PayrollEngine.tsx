@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   UserPlus,
   Trash2,
@@ -10,6 +10,11 @@ import {
   Shield,
   Calendar,
   Info,
+  ClipboardList,
+  Gift,
+  Briefcase,
+  LogOut,
+  Loader2,
 } from "lucide-react";
 import {
   BarChart,
@@ -22,136 +27,109 @@ import {
   CartesianGrid,
 } from "recharts";
 import SmartTooltip from "@/components/SmartTooltip";
+import AttendanceModal, {
+  type AttendanceRecord,
+} from "@/components/AttendanceModal";
+import { payrollApi } from "@/lib/api";
 
 // ============================================
-// MOTOR DE CALCULO NOMINA PANAMA 2026
-// Ley 462 de 2025 — SS Patronal 13.25%
+// TYPES
 // ============================================
 
 type ContractType = "planilla" | "freelance";
 
 interface Employee {
   id: string;
-  name: string;
-  contractType: ContractType;
-  grossSalary: number;
-  yearsWorked: number; // Para prima de antigüedad
-}
-
-interface PayrollResult {
-  employerCost: number;
-  employeeNet: number;
-  totalDeductions: number;
+  society_id: string;
+  employee_name: string;
+  contract_type: string;
+  gross_salary: number;
+  years_worked: number;
+  cedula?: string;
+  entry_date?: string;
+  exit_date?: string;
+  exit_reason?: string;
+  vacation_days_accrued: number;
+  vacation_days_taken: number;
+  xiii_mes_accumulated: number;
+  employer_cost: number;
+  employee_net: number;
+  total_deductions: number;
+  carga_patronal_pct: number;
   breakdown: Record<string, number>;
-  cargaPatronalPct: number; // % total sobre bruto
+  is_active: boolean;
 }
 
-/**
- * TABLA ISR MENSUAL DGI PANAMA 2026
- * Tramo 1: $0 – $846.15 → 0%
- * Tramo 2: $846.16 – $1,538.46 → 15%
- * Tramo 3: >$1,538.46 → 25%
- */
+interface PayrollEngineProps {
+  societyId: string;
+}
+
+// ============================================
+// LOCAL CALCULATION (fallback when no API)
+// ============================================
+
 function calcularISR(salario: number): number {
   if (salario <= 846.15) return 0;
-
-  let isr = 0;
-  if (salario <= 1538.46) {
-    // Tramo 2: 15% sobre excedente de $846.15
-    isr = (salario - 846.15) * 0.15;
-  } else {
-    // Tramo 2 completo + Tramo 3
-    isr = (1538.46 - 846.15) * 0.15; // $103.85
-    isr += (salario - 1538.46) * 0.25;
-  }
+  if (salario <= 1538.46) return (salario - 846.15) * 0.15;
+  let isr = (1538.46 - 846.15) * 0.15;
+  isr += (salario - 1538.46) * 0.25;
   return isr;
 }
 
-/**
- * CALCULO COMPLETO DE CARGA LABORAL PANAMA 2026
- * Ley 462 de 2025: SS Patronal sube de 12.25% a 13.25%
- */
-function calcularCargaPanama(emp: Employee): PayrollResult {
-  const salario = emp.grossSalary;
-
+function calcularCargaLocal(
+  salario: number,
+  tipo: string,
+  years: number
+): { employerCost: number; employeeNet: number; totalDeductions: number; cargaPatronalPct: number; breakdown: Record<string, number> } {
   if (salario <= 0) {
-    return {
-      employerCost: 0,
-      employeeNet: 0,
-      totalDeductions: 0,
-      breakdown: {},
-      cargaPatronalPct: 0,
-    };
+    return { employerCost: 0, employeeNet: 0, totalDeductions: 0, cargaPatronalPct: 0, breakdown: {} };
   }
 
-  if (emp.contractType === "planilla") {
-    // =============================================
-    // 1. COSTOS PATRONALES (empresa paga ADICIONAL)
-    // =============================================
-    const ssPatronal = salario * 0.1325;  // LEY 462/2025: 13.25%
-    const sePatronal = salario * 0.015;   // Seguro Educativo
-    const rpPatronal = salario * 0.015;   // Riesgos Profesionales
-    const decimoProv = salario / 12;      // XIII Mes (8.33%)
+  if (tipo === "planilla" || tipo === "payroll") {
+    const ssP = salario * 0.1325;
+    const seP = salario * 0.015;
+    const rpP = salario * 0.015;
+    const decimo = salario / 12;
+    const vac = (salario / 30) * 2.5 / 12;
+    const prima = years > 0 ? (salario / 4) / 12 : 0;
+    const carga = ssP + seP + rpP + decimo + vac + prima;
 
-    // Vacaciones proporcionales: 30 dias/año = 2.5 dias/mes
-    const vacacionesProv = (salario / 30) * 2.5 / 12; // provision mensual
-
-    // Prima de antigüedad: 1 semana por año trabajado (provision mensual)
-    // Se paga al terminar relación laboral, pero provisionamos mensualmente
-    const primaAntig = emp.yearsWorked > 0
-      ? ((salario / 4) * emp.yearsWorked) / 12 / emp.yearsWorked // = salario/48 por mes
-      : 0;
-
-    const cargaPatronal = ssPatronal + sePatronal + rpPatronal + decimoProv + vacacionesProv + primaAntig;
-    const employerCost = salario + cargaPatronal;
-
-    // =============================================
-    // 2. RETENCIONES AL EMPLEADO
-    // =============================================
-    const ssEmpleado = salario * 0.0975;  // SS Empleado
-    const seEmpleado = salario * 0.0125;  // SE Empleado
-    const isrEmpleado = calcularISR(salario); // ISR progresivo
-
-    const totalDeductions = ssEmpleado + seEmpleado + isrEmpleado;
-    const employeeNet = salario - totalDeductions;
-
-    const cargaPatronalPct = salario > 0 ? (cargaPatronal / salario) * 100 : 0;
+    const ssE = salario * 0.0975;
+    const seE = salario * 0.0125;
+    const isrE = calcularISR(salario);
+    const totalDed = ssE + seE + isrE;
 
     return {
-      employerCost: round2(employerCost),
-      employeeNet: round2(employeeNet),
-      totalDeductions: round2(totalDeductions),
-      cargaPatronalPct: round2(cargaPatronalPct),
+      employerCost: r2(salario + carga),
+      employeeNet: r2(salario - totalDed),
+      totalDeductions: r2(totalDed),
+      cargaPatronalPct: r2((carga / salario) * 100),
       breakdown: {
-        "CSS Patronal (13.25%)": round2(ssPatronal),
-        "Seguro Educativo Patr. (1.50%)": round2(sePatronal),
-        "Riesgos Prof. (1.50%)": round2(rpPatronal),
-        "Prov. XIII Mes (8.33%)": round2(decimoProv),
-        "Prov. Vacaciones": round2(vacacionesProv),
-        "Prov. Prima Antiguedad": round2(primaAntig),
-        "CSS Empleado (9.75%)": round2(ssEmpleado),
-        "SE Empleado (1.25%)": round2(seEmpleado),
-        "ISR Empleado (Tabla DGI)": round2(isrEmpleado),
+        "CSS Patronal (13.25%)": r2(ssP),
+        "Seguro Educativo Patr. (1.50%)": r2(seP),
+        "Riesgos Prof. (1.50%)": r2(rpP),
+        "Prov. XIII Mes (8.33%)": r2(decimo),
+        "Prov. Vacaciones": r2(vac),
+        "Prov. Prima Antiguedad": r2(prima),
+        "CSS Empleado (9.75%)": r2(ssE),
+        "SE Empleado (1.25%)": r2(seE),
+        "ISR Empleado (Tabla DGI)": r2(isrE),
       },
     };
   }
 
-  // =============================================
-  // SERVICIOS PROFESIONALES (Freelance)
-  // =============================================
-  const retencion10 = salario * 0.1;
+  // Freelance
+  const ret = salario * 0.1;
   return {
-    employerCost: round2(salario),
-    employeeNet: round2(salario - retencion10),
-    totalDeductions: round2(retencion10),
+    employerCost: r2(salario),
+    employeeNet: r2(salario - ret),
+    totalDeductions: r2(ret),
     cargaPatronalPct: 0,
-    breakdown: {
-      "Retencion ISR (10%)": round2(retencion10),
-    },
+    breakdown: { "Retencion ISR (10%)": r2(ret) },
   };
 }
 
-function round2(n: number): number {
+function r2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
@@ -160,120 +138,238 @@ function generateId(): string {
 }
 
 // ============================================
-// DATOS MOCK INICIALES
-// ============================================
-const INITIAL_EMPLOYEES: Employee[] = [
-  {
-    id: generateId(),
-    name: "Gerente General",
-    contractType: "planilla",
-    grossSalary: 2500,
-    yearsWorked: 3,
-  },
-  {
-    id: generateId(),
-    name: "Asistente Admin",
-    contractType: "planilla",
-    grossSalary: 850,
-    yearsWorked: 1,
-  },
-  {
-    id: generateId(),
-    name: "Contador Externo",
-    contractType: "freelance",
-    grossSalary: 300,
-    yearsWorked: 0,
-  },
-];
-
-// ============================================
-// COMPONENTE PRINCIPAL
+// MAIN COMPONENT
 // ============================================
 
-export default function PayrollEngine() {
-  const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
+export default function PayrollEngine({ societyId }: PayrollEngineProps) {
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [attendanceModal, setAttendanceModal] = useState<{
+    employeeId: string;
+    employeeName: string;
+  } | null>(null);
+  const [xiiiMes, setXiiiMes] = useState<any>(null);
 
-  // Calcular resultados para cada empleado
-  const results = useMemo(() => {
-    return employees.map((emp) => ({
-      ...emp,
-      result: calcularCargaPanama(emp),
-    }));
-  }, [employees]);
+  // Load employees from API
+  const loadEmployees = useCallback(async () => {
+    if (!societyId) return;
+    try {
+      setLoading(true);
+      const res = await payrollApi.listEmployees(societyId, false);
+      setEmployees(res.data || []);
+    } catch {
+      // Fallback: keep current local state
+    } finally {
+      setLoading(false);
+    }
+  }, [societyId]);
 
-  // Totales
+  useEffect(() => {
+    loadEmployees();
+  }, [loadEmployees]);
+
+  // Load XIII Mes
+  const loadXIIIMes = useCallback(async () => {
+    if (!societyId) return;
+    try {
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      // Tercios: Ene-Abr (1-4), May-Ago (5-8), Sep-Dic (9-12)
+      let monthsInTercio: number;
+      if (month <= 4) monthsInTercio = month;
+      else if (month <= 8) monthsInTercio = month - 4;
+      else monthsInTercio = month - 8;
+      const res = await payrollApi.getXIIIMes(societyId, monthsInTercio);
+      setXiiiMes(res);
+    } catch {
+      // Ignore
+    }
+  }, [societyId]);
+
+  useEffect(() => {
+    loadXIIIMes();
+  }, [loadXIIIMes]);
+
+  // Computed totals
   const totals = useMemo(() => {
-    const totalGross = results.reduce((s, r) => s + r.grossSalary, 0);
-    const totalEmployerCost = results.reduce(
-      (s, r) => s + r.result.employerCost,
-      0
-    );
-    const totalNet = results.reduce((s, r) => s + r.result.employeeNet, 0);
-    const totalDeductions = results.reduce(
-      (s, r) => s + r.result.totalDeductions,
-      0
-    );
-    const hiddenCost = totalEmployerCost - totalGross;
-    const planillaCount = results.filter((r) => r.contractType === "planilla").length;
-    const freelanceCount = results.filter((r) => r.contractType === "freelance").length;
+    const active = employees.filter((e) => e.is_active);
+    const totalGross = active.reduce((s, e) => s + (e.gross_salary || 0), 0);
+    const totalEmployerCost = active.reduce((s, e) => {
+      const calc = e.employer_cost || calcularCargaLocal(e.gross_salary, e.contract_type, e.years_worked).employerCost;
+      return s + calc;
+    }, 0);
+    const totalNet = active.reduce((s, e) => {
+      const calc = e.employee_net || calcularCargaLocal(e.gross_salary, e.contract_type, e.years_worked).employeeNet;
+      return s + calc;
+    }, 0);
+
+    const planillaCount = active.filter(
+      (e) => e.contract_type === "planilla" || e.contract_type === "payroll"
+    ).length;
+    const freelanceCount = active.filter(
+      (e) => e.contract_type === "freelance"
+    ).length;
 
     return {
-      totalGross: round2(totalGross),
-      totalEmployerCost: round2(totalEmployerCost),
-      totalNet: round2(totalNet),
-      totalDeductions: round2(totalDeductions),
-      hiddenCost: round2(hiddenCost),
+      totalGross: r2(totalGross),
+      totalEmployerCost: r2(totalEmployerCost),
+      totalNet: r2(totalNet),
+      hiddenCost: r2(totalEmployerCost - totalGross),
       planillaCount,
       freelanceCount,
-      costoAnual: round2(totalEmployerCost * 12),
+      costoAnual: r2(totalEmployerCost * 12),
     };
-  }, [results]);
+  }, [employees]);
 
   // Chart data
   const chartData = useMemo(() => {
-    return results.map((r) => ({
-      name: r.name.length > 12 ? r.name.substring(0, 12) + "..." : r.name,
-      "Costo Empresa": r.result.employerCost,
-      "Neto Empleado": r.result.employeeNet,
-      "Bruto": r.grossSalary,
-    }));
-  }, [results]);
+    return employees
+      .filter((e) => e.is_active)
+      .map((e) => {
+        const calc = calcularCargaLocal(
+          e.gross_salary,
+          e.contract_type,
+          e.years_worked
+        );
+        return {
+          name:
+            (e.employee_name || "").length > 12
+              ? e.employee_name.substring(0, 12) + "..."
+              : e.employee_name || "Sin nombre",
+          "Costo Empresa": e.employer_cost || calc.employerCost,
+          "Neto Empleado": e.employee_net || calc.employeeNet,
+          Bruto: e.gross_salary,
+        };
+      });
+  }, [employees]);
 
-  // Detalle del empleado seleccionado
+  // Selected detail
   const selectedDetail = useMemo(() => {
     if (!selectedId) return null;
-    return results.find((r) => r.id === selectedId) || null;
-  }, [selectedId, results]);
+    const emp = employees.find((e) => e.id === selectedId);
+    if (!emp) return null;
+    const calc = calcularCargaLocal(
+      emp.gross_salary,
+      emp.contract_type,
+      emp.years_worked
+    );
+    return {
+      ...emp,
+      employer_cost: emp.employer_cost || calc.employerCost,
+      employee_net: emp.employee_net || calc.employeeNet,
+      total_deductions: emp.total_deductions || calc.totalDeductions,
+      carga_patronal_pct: emp.carga_patronal_pct || calc.cargaPatronalPct,
+      breakdown:
+        emp.breakdown && Object.keys(emp.breakdown).length > 0
+          ? emp.breakdown
+          : calc.breakdown,
+    };
+  }, [selectedId, employees]);
 
-  // Handlers
-  const addEmployee = () => {
-    setEmployees((prev) => [
-      ...prev,
-      {
-        id: generateId(),
-        name: "",
-        contractType: "planilla",
-        grossSalary: 0,
-        yearsWorked: 0,
-      },
-    ]);
+  // ---- HANDLERS ----
+
+  const addEmployee = async () => {
+    setSaving(true);
+    try {
+      const res = await payrollApi.createEmployee({
+        society_id: societyId,
+        employee_name: "",
+        contract_type: "payroll",
+        gross_salary: 0,
+        years_worked: 0,
+      });
+      if (res.data) {
+        await loadEmployees();
+      }
+    } catch {
+      // Fallback to local-only
+      setEmployees((prev) => [
+        ...prev,
+        {
+          id: generateId(),
+          society_id: societyId,
+          employee_name: "",
+          contract_type: "payroll",
+          gross_salary: 0,
+          years_worked: 0,
+          vacation_days_accrued: 0,
+          vacation_days_taken: 0,
+          xiii_mes_accumulated: 0,
+          employer_cost: 0,
+          employee_net: 0,
+          total_deductions: 0,
+          carga_patronal_pct: 0,
+          breakdown: {},
+          is_active: true,
+        },
+      ]);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const removeEmployee = (id: string) => {
-    setEmployees((prev) => prev.filter((e) => e.id !== id));
-    if (selectedId === id) setSelectedId(null);
+  const removeEmployee = async (id: string) => {
+    try {
+      await payrollApi.deleteEmployee(societyId, id);
+      setEmployees((prev) => prev.filter((e) => e.id !== id));
+      if (selectedId === id) setSelectedId(null);
+    } catch {
+      setEmployees((prev) => prev.filter((e) => e.id !== id));
+      if (selectedId === id) setSelectedId(null);
+    }
   };
 
-  const updateEmployee = (
+  const updateEmployee = async (
     id: string,
-    field: keyof Employee,
+    field: string,
     value: string | number
   ) => {
+    // Update local state immediately for responsiveness
     setEmployees((prev) =>
       prev.map((e) => (e.id === id ? { ...e, [field]: value } : e))
     );
+
+    // Debounced API update
+    try {
+      const apiField =
+        field === "contractType"
+          ? "contract_type"
+          : field === "grossSalary"
+          ? "gross_salary"
+          : field === "yearsWorked"
+          ? "years_worked"
+          : field === "employeeName"
+          ? "employee_name"
+          : field;
+      await payrollApi.updateEmployee(societyId, id, { [apiField]: value });
+    } catch {
+      // Local state already updated
+    }
   };
+
+  const handleAttendanceSave = async (record: AttendanceRecord) => {
+    try {
+      await payrollApi.createAttendance(record);
+      setAttendanceModal(null);
+      // Reload to get updated vacation counts
+      await loadEmployees();
+    } catch {
+      setAttendanceModal(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={24} className="animate-spin text-blue-500" />
+        <span className="ml-2 text-sm text-slate-500">
+          Cargando nomina...
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -285,7 +381,8 @@ export default function PayrollEngine() {
             Ley 462 de 2025 — CSS Patronal actualizada al 13.25%
           </p>
           <p className="text-[10px] text-amber-600 mt-0.5">
-            Incluye: XIII Mes, Vacaciones, Prima de Antiguedad, ISR progresivo (3 tramos DGI).
+            Incluye: XIII Mes, Vacaciones, Prima de Antiguedad, ISR progresivo
+            (3 tramos DGI). Datos guardados en la nube.
           </p>
         </div>
       </div>
@@ -318,9 +415,54 @@ export default function PayrollEngine() {
           value={totals.hiddenCost}
           icon={<TrendingDown size={18} />}
           color="amber"
-          subtitle={`+${totals.totalGross > 0 ? ((totals.hiddenCost / totals.totalGross) * 100).toFixed(1) : 0}% sobre bruto`}
+          subtitle={`+${
+            totals.totalGross > 0
+              ? ((totals.hiddenCost / totals.totalGross) * 100).toFixed(1)
+              : 0
+          }% sobre bruto`}
         />
       </div>
+
+      {/* ====== XIII MES CARD ====== */}
+      {xiiiMes && xiiiMes.total_reserva_pendiente > 0 && (
+        <div className="p-4 rounded-xl bg-purple-50 border border-purple-200">
+          <div className="flex items-center gap-2 mb-2">
+            <Gift size={16} className="text-purple-600" />
+            <h4 className="text-sm font-bold text-purple-700">
+              Reserva XIII Mes (Decimo Tercer Mes)
+              <SmartTooltip term="reserva_xiii_mes" size={13} />
+            </h4>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-purple-600">
+                Meses en tercio actual: {xiiiMes.months_in_tercio}
+              </p>
+              <p className="text-[10px] text-purple-500 mt-0.5">
+                Pagos: 15 Abr · 15 Ago · 15 Dic
+              </p>
+            </div>
+            <p className="text-xl font-extrabold text-purple-700">
+              ${xiiiMes.total_reserva_pendiente.toLocaleString("es-PA")}
+            </p>
+          </div>
+          {xiiiMes.empleados && xiiiMes.empleados.length > 0 && (
+            <div className="mt-3 pt-2 border-t border-purple-200 space-y-1">
+              {xiiiMes.empleados.map((emp: any, i: number) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between text-[11px]"
+                >
+                  <span className="text-purple-600">{emp.employee_name}</span>
+                  <span className="font-bold text-purple-700">
+                    ${emp.acumulado_tercio.toLocaleString("es-PA")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ====== LAYOUT: TABLE + CHART ====== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -328,64 +470,114 @@ export default function PayrollEngine() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-slate-700 text-sm flex items-center">
-              Equipo ({employees.length})
-              <SmartTooltip term="css_patronal" size={14} />
+              Equipo ({employees.filter((e) => e.is_active).length})
+              <SmartTooltip term="costo_patronal" size={14} />
             </h3>
             <button
               onClick={addEmployee}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-all"
+              disabled={saving}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-all disabled:opacity-50"
             >
-              <UserPlus size={14} />
+              {saving ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <UserPlus size={14} />
+              )}
               Agregar
             </button>
           </div>
 
           <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
             {employees.map((emp) => {
-              const res = calcularCargaPanama(emp);
+              const calc = calcularCargaLocal(
+                emp.gross_salary,
+                emp.contract_type,
+                emp.years_worked
+              );
+              const ec = emp.employer_cost || calc.employerCost;
+              const en = emp.employee_net || calc.employeeNet;
+              const cp = emp.carga_patronal_pct || calc.cargaPatronalPct;
               const isSelected = selectedId === emp.id;
+              const isPlanilla =
+                emp.contract_type === "planilla" ||
+                emp.contract_type === "payroll";
+
               return (
                 <div
                   key={emp.id}
                   onClick={() => setSelectedId(isSelected ? null : emp.id)}
                   className={`p-3 rounded-xl border transition-all cursor-pointer ${
-                    isSelected
+                    !emp.is_active
+                      ? "border-slate-200 bg-slate-50 opacity-60"
+                      : isSelected
                       ? "border-blue-500 bg-blue-50 shadow-sm"
                       : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-2">
-                    {/* Nombre */}
                     <input
                       type="text"
-                      value={emp.name}
+                      value={emp.employee_name || ""}
                       onChange={(e) =>
-                        updateEmployee(emp.id, "name", e.target.value)
+                        updateEmployee(emp.id, "employee_name", e.target.value)
                       }
                       onClick={(e) => e.stopPropagation()}
                       placeholder="Nombre del cargo..."
                       className="flex-1 text-sm font-medium bg-transparent outline-none border-b border-transparent focus:border-slate-300 text-slate-800 placeholder:text-slate-300"
                     />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeEmployee(emp.id);
-                      }}
-                      className="text-slate-300 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {/* Cedula badge */}
+                    {!emp.cedula && isPlanilla && emp.is_active && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-bold">
+                        Sin Cedula
+                      </span>
+                    )}
+                    {!emp.is_active && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-slate-200 text-slate-500 rounded font-bold">
+                        Inactivo
+                      </span>
+                    )}
+                    <div className="flex items-center gap-1">
+                      {emp.is_active && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAttendanceModal({
+                              employeeId: emp.id,
+                              employeeName: emp.employee_name || "Empleado",
+                            });
+                          }}
+                          title="Registrar asistencia"
+                          className="p-1 text-slate-300 hover:text-blue-500 transition-colors"
+                        >
+                          <ClipboardList size={14} />
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeEmployee(emp.id);
+                        }}
+                        className="p-1 text-slate-300 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    {/* Tipo contrato */}
                     <select
-                      value={emp.contractType}
+                      value={
+                        emp.contract_type === "payroll"
+                          ? "planilla"
+                          : emp.contract_type
+                      }
                       onChange={(e) =>
                         updateEmployee(
                           emp.id,
-                          "contractType",
-                          e.target.value as ContractType
+                          "contract_type",
+                          e.target.value === "planilla"
+                            ? "payroll"
+                            : e.target.value
                         )
                       }
                       onClick={(e) => e.stopPropagation()}
@@ -395,16 +587,15 @@ export default function PayrollEngine() {
                       <option value="freelance">Freelance</option>
                     </select>
 
-                    {/* Salario */}
                     <div className="flex items-center gap-1">
                       <span className="text-[11px] text-emerald-500">$</span>
                       <input
                         type="number"
-                        value={emp.grossSalary || ""}
+                        value={emp.gross_salary || ""}
                         onChange={(e) =>
                           updateEmployee(
                             emp.id,
-                            "grossSalary",
+                            "gross_salary",
                             parseFloat(e.target.value) || 0
                           )
                         }
@@ -414,48 +605,102 @@ export default function PayrollEngine() {
                       />
                     </div>
 
-                    {/* Anos trabajados (solo planilla) */}
-                    {emp.contractType === "planilla" && (
-                      <div className="flex items-center gap-1">
-                        <Calendar size={11} className="text-slate-400" />
-                        <input
-                          type="number"
-                          value={emp.yearsWorked || ""}
-                          onChange={(e) =>
-                            updateEmployee(
-                              emp.id,
-                              "yearsWorked",
-                              parseInt(e.target.value) || 0
-                            )
-                          }
-                          onClick={(e) => e.stopPropagation()}
-                          placeholder="0"
-                          min="0"
-                          max="40"
-                          className="w-8 text-[11px] bg-transparent outline-none border-b border-transparent focus:border-slate-300 text-slate-700 text-center"
-                        />
-                        <span className="text-[10px] text-slate-400">anos</span>
-                      </div>
+                    {isPlanilla && (
+                      <>
+                        <div className="flex items-center gap-1">
+                          <Calendar size={11} className="text-slate-400" />
+                          <input
+                            type="number"
+                            value={emp.years_worked || ""}
+                            onChange={(e) =>
+                              updateEmployee(
+                                emp.id,
+                                "years_worked",
+                                parseInt(e.target.value) || 0
+                              )
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder="0"
+                            min="0"
+                            max="40"
+                            className="w-8 text-[11px] bg-transparent outline-none border-b border-transparent focus:border-slate-300 text-slate-700 text-center"
+                          />
+                          <span className="text-[10px] text-slate-400">
+                            anos
+                          </span>
+                        </div>
+
+                        {/* Cedula input */}
+                        <div className="flex items-center gap-1">
+                          <Briefcase size={11} className="text-slate-400" />
+                          <input
+                            type="text"
+                            value={emp.cedula || ""}
+                            onChange={(e) =>
+                              updateEmployee(emp.id, "cedula", e.target.value)
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder="Cedula"
+                            className="w-20 text-[11px] bg-transparent outline-none border-b border-transparent focus:border-slate-300 text-slate-700"
+                          />
+                        </div>
+                      </>
                     )}
                   </div>
 
-                  {/* Resultado inline */}
+                  {/* Vacation info for planilla */}
+                  {isPlanilla &&
+                    (emp.vacation_days_accrued > 0 ||
+                      emp.vacation_days_taken > 0) && (
+                      <div className="flex items-center gap-3 mt-1.5 text-[10px]">
+                        <span className="text-blue-500">
+                          Vac. acumuladas:{" "}
+                          {emp.vacation_days_accrued?.toFixed(1) || "0"} d
+                        </span>
+                        <span className="text-amber-500">
+                          Tomadas:{" "}
+                          {emp.vacation_days_taken?.toFixed(1) || "0"} d
+                        </span>
+                        <span className="text-emerald-500">
+                          Pendientes:{" "}
+                          {(
+                            (emp.vacation_days_accrued || 0) -
+                            (emp.vacation_days_taken || 0)
+                          ).toFixed(1)}{" "}
+                          d
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Result inline */}
                   <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-100">
                     <span className="text-[10px] text-red-600 font-bold">
-                      Costo: ${res.employerCost.toLocaleString("es-PA")}
+                      Costo: ${ec.toLocaleString("es-PA")}
                     </span>
                     <span className="text-[10px] text-emerald-600 font-bold">
-                      Neto: ${res.employeeNet.toLocaleString("es-PA")}
+                      Neto: ${en.toLocaleString("es-PA")}
                     </span>
-                    {emp.contractType === "planilla" && res.cargaPatronalPct > 0 && (
+                    {isPlanilla && cp > 0 && (
                       <span className="text-[10px] text-amber-600 font-bold ml-auto">
-                        +{res.cargaPatronalPct.toFixed(1)}%
+                        +{cp.toFixed(1)}%
                       </span>
                     )}
                   </div>
                 </div>
               );
             })}
+
+            {employees.length === 0 && (
+              <div className="py-8 text-center">
+                <Users size={32} className="mx-auto text-slate-200 mb-3" />
+                <p className="text-sm text-slate-400">
+                  No hay empleados registrados
+                </p>
+                <p className="text-[10px] text-slate-300 mt-1">
+                  Haz clic en "Agregar" para crear tu primer empleado
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -528,32 +773,40 @@ export default function PayrollEngine() {
             </p>
           )}
 
-          {/* Detalle de desglose si hay empleado seleccionado */}
+          {/* Detalle del empleado seleccionado */}
           {selectedDetail && (
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
               <h4 className="text-sm font-bold text-slate-700 mb-3">
-                Desglose: {selectedDetail.name || "Sin nombre"}
+                Desglose: {selectedDetail.employee_name || "Sin nombre"}
                 <span className="text-[10px] text-slate-500 ml-2 font-normal">
-                  ({selectedDetail.contractType === "planilla"
+                  (
+                  {selectedDetail.contract_type === "planilla" ||
+                  selectedDetail.contract_type === "payroll"
                     ? "Planilla - Ley 462/2025"
-                    : "Servicios Profesionales"})
+                    : "Servicios Profesionales"}
+                  )
                 </span>
               </h4>
 
-              {/* Separar costos patronales vs retenciones */}
-              {selectedDetail.contractType === "planilla" && (
+              {(selectedDetail.contract_type === "planilla" ||
+                selectedDetail.contract_type === "payroll") && (
                 <>
                   <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1.5">
                     Cargas Patronales (empresa paga adicional)
                   </p>
                   <div className="space-y-1 mb-3">
-                    {Object.entries(selectedDetail.result.breakdown)
+                    {Object.entries(selectedDetail.breakdown)
                       .filter(([key]) => !key.includes("Empleado"))
                       .map(([key, val]) => (
-                        <div key={key} className="flex items-center justify-between">
-                          <span className="text-[11px] text-slate-500">{key}</span>
+                        <div
+                          key={key}
+                          className="flex items-center justify-between"
+                        >
+                          <span className="text-[11px] text-slate-500">
+                            {key}
+                          </span>
                           <span className="text-[11px] font-bold text-red-600">
-                            ${val.toLocaleString("es-PA")}
+                            ${(val as number).toLocaleString("es-PA")}
                           </span>
                         </div>
                       ))}
@@ -563,13 +816,18 @@ export default function PayrollEngine() {
                     Retenciones al Empleado (se descuenta del sueldo)
                   </p>
                   <div className="space-y-1 mb-3">
-                    {Object.entries(selectedDetail.result.breakdown)
+                    {Object.entries(selectedDetail.breakdown)
                       .filter(([key]) => key.includes("Empleado"))
                       .map(([key, val]) => (
-                        <div key={key} className="flex items-center justify-between">
-                          <span className="text-[11px] text-slate-500">{key}</span>
+                        <div
+                          key={key}
+                          className="flex items-center justify-between"
+                        >
+                          <span className="text-[11px] text-slate-500">
+                            {key}
+                          </span>
                           <span className="text-[11px] font-bold text-blue-600">
-                            ${val.toLocaleString("es-PA")}
+                            ${(val as number).toLocaleString("es-PA")}
                           </span>
                         </div>
                       ))}
@@ -577,14 +835,19 @@ export default function PayrollEngine() {
                 </>
               )}
 
-              {selectedDetail.contractType === "freelance" && (
+              {selectedDetail.contract_type === "freelance" && (
                 <div className="space-y-1 mb-3">
-                  {Object.entries(selectedDetail.result.breakdown).map(
+                  {Object.entries(selectedDetail.breakdown).map(
                     ([key, val]) => (
-                      <div key={key} className="flex items-center justify-between">
-                        <span className="text-[11px] text-slate-500">{key}</span>
+                      <div
+                        key={key}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-[11px] text-slate-500">
+                          {key}
+                        </span>
                         <span className="text-[11px] font-bold text-slate-700">
-                          ${val.toLocaleString("es-PA")}
+                          ${(val as number).toLocaleString("es-PA")}
                         </span>
                       </div>
                     )
@@ -592,34 +855,51 @@ export default function PayrollEngine() {
                 </div>
               )}
 
-              {/* Resumen final */}
+              {/* Summary */}
               <div className="pt-3 border-t border-slate-200 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Salario Bruto:</span>
+                  <span className="text-xs text-slate-500">
+                    Salario Bruto:
+                  </span>
                   <span className="text-xs font-bold text-slate-700">
-                    ${selectedDetail.grossSalary.toLocaleString("es-PA")}
+                    $
+                    {selectedDetail.gross_salary.toLocaleString("es-PA")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Costo Real Empresa:</span>
+                  <span className="text-xs text-slate-500">
+                    Costo Real Empresa:
+                  </span>
                   <span className="text-xs font-extrabold text-red-600">
-                    ${selectedDetail.result.employerCost.toLocaleString("es-PA")}
+                    $
+                    {selectedDetail.employer_cost.toLocaleString("es-PA")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Neto Empleado:</span>
+                  <span className="text-xs text-slate-500">
+                    Neto Empleado:
+                  </span>
                   <span className="text-xs font-extrabold text-emerald-600">
-                    ${selectedDetail.result.employeeNet.toLocaleString("es-PA")}
+                    $
+                    {selectedDetail.employee_net.toLocaleString("es-PA")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between bg-amber-50 -mx-2 px-2 py-1 rounded-lg">
-                  <span className="text-xs font-bold text-amber-700">Sobrecosto Oculto:</span>
+                  <span className="text-xs font-bold text-amber-700">
+                    Sobrecosto Oculto:
+                  </span>
                   <span className="text-xs font-extrabold text-amber-700">
-                    +${(selectedDetail.result.employerCost - selectedDetail.grossSalary).toLocaleString("es-PA")}
-                    {selectedDetail.grossSalary > 0 &&
+                    +$
+                    {(
+                      selectedDetail.employer_cost -
+                      selectedDetail.gross_salary
+                    ).toLocaleString("es-PA")}
+                    {selectedDetail.gross_salary > 0 &&
                       ` (+${(
-                        ((selectedDetail.result.employerCost - selectedDetail.grossSalary) /
-                          selectedDetail.grossSalary) * 100
+                        ((selectedDetail.employer_cost -
+                          selectedDetail.gross_salary) /
+                          selectedDetail.gross_salary) *
+                        100
                       ).toFixed(1)}%)`}
                   </span>
                 </div>
@@ -627,7 +907,7 @@ export default function PayrollEngine() {
             </div>
           )}
 
-          {/* ISR Explicacion */}
+          {/* ISR Reference */}
           <div className="p-3 rounded-xl bg-blue-50 border border-blue-200">
             <div className="flex items-center gap-2 mb-2">
               <Info size={14} className="text-blue-600" />
@@ -655,11 +935,24 @@ export default function PayrollEngine() {
 
       {/* ====== LEGAL FOOTER ====== */}
       <p className="text-[10px] text-slate-400 italic border-t border-slate-100 pt-3">
-        Basado en legislacion laboral de Panama 2026. <strong>Ley 462 de 2025</strong>: CSS
-        Patronal 13.25%, SE 1.50%, Riesgos Prof. 1.50%, XIII Mes, Vacaciones (30 dias/ano),
-        Prima de Antiguedad (1 semana/ano). ISR segun tabla DGI mensual 2026 (3 tramos
-        progresivos). Esto es una estimacion educativa, no constituye asesoria legal ni contable.
+        Basado en legislacion laboral de Panama 2026.{" "}
+        <strong>Ley 462 de 2025</strong>: CSS Patronal 13.25%, SE 1.50%,
+        Riesgos Prof. 1.50%, XIII Mes, Vacaciones (30 dias/ano), Prima de
+        Antiguedad (1 semana/ano). ISR segun tabla DGI mensual 2026 (3
+        tramos progresivos). Esto es una estimacion educativa, no constituye
+        asesoria legal ni contable.
       </p>
+
+      {/* ====== ATTENDANCE MODAL ====== */}
+      {attendanceModal && (
+        <AttendanceModal
+          employeeId={attendanceModal.employeeId}
+          employeeName={attendanceModal.employeeName}
+          societyId={societyId}
+          onClose={() => setAttendanceModal(null)}
+          onSave={handleAttendanceSave}
+        />
+      )}
     </div>
   );
 }

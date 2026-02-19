@@ -31,6 +31,10 @@ interface RatioGaugesProps {
       trapped_cash: number;
     };
     fiscal: { annual_revenue_projected: number; itbms_status: string };
+    absenteeism?: {
+      absenteeism_pct: number;
+      status: string;
+    };
   };
 }
 
@@ -139,10 +143,17 @@ export default function RatioGauges({ ratios }: RatioGaugesProps) {
     false
   );
 
+  const absenteeismPct = ratios.absenteeism?.absenteeism_pct ?? 0;
+  const absenteeismStatus = getStatus(
+    absenteeismPct,
+    { danger: 5, warning: 2 },
+    true
+  );
+
   return (
     <div className="space-y-6">
       {/* Gauges grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <GaugeChart
           value={ratios.margins.ebitda_margin_pct}
           max={30}
@@ -178,6 +189,15 @@ export default function RatioGauges({ ratios }: RatioGaugesProps) {
           status={acidStatus}
           subtitle="Meta: >1.0x"
           tooltipTerm="prueba_acida"
+        />
+        <GaugeChart
+          value={absenteeismPct}
+          max={10}
+          label="Ausentismo"
+          unit="%"
+          status={absenteeismStatus}
+          subtitle="Meta: <2%"
+          tooltipTerm="absentismo"
         />
       </div>
 

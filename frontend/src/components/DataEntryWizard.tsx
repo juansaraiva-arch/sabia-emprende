@@ -4,6 +4,7 @@ import {
   Camera,
   Film,
   ArrowLeft,
+  Home,
   Mic,
   ScanLine,
   Sparkles,
@@ -19,6 +20,7 @@ import CsvUploader from "./CsvUploader";
 interface DataEntryWizardProps {
   onRecordSaved: (record: FinancialRecord) => void;
   onBulkRecordsSaved: (records: FinancialRecord[]) => void;
+  onNavigateHome?: () => void;
 }
 
 type Mode = "flash" | "estratega" | null;
@@ -30,6 +32,7 @@ type Mode = "flash" | "estratega" | null;
 export default function DataEntryWizard({
   onRecordSaved,
   onBulkRecordsSaved,
+  onNavigateHome,
 }: DataEntryWizardProps) {
   const [mode, setMode] = useState<Mode>(null);
   const [showAiToast, setShowAiToast] = useState<string | null>(null);
@@ -60,15 +63,26 @@ export default function DataEntryWizard({
         </p>
       </div>
 
-      {/* ====== VOLVER BUTTON ====== */}
+      {/* ====== VOLVER BUTTONS ====== */}
       {mode !== null && (
-        <button
-          onClick={() => setMode(null)}
-          className="flex items-center gap-2 mb-5 px-4 py-2.5 text-sm font-bold text-slate-500 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors min-h-[48px]"
-        >
-          <ArrowLeft size={18} />
-          Volver a elegir modo
-        </button>
+        <div className="flex gap-2 mb-5 flex-wrap">
+          <button
+            onClick={() => setMode(null)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-slate-500 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors min-h-[48px]"
+          >
+            <ArrowLeft size={18} />
+            Volver a elegir modo
+          </button>
+          {onNavigateHome && (
+            <button
+              onClick={onNavigateHome}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors min-h-[48px]"
+            >
+              <Home size={18} />
+              Volver al Inicio
+            </button>
+          )}
+        </div>
       )}
 
       {/* ====== MODE SELECTOR ====== */}

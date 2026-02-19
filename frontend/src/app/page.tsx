@@ -5,23 +5,22 @@ import {
   ChevronRight,
   BrainCircuit,
   BarChart3,
-  Leaf,
 } from "lucide-react";
 import Link from "next/link";
+import SabiaLogo from "@/components/SabiaLogo";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
       {/* Header */}
       <div className="text-center mb-10 max-w-3xl">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium mb-6">
-          <Leaf size={16} />
-          Tu Aliado Estrategico
+        <div className="flex justify-center mb-6">
+          <SabiaLogo size={100} iconOnly />
         </div>
         <h1 className="text-5xl font-extrabold text-slate-800 mb-4 tracking-tight font-heading">
           SABIA EMPRENDE
         </h1>
-        <p className="text-emerald-600 text-lg font-semibold mb-4">
+        <p className="text-lg font-semibold mb-4" style={{ color: "#C9A84C" }}>
           Tu Aliado Estrategico
         </p>
         <p className="text-slate-500 text-xl leading-relaxed">
@@ -42,7 +41,8 @@ export default function Home() {
         </Link>
         <Link
           href="/dashboard"
-          className="group relative inline-flex items-center gap-3 px-10 py-5 bg-emerald-600 text-white font-bold text-lg rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 hover:-translate-y-1"
+          className="group relative inline-flex items-center gap-3 px-10 py-5 text-white font-bold text-lg rounded-2xl transition-all shadow-lg hover:-translate-y-1"
+          style={{ backgroundColor: "#1B2838", boxShadow: "0 4px 14px rgba(27,40,56,0.3)" }}
         >
           <BarChart3 size={20} />
           Mi Director Financiero

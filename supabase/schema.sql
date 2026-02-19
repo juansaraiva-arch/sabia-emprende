@@ -190,11 +190,54 @@ CREATE TABLE public.payroll_entries (
     total_deductions NUMERIC(12,2),         -- Retenciones totales
 
     is_active BOOLEAN DEFAULT TRUE,
+
+    -- Campos extendidos (Fase 1: Nomina Completa)
+    cedula TEXT,
+    entry_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    exit_date DATE,
+    exit_reason TEXT CHECK (exit_reason IN ('renuncia', 'despido', 'mutuo_acuerdo', 'fin_contrato')),
+    years_worked INT DEFAULT 0,
+    vacation_days_accrued NUMERIC(6,2) DEFAULT 0,
+    vacation_days_taken NUMERIC(6,2) DEFAULT 0,
+    xiii_mes_accumulated NUMERIC(12,2) DEFAULT 0,
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_payroll_society ON public.payroll_entries(society_id);
+
+-- ============================================================
+-- 5b. TABLA: attendance_records
+-- Registro de asistencia, vacaciones, faltas y feriados laborados
+-- ============================================================
+CREATE TABLE public.attendance_records (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    payroll_entry_id UUID NOT NULL REFERENCES public.payroll_entries(id) ON DELETE CASCADE,
+    society_id UUID NOT NULL REFERENCES public.societies(id) ON DELETE CASCADE,
+
+    record_date DATE NOT NULL,
+    record_type TEXT NOT NULL CHECK (record_type IN (
+        'vacation_taken',
+        'justified_absence',
+        'unjustified_absence',
+        'holiday_worked',
+        'sunday_worked',
+        'compensatory_day'
+    )),
+    hours NUMERIC(4,1) DEFAULT 8,
+    surcharge_pct NUMERIC(5,2) DEFAULT 0,        -- 50% domingo, 150% feriado
+    deduction_amount NUMERIC(12,2) DEFAULT 0,     -- Monto descontado del salario
+    notes TEXT,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_attendance_payroll ON public.attendance_records(payroll_entry_id);
+CREATE INDEX idx_attendance_society ON public.attendance_records(society_id);
+CREATE INDEX idx_attendance_date ON public.attendance_records(record_date);
+
+COMMENT ON TABLE public.attendance_records IS 'Registro de novedades laborales: vacaciones, faltas, feriados laborados, dias compensatorios.';
 
 -- ============================================================
 -- 6. ROW LEVEL SECURITY (RLS)
@@ -207,6 +250,7 @@ ALTER TABLE public.societies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.financial_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payroll_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attendance_records ENABLE ROW LEVEL SECURITY;
 
 -- USERS: Solo puede ver/editar su propio perfil
 CREATE POLICY "users_select_own" ON public.users
@@ -299,6 +343,43 @@ CREATE POLICY "payroll_update" ON public.payroll_entries
         EXISTS (
             SELECT 1 FROM public.societies s
             WHERE s.id = payroll_entries.society_id
+            AND s.user_id = auth.uid()
+        )
+    );
+
+-- ATTENDANCE_RECORDS: Via la sociedad del usuario
+CREATE POLICY "attendance_select" ON public.attendance_records
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.societies s
+            WHERE s.id = attendance_records.society_id
+            AND s.user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "attendance_insert" ON public.attendance_records
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.societies s
+            WHERE s.id = attendance_records.society_id
+            AND s.user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "attendance_update" ON public.attendance_records
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.societies s
+            WHERE s.id = attendance_records.society_id
+            AND s.user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "attendance_delete" ON public.attendance_records
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.societies s
+            WHERE s.id = attendance_records.society_id
             AND s.user_id = auth.uid()
         )
     );
@@ -425,3 +506,265 @@ SELECT
     fr.created_at
 FROM public.financial_records fr
 JOIN public.societies s ON s.id = fr.society_id;
+
+-- ============================================================
+-- 10. TABLA: chart_of_accounts
+-- Plan de Cuentas contable (codificacion decimal Panama)
+-- ============================================================
+CREATE TABLE public.chart_of_accounts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    society_id UUID NOT NULL REFERENCES public.societies(id) ON DELETE CASCADE,
+
+    account_code TEXT NOT NULL,              -- "1.1.1", "4.1", "5.2.3"
+    account_name TEXT NOT NULL,              -- "Caja y Bancos", "Ventas", "Alquiler"
+    account_type TEXT NOT NULL CHECK (account_type IN (
+        'activo', 'pasivo', 'patrimonio', 'ingreso', 'costo_gasto'
+    )),
+    parent_code TEXT,                        -- "1.1" es padre de "1.1.1"
+    level INT NOT NULL DEFAULT 1,            -- 1 = mayor, 2 = sub, 3 = detalle
+    is_header BOOLEAN DEFAULT FALSE,         -- TRUE = cuenta de agrupacion, no se usa en asientos
+    normal_balance TEXT NOT NULL DEFAULT 'debe' CHECK (normal_balance IN ('debe', 'haber')),
+    is_active BOOLEAN DEFAULT TRUE,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    UNIQUE(society_id, account_code)
+);
+
+CREATE INDEX idx_coa_society ON public.chart_of_accounts(society_id);
+CREATE INDEX idx_coa_type ON public.chart_of_accounts(account_type);
+CREATE INDEX idx_coa_parent ON public.chart_of_accounts(society_id, parent_code);
+
+COMMENT ON TABLE public.chart_of_accounts IS 'Plan de cuentas contable. Codificacion decimal: 1.x Activos, 2.x Pasivos, 3.x Patrimonio, 4.x Ingresos, 5.x Costos/Gastos.';
+COMMENT ON COLUMN public.chart_of_accounts.normal_balance IS 'Saldo normal: activos y gastos = debe; pasivos, patrimonio e ingresos = haber.';
+
+-- ============================================================
+-- 11. TABLA: journal_entries (Libro Diario)
+-- Encabezado de asientos contables
+-- ============================================================
+CREATE TABLE public.journal_entries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    society_id UUID NOT NULL REFERENCES public.societies(id) ON DELETE CASCADE,
+
+    entry_number SERIAL,                    -- Consecutivo por sociedad
+    entry_date DATE NOT NULL,
+    description TEXT NOT NULL,              -- "Venta al contado Factura #123"
+    reference TEXT,                          -- # factura, # recibo, etc.
+    source TEXT DEFAULT 'manual' CHECK (source IN ('manual', 'nlp', 'auto', 'csv')),
+
+    period_year INT NOT NULL,
+    period_month INT NOT NULL CHECK (period_month BETWEEN 1 AND 12),
+
+    is_locked BOOLEAN DEFAULT FALSE,        -- TRUE si el periodo esta cerrado
+    attachment_url TEXT,                     -- URL factura/soporte en storage
+
+    total_debe NUMERIC(15,2) NOT NULL DEFAULT 0,
+    total_haber NUMERIC(15,2) NOT NULL DEFAULT 0,
+
+    created_by TEXT,                         -- user_id que creo el asiento
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_je_society ON public.journal_entries(society_id);
+CREATE INDEX idx_je_date ON public.journal_entries(entry_date);
+CREATE INDEX idx_je_period ON public.journal_entries(period_year, period_month);
+
+COMMENT ON TABLE public.journal_entries IS 'Libro Diario: asientos de doble partida. Cada asiento debe tener total_debe == total_haber.';
+
+-- ============================================================
+-- 12. TABLA: journal_lines (Detalle de asientos)
+-- Lineas DEBE/HABER de cada asiento
+-- ============================================================
+CREATE TABLE public.journal_lines (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    journal_entry_id UUID NOT NULL REFERENCES public.journal_entries(id) ON DELETE CASCADE,
+
+    account_id UUID NOT NULL REFERENCES public.chart_of_accounts(id),
+    account_code TEXT NOT NULL,             -- Denormalizado para queries rapidos
+    description TEXT,                       -- Detalle opcional por linea
+
+    debe NUMERIC(15,2) NOT NULL DEFAULT 0,
+    haber NUMERIC(15,2) NOT NULL DEFAULT 0,
+
+    line_order INT NOT NULL DEFAULT 0,
+
+    -- Una linea no puede tener DEBE y HABER al mismo tiempo
+    CHECK (NOT (debe > 0 AND haber > 0)),
+    -- Al menos uno debe ser mayor a 0
+    CHECK (debe > 0 OR haber > 0)
+);
+
+CREATE INDEX idx_jl_entry ON public.journal_lines(journal_entry_id);
+CREATE INDEX idx_jl_account ON public.journal_lines(account_id);
+CREATE INDEX idx_jl_account_code ON public.journal_lines(account_code);
+
+COMMENT ON TABLE public.journal_lines IS 'Lineas de detalle de cada asiento del Libro Diario. Partida doble: debe en una cuenta, haber en otra.';
+
+-- ============================================================
+-- 13. TABLA: accounting_periods
+-- Control de periodos contables (apertura/cierre)
+-- ============================================================
+CREATE TABLE public.accounting_periods (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    society_id UUID NOT NULL REFERENCES public.societies(id) ON DELETE CASCADE,
+
+    period_year INT NOT NULL,
+    period_month INT NOT NULL CHECK (period_month BETWEEN 1 AND 12),
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed', 'reopened')),
+
+    closed_at TIMESTAMPTZ,
+    closed_by TEXT,                          -- user_id que cerro el periodo
+    reopened_at TIMESTAMPTZ,
+    reopened_by TEXT,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    UNIQUE(society_id, period_year, period_month)
+);
+
+CREATE INDEX idx_ap_society ON public.accounting_periods(society_id);
+
+COMMENT ON TABLE public.accounting_periods IS 'Control de periodos contables. Un periodo cerrado bloquea edicion de asientos.';
+
+-- ============================================================
+-- 14. TABLA: generated_reports (Fase 6)
+-- Registro de reportes PDF generados
+-- ============================================================
+CREATE TABLE public.generated_reports (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    society_id UUID NOT NULL REFERENCES public.societies(id) ON DELETE CASCADE,
+
+    report_type TEXT NOT NULL CHECK (report_type IN (
+        'libro_diario', 'libro_mayor', 'balance_comprobacion',
+        'estado_resultados', 'balance_general'
+    )),
+    period_year INT NOT NULL,
+    period_month INT NOT NULL,
+    storage_path TEXT NOT NULL,             -- Ruta en Supabase Storage
+    file_size_kb INT,
+
+    generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    generated_by TEXT
+);
+
+CREATE INDEX idx_reports_society ON public.generated_reports(society_id);
+
+-- ============================================================
+-- 15. RLS para tablas contables
+-- ============================================================
+
+ALTER TABLE public.chart_of_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.journal_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.journal_lines ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.accounting_periods ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.generated_reports ENABLE ROW LEVEL SECURITY;
+
+-- chart_of_accounts: via sociedad
+CREATE POLICY "coa_select" ON public.chart_of_accounts
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = chart_of_accounts.society_id AND s.user_id = auth.uid())
+    );
+CREATE POLICY "coa_insert" ON public.chart_of_accounts
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = chart_of_accounts.society_id AND s.user_id = auth.uid())
+    );
+CREATE POLICY "coa_update" ON public.chart_of_accounts
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = chart_of_accounts.society_id AND s.user_id = auth.uid())
+    );
+CREATE POLICY "coa_delete" ON public.chart_of_accounts
+    FOR DELETE USING (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = chart_of_accounts.society_id AND s.user_id = auth.uid())
+    );
+
+-- journal_entries: via sociedad
+CREATE POLICY "je_select" ON public.journal_entries
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = journal_entries.society_id AND s.user_id = auth.uid())
+    );
+CREATE POLICY "je_insert" ON public.journal_entries
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = journal_entries.society_id AND s.user_id = auth.uid())
+    );
+CREATE POLICY "je_update" ON public.journal_entries
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = journal_entries.society_id AND s.user_id = auth.uid())
+    );
+CREATE POLICY "je_delete" ON public.journal_entries
+    FOR DELETE USING (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = journal_entries.society_id AND s.user_id = auth.uid())
+    );
+
+-- journal_lines: via entry -> society
+CREATE POLICY "jl_select" ON public.journal_lines
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.journal_entries je
+            JOIN public.societies s ON s.id = je.society_id
+            WHERE je.id = journal_lines.journal_entry_id AND s.user_id = auth.uid()
+        )
+    );
+CREATE POLICY "jl_insert" ON public.journal_lines
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.journal_entries je
+            JOIN public.societies s ON s.id = je.society_id
+            WHERE je.id = journal_lines.journal_entry_id AND s.user_id = auth.uid()
+        )
+    );
+CREATE POLICY "jl_update" ON public.journal_lines
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM public.journal_entries je
+            JOIN public.societies s ON s.id = je.society_id
+            WHERE je.id = journal_lines.journal_entry_id AND s.user_id = auth.uid()
+        )
+    );
+CREATE POLICY "jl_delete" ON public.journal_lines
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM public.journal_entries je
+            JOIN public.societies s ON s.id = je.society_id
+            WHERE je.id = journal_lines.journal_entry_id AND s.user_id = auth.uid()
+        )
+    );
+
+-- accounting_periods: via sociedad
+CREATE POLICY "ap_select" ON public.accounting_periods
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = accounting_periods.society_id AND s.user_id = auth.uid())
+    );
+CREATE POLICY "ap_insert" ON public.accounting_periods
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = accounting_periods.society_id AND s.user_id = auth.uid())
+    );
+CREATE POLICY "ap_update" ON public.accounting_periods
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = accounting_periods.society_id AND s.user_id = auth.uid())
+    );
+
+-- generated_reports: via sociedad
+CREATE POLICY "reports_select" ON public.generated_reports
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = generated_reports.society_id AND s.user_id = auth.uid())
+    );
+CREATE POLICY "reports_insert" ON public.generated_reports
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM public.societies s WHERE s.id = generated_reports.society_id AND s.user_id = auth.uid())
+    );
+
+-- Triggers updated_at para tablas contables
+CREATE TRIGGER trg_coa_updated_at
+    BEFORE UPDATE ON public.chart_of_accounts
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER trg_je_updated_at
+    BEFORE UPDATE ON public.journal_entries
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER trg_ap_updated_at
+    BEFORE UPDATE ON public.accounting_periods
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();

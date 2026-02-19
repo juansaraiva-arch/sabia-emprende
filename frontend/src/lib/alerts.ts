@@ -229,6 +229,46 @@ export function computeAlerts(record: FinancialRecord): StrategicAlert[] {
     });
   }
 
+  // ---- CAPITAL HUMANO: XIII Mes ----
+  // Alerta cuando la provisión de XIII Mes acumulada supera el 50% del efectivo
+  const xiiiMesProvision = record.opex_payroll * 0.0833 * 4; // Estimado peor caso (4 meses de tercio)
+  if (xiiiMesProvision > record.cash_balance * 0.5 && record.opex_payroll > 0 && record.cash_balance > 0) {
+    alerts.push({
+      id: "xiii_mes_warning",
+      priority: "orange",
+      category: "capital_humano",
+      title: "Reserva XIII Mes Ajustada",
+      message: `La provision de XIII Mes estimada ($${xiiiMesProvision.toLocaleString("es-PA")}) supera el 50% de tu efectivo. Asegura fondos antes de la fecha de pago.`,
+      emoji: "🎁",
+      promptHint: "La provision de XIII Mes puede superar tu caja",
+    });
+  }
+
+  // ---- FISCAL: ITBMS por Pagar vs Efectivo ----
+  // Estimado: 7% de ventas menos credito fiscal (~2% compras)
+  const itbmsPorPagar = record.revenue * 0.07;
+  if (itbmsPorPagar > record.cash_balance && record.cash_balance > 0 && record.revenue > 0) {
+    alerts.push({
+      id: "itbms_vs_cash",
+      priority: "red",
+      category: "dgi",
+      title: "ITBMS Supera tu Efectivo",
+      message: `El ITBMS estimado por pagar ($${itbmsPorPagar.toLocaleString("es-PA")}) supera tu efectivo disponible ($${record.cash_balance.toLocaleString("es-PA")}). Riesgo de multa DGI.`,
+      emoji: "🏛️",
+      promptHint: "ALERTA: El ITBMS estimado supera tu caja disponible",
+    });
+  } else if (itbmsPorPagar > record.cash_balance * 0.7 && record.cash_balance > 0 && record.revenue > 0) {
+    alerts.push({
+      id: "itbms_vs_cash_warning",
+      priority: "yellow",
+      category: "dgi",
+      title: "ITBMS consume mucha caja",
+      message: `El ITBMS estimado ($${itbmsPorPagar.toLocaleString("es-PA")}) representa mas del 70% de tu efectivo. Asegura fondos para la declaracion.`,
+      emoji: "💰",
+      promptHint: "El ITBMS podria dejarte sin liquidez",
+    });
+  }
+
   // ---- TODO OK ----
   if (alerts.length === 0) {
     alerts.push({

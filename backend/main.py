@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.database import get_supabase
-from app.routers import financial, societies, nlp, audit, ai_agents
+from app.routers import financial, societies, nlp, audit, ai_agents, payroll, accounting, reports
 
 
 @asynccontextmanager
@@ -37,6 +37,9 @@ app.include_router(financial.router, prefix="/api/financial", tags=["Motor Finan
 app.include_router(nlp.router, prefix="/api/nlp", tags=["Lenguaje Natural"])
 app.include_router(audit.router, prefix="/api/audit", tags=["Auditoría"])
 app.include_router(ai_agents.router, prefix="/api/ai", tags=["Inteligencia Artificial"])
+app.include_router(payroll.router, prefix="/api/payroll", tags=["Nómina"])
+app.include_router(accounting.router, prefix="/api/accounting", tags=["Contabilidad"])
+app.include_router(reports.router, prefix="/api/reports", tags=["Reportes PDF"])
 
 
 @app.get("/")

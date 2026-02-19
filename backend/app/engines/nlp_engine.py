@@ -5,8 +5,12 @@ Interpreta frases en español plano y las convierte en operaciones financieras.
 El usuario describe resultados en lenguaje natural en lugar de pensar en fórmulas.
 Ejemplo: "Mis ventas de enero fueron 50 mil y gasté 30 mil en mercancía"
 -> Crea un financial_record con revenue=50000, cogs=30000, period_month=1
+
+Fase 5: Soporte para auto-asientos contables.
+Ejemplo: "Pagué la luz 200 dólares" -> asiento DEBE 5.2.3 $200 / HABER 1.1.1 $200
 """
 import re
+from datetime import date, timedelta
 from typing import Optional
 
 
@@ -18,6 +22,12 @@ MESES = {
     "ene": 1, "feb": 2, "mar": 3, "abr": 4,
     "may": 5, "jun": 6, "jul": 7, "ago": 8,
     "sep": 9, "oct": 10, "nov": 11, "dic": 12,
+}
+
+# Dias de la semana para fecha relativa
+DIAS_SEMANA = {
+    "lunes": 0, "martes": 1, "miercoles": 2, "miércoles": 2,
+    "jueves": 3, "viernes": 4, "sabado": 5, "sábado": 5, "domingo": 6,
 }
 
 # Patrones de intención
@@ -39,6 +49,31 @@ PATTERNS = {
         r"(?:n[oó]mina|planilla|salarios)\s+(?:es|fue|cuesta|total)\s+(?:de\s+)?\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?",
         r"pago?\s+(?:de\s+)?(?:n[oó]mina|planilla)\s+(?:de\s+)?\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?",
     ],
+
+    # --- NUEVOS: Asientos contables via NLP (Fase 5) ---
+    "register_expense": [
+        r"pagu[eé]\s+(?:la\s+)?(?P<concept>luz|agua|internet|telefono|celular|seguro|gasolina|combustible|transporte)\s+(?:de\s+)?\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?",
+        r"pagu[eé]\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?\s+(?:de|por|en)\s+(?P<concept>luz|agua|internet|telefono|seguro|alquiler|renta|marketing|publicidad|honorarios|contador|abogado|gasolina)",
+        r"(?:gast[eé]|pagu[eé])\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?\s+(?:en|de|por)\s+(?P<concept>\w+(?:\s+\w+)?)",
+    ],
+    "register_income": [
+        r"(?:me\s+pag[oó]|cobr[eé])\s+(?:el\s+)?(?:cliente|un\s+cliente)\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?",
+        r"(?:entr[oó]|recibi[mó]s?|recib[ií])\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?\s+(?:de|por)\s+(?P<concept>\w+(?:\s+\w+)?)",
+        r"(?:me\s+pagaron?|cobr[eé])\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?",
+    ],
+    "register_loan": [
+        r"(?:saqu[eé]|recibi[mó]?)\s+(?:un\s+)?(?:pr[eé]stamo|credito)\s+(?:de|por)\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?",
+        r"(?:el\s+)?banco\s+(?:me\s+)?(?:prest[oó]|deposit[oó]|desembols[oó])\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?",
+    ],
+    "register_loan_payment": [
+        r"pagu[eé]\s+(?:la\s+)?(?:cuota|pr[eé]stamo|credito)\s+(?:de|por)\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?",
+        r"abon[eé]\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?\s+(?:al\s+)?(?:pr[eé]stamo|banco|credito)",
+    ],
+    "register_purchase": [
+        r"compr[eé]\s+(?:mercancía|mercancia|producto|material|inventario)\s+(?:por|de)\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?",
+        r"compr[eé]\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?\s+(?:de|en)\s+(?:mercancía|mercancia|producto|material|inventario)",
+    ],
+
     "query_profit": [
         r"(?:cu[aá]nto\s+)?(?:me\s+queda|gano|utilidad|ganancia)",
         r"(?:cu[aá]l\s+es\s+)?(?:mi\s+)?(?:utilidad|ganancia|beneficio)",
@@ -55,6 +90,31 @@ PATTERNS = {
         r"(?:c[oó]mo\s+(?:est[aá]|va)\s+)?(?:mi\s+)?(?:negocio|empresa|salud)",
         r"diagn[oó]stico|veredicto|an[aá]lisis",
     ],
+}
+
+# Mapeo de conceptos NLP a claves del CONCEPT_TO_ACCOUNTS
+EXPENSE_CONCEPT_MAP = {
+    "luz": "servicios_publicos",
+    "agua": "servicios_publicos",
+    "internet": "servicios_publicos",
+    "telefono": "servicios_publicos",
+    "celular": "servicios_publicos",
+    "seguro": "servicios_publicos",
+    "seguros": "servicios_publicos",
+    "alquiler": "alquiler",
+    "renta": "alquiler",
+    "arrendamiento": "alquiler",
+    "marketing": "marketing",
+    "publicidad": "marketing",
+    "honorarios": "honorarios",
+    "contador": "honorarios",
+    "abogado": "honorarios",
+    "gasolina": "servicios_publicos",
+    "combustible": "servicios_publicos",
+    "transporte": "servicios_publicos",
+    "nomina": "planilla",
+    "planilla": "planilla",
+    "salarios": "planilla",
 }
 
 
@@ -84,6 +144,60 @@ def _extract_month(query: str) -> Optional[int]:
     for mes_name, mes_num in MESES.items():
         if mes_name in query_lower:
             return mes_num
+    return None
+
+
+def _resolve_relative_date(query: str) -> Optional[date]:
+    """
+    Resuelve fechas relativas en español.
+    'ayer' -> date de ayer
+    'el lunes' -> ultimo lunes
+    'el 15' -> dia 15 del mes actual
+    'antier' / 'anteayer' -> hace 2 dias
+    """
+    query_lower = query.lower().strip()
+    today = date.today()
+
+    if "hoy" in query_lower:
+        return today
+    if "ayer" in query_lower and "ante" not in query_lower:
+        return today - timedelta(days=1)
+    if "antier" in query_lower or "anteayer" in query_lower:
+        return today - timedelta(days=2)
+
+    # "el lunes", "el martes", etc. -> ultimo dia de la semana
+    for dia_name, dia_num in DIAS_SEMANA.items():
+        if dia_name in query_lower:
+            days_ago = (today.weekday() - dia_num) % 7
+            if days_ago == 0:
+                days_ago = 7  # Si hoy es ese dia, referirse a la semana pasada
+            return today - timedelta(days=days_ago)
+
+    # "el 15", "el dia 15" -> dia especifico del mes actual
+    m = re.search(r"(?:el\s+)?(?:d[ií]a\s+)?(\d{1,2})(?:\s+de\s+)?", query_lower)
+    if m:
+        day = int(m.group(1))
+        if 1 <= day <= 31:
+            try:
+                resolved = date(today.year, today.month, day)
+                # Si el dia es futuro, asumir mes pasado
+                if resolved > today:
+                    month = today.month - 1 if today.month > 1 else 12
+                    year = today.year if today.month > 1 else today.year - 1
+                    resolved = date(year, month, day)
+                return resolved
+            except ValueError:
+                pass
+
+    return None
+
+
+def _extract_concept(query: str) -> Optional[str]:
+    """Extrae el concepto contable del texto NLP."""
+    query_lower = query.lower()
+    for keyword, concept_key in EXPENSE_CONCEPT_MAP.items():
+        if keyword in query_lower:
+            return concept_key
     return None
 
 
@@ -128,6 +242,24 @@ def interpret_query(query: str) -> dict:
                 if "percent" in groups:
                     extracted["percent"] = float(groups["percent"])
 
+                # Extraer concepto (para asientos contables)
+                if "concept" in groups and groups["concept"]:
+                    extracted["concept_raw"] = groups["concept"]
+                    concept_key = _extract_concept(groups["concept"])
+                    if concept_key:
+                        extracted["concept_key"] = concept_key
+                    else:
+                        extracted["concept_key"] = "servicios_publicos"  # fallback
+                elif action in ("register_expense", "register_income", "register_purchase"):
+                    concept_key = _extract_concept(query_lower)
+                    if concept_key:
+                        extracted["concept_key"] = concept_key
+
+                # Resolver fecha relativa (para asientos)
+                resolved_date = _resolve_relative_date(query_lower)
+                if resolved_date:
+                    extracted["resolved_date"] = resolved_date.isoformat()
+
                 # Generar descripción
                 description = _generate_description(action, extracted)
 
@@ -149,7 +281,9 @@ def interpret_query(query: str) -> dict:
             "Intenta frases como:\n"
             "- 'Mis ventas de enero fueron 50 mil'\n"
             "- 'Gasté 30 mil en mercancía'\n"
-            "- 'Mi alquiler cuesta 5 mil'\n"
+            "- 'Pagué la luz 200 dólares'\n"
+            "- 'Me pagó el cliente 5 mil'\n"
+            "- 'Saqué un préstamo de 20 mil'\n"
             "- 'Cómo está mi negocio?'\n"
             "- 'Si subo el precio un 10%, qué pasa?'"
         ),
@@ -168,6 +302,14 @@ def _generate_description(action: str, data: dict) -> str:
         "register_costs": lambda: f"Registrar costo de ventas: ${data.get('amount', 0):,.0f}",
         "register_rent": lambda: f"Registrar alquiler: ${data.get('amount', 0):,.0f}",
         "register_payroll": lambda: f"Registrar nómina: ${data.get('amount', 0):,.0f}",
+        "register_expense": lambda: (
+            f"Registrar gasto de {data.get('concept_raw', 'operativo')}: ${data.get('amount', 0):,.0f}"
+            + (f" ({data.get('resolved_date', '')})" if data.get("resolved_date") else "")
+        ),
+        "register_income": lambda: f"Registrar ingreso: ${data.get('amount', 0):,.0f}",
+        "register_loan": lambda: f"Registrar préstamo recibido: ${data.get('amount', 0):,.0f}",
+        "register_loan_payment": lambda: f"Registrar pago de préstamo: ${data.get('amount', 0):,.0f}",
+        "register_purchase": lambda: f"Registrar compra de mercancía: ${data.get('amount', 0):,.0f}",
         "query_profit": lambda: "Consultar utilidad/ganancia del negocio",
         "query_breakeven": lambda: "Calcular punto de equilibrio",
         "simulate_price": lambda: f"Simular aumento de precio del {data.get('percent', 0)}%",

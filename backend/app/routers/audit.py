@@ -2,15 +2,16 @@
 Router: Auditoría / Session Logging
 Consulta del historial de cambios en la lógica financiera.
 """
-from fastapi import APIRouter, Header, Query
+from fastapi import APIRouter, Depends, Query
 from app.database import get_supabase
+from app.auth import AuthenticatedUser, get_current_user
 
 router = APIRouter()
 
 
 @router.get("/logs")
 async def get_audit_logs(
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
     limit: int = Query(50, le=200),
     action_type: str = Query(None, description="Filtrar por tipo de acción"),
     target_id: str = Query(None, description="Filtrar por registro específico"),
@@ -20,7 +21,7 @@ async def get_audit_logs(
     query = (
         db.table("audit_logs")
         .select("*")
-        .eq("user_id", x_user_id)
+        .eq("user_id", user.id)
         .order("created_at", desc=True)
         .limit(limit)
     )
@@ -35,13 +36,13 @@ async def get_audit_logs(
 
 
 @router.get("/logs/financial/{record_id}")
-async def get_financial_history(record_id: str, x_user_id: str = Header(...)):
+async def get_financial_history(record_id: str, user: AuthenticatedUser = Depends(get_current_user)):
     """Historial completo de cambios de un registro financiero específico."""
     db = get_supabase()
     result = (
         db.table("audit_logs")
         .select("*")
-        .eq("user_id", x_user_id)
+        .eq("user_id", user.id)
         .eq("target_id", record_id)
         .eq("target_table", "financial_records")
         .order("created_at", desc=True)
@@ -51,13 +52,13 @@ async def get_financial_history(record_id: str, x_user_id: str = Header(...)):
 
 
 @router.get("/logs/nlp")
-async def get_nlp_history(x_user_id: str = Header(...), limit: int = Query(20)):
+async def get_nlp_history(user: AuthenticatedUser = Depends(get_current_user), limit: int = Query(20)):
     """Historial de queries en lenguaje natural."""
     db = get_supabase()
     result = (
         db.table("audit_logs")
         .select("*")
-        .eq("user_id", x_user_id)
+        .eq("user_id", user.id)
         .eq("action_type", "nlp_query_executed")
         .order("created_at", desc=True)
         .limit(limit)
@@ -67,13 +68,13 @@ async def get_nlp_history(x_user_id: str = Header(...), limit: int = Query(20)):
 
 
 @router.get("/logs/assumptions")
-async def get_assumption_changes(x_user_id: str = Header(...)):
+async def get_assumption_changes(user: AuthenticatedUser = Depends(get_current_user)):
     """Cambios en supuestos financieros (fórmulas, multiplicadores, etc.)."""
     db = get_supabase()
     result = (
         db.table("audit_logs")
         .select("*")
-        .eq("user_id", x_user_id)
+        .eq("user_id", user.id)
         .in_("action_type", ["assumption_changed", "formula_override"])
         .order("created_at", desc=True)
         .execute()

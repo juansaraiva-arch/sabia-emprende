@@ -1,21 +1,46 @@
 """
-Router: Generacion de Reportes PDF
+Router: Generacion de Reportes PDF y CSV
 Libro Diario, Libro Mayor, Balance de Comprobacion.
+Estado de Resultados, Balance General, Flujo de Caja, Resumen Ejecutivo (Fase 11).
+Exportacion CSV (Fase 11).
 """
 import base64
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Header, Query
+from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import Response
 
 from app.database import get_supabase
+from app.auth import AuthenticatedUser, get_current_user
 from app.engines.pdf_generator import (
     generate_libro_diario_pdf,
     generate_libro_mayor_pdf,
     generate_trial_balance_pdf,
+    generate_estado_resultados_pdf,
+    generate_balance_general_pdf,
+    generate_flujo_caja_pdf,
+    generate_resumen_ejecutivo_pdf,
 )
 from app.engines.accounting_engine import (
     compute_ledger,
     compute_trial_balance,
+)
+from app.engines.financial_engine import (
+    calcular_cascada,
+    calcular_ratios,
+    diagnostico_juez_digital,
+    valoracion_empresa,
+)
+from app.engines.multiperiod_engine import (
+    calcular_tendencias,
+    comparar_periodos,
+    proyectar_futuro,
+    calcular_varianza_presupuesto,
+)
+from app.engines.csv_exporter import (
+    export_cascada_csv,
+    export_trends_csv,
+    export_comparison_csv,
+    export_budget_variance_csv,
 )
 
 router = APIRouter()
@@ -24,7 +49,7 @@ router = APIRouter()
 @router.get("/libro-diario/{society_id}")
 async def generate_libro_diario(
     society_id: str,
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
     period_year: int = Query(...),
     period_month: int = Query(...),
 ):
@@ -61,7 +86,7 @@ async def generate_libro_diario(
 
     # Save report record
     _save_report_record(
-        db, society_id, "libro_diario", period_year, period_month, x_user_id
+        db, society_id, "libro_diario", period_year, period_month, user.id
     )
 
     filename = f"LibroDiario_{society_name}_{period_year}_{period_month:02d}.pdf"
@@ -76,7 +101,7 @@ async def generate_libro_diario(
 async def generate_libro_mayor(
     society_id: str,
     account_code: str,
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
     period_year: int = Query(None),
     period_month: int = Query(None),
 ):
@@ -142,7 +167,7 @@ async def generate_libro_mayor(
     )
 
     _save_report_record(
-        db, society_id, "libro_mayor", period_year, period_month, x_user_id
+        db, society_id, "libro_mayor", period_year, period_month, user.id
     )
 
     filename = f"LibroMayor_{account_code}_{society_name}_{period_year or 'all'}_{period_month or 'all'}.pdf"
@@ -156,7 +181,7 @@ async def generate_libro_mayor(
 @router.get("/balance-comprobacion/{society_id}")
 async def generate_balance_comprobacion(
     society_id: str,
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
     period_year: int = Query(None),
     period_month: int = Query(None),
 ):
@@ -209,7 +234,7 @@ async def generate_balance_comprobacion(
     )
 
     _save_report_record(
-        db, society_id, "balance_comprobacion", period_year, period_month, x_user_id
+        db, society_id, "balance_comprobacion", period_year, period_month, user.id
     )
 
     filename = f"BalanceComprobacion_{society_name}_{period_year or 'all'}_{period_month or 'all'}.pdf"
@@ -223,7 +248,7 @@ async def generate_balance_comprobacion(
 @router.get("/history/{society_id}")
 async def list_generated_reports(
     society_id: str,
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
     limit: int = Query(20, le=100),
 ):
     """Lista reportes generados previamente."""
@@ -237,6 +262,257 @@ async def list_generated_reports(
         .execute()
     )
     return {"data": result.data}
+
+
+# ============================================
+# REPORTES EJECUTIVOS (Fase 11)
+# ============================================
+
+
+def _get_society_name(db, society_id: str) -> str:
+    """Obtiene el nombre de la sociedad."""
+    result = db.table("societies").select("business_name").eq("id", society_id).limit(1).execute()
+    return result.data[0]["business_name"] if result.data else "Sociedad"
+
+
+def _get_financial_record(db, society_id: str, period_year: int, period_month: int) -> dict:
+    """Obtiene un registro financiero o lanza 404."""
+    result = (
+        db.table("financial_records").select("*")
+        .eq("society_id", society_id)
+        .eq("period_year", period_year)
+        .eq("period_month", period_month)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="No hay datos financieros para ese periodo")
+    return result.data[0]
+
+
+@router.get("/estado-resultados/{society_id}")
+async def generate_estado_resultados(
+    society_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    period_year: int = Query(...),
+    period_month: int = Query(...),
+):
+    """Genera PDF del Estado de Resultados con comparativo vs periodo anterior."""
+    db = get_supabase()
+    society_name = _get_society_name(db, society_id)
+    record = _get_financial_record(db, society_id, period_year, period_month)
+
+    cascada = calcular_cascada(record)
+    ratios = calcular_ratios(record)
+
+    # Auto-resolver periodo anterior para comparativo
+    prev_month = period_month - 1
+    prev_year = period_year
+    if prev_month < 1:
+        prev_month = 12
+        prev_year -= 1
+
+    prev_result = (
+        db.table("financial_records").select("*")
+        .eq("society_id", society_id)
+        .eq("period_year", prev_year)
+        .eq("period_month", prev_month)
+        .limit(1)
+        .execute()
+    )
+    prev_cascada = calcular_cascada(prev_result.data[0]) if prev_result.data else None
+
+    pdf_bytes = generate_estado_resultados_pdf(
+        cascada, ratios, society_name, period_year, period_month, prev_cascada
+    )
+    _save_report_record(db, society_id, "estado_resultados", period_year, period_month, user.id)
+
+    filename = f"EstadoResultados_{society_name}_{period_year}_{period_month:02d}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/balance-general/{society_id}")
+async def generate_balance_general(
+    society_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    period_year: int = Query(...),
+    period_month: int = Query(...),
+):
+    """Genera PDF del Balance General."""
+    db = get_supabase()
+    society_name = _get_society_name(db, society_id)
+    record = _get_financial_record(db, society_id, period_year, period_month)
+
+    pdf_bytes = generate_balance_general_pdf(record, society_name, period_year, period_month)
+    _save_report_record(db, society_id, "balance_general", period_year, period_month, user.id)
+
+    filename = f"BalanceGeneral_{society_name}_{period_year}_{period_month:02d}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/flujo-caja/{society_id}")
+async def generate_flujo_caja(
+    society_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    months_ahead: int = Query(6, ge=1, le=12),
+):
+    """Genera PDF del Flujo de Caja Proyectado."""
+    db = get_supabase()
+    society_name = _get_society_name(db, society_id)
+
+    records = (
+        db.table("financial_records").select("*")
+        .eq("society_id", society_id)
+        .order("period_year")
+        .order("period_month")
+        .execute()
+    )
+    if not records.data:
+        raise HTTPException(status_code=404, detail="No hay registros financieros")
+
+    forecast_data = proyectar_futuro(records.data, months_ahead)
+    pdf_bytes = generate_flujo_caja_pdf(forecast_data, society_name)
+
+    last = records.data[-1]
+    _save_report_record(
+        db, society_id, "flujo_caja",
+        last.get("period_year"), last.get("period_month"), user.id
+    )
+
+    filename = f"FlujoCaja_{society_name}_{months_ahead}m.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/resumen-ejecutivo/{society_id}")
+async def generate_resumen_ejecutivo(
+    society_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    period_year: int = Query(...),
+    period_month: int = Query(...),
+):
+    """Genera PDF del Resumen Ejecutivo combinado."""
+    db = get_supabase()
+    society_name = _get_society_name(db, society_id)
+    record = _get_financial_record(db, society_id, period_year, period_month)
+
+    cascada = calcular_cascada(record)
+    ratios = calcular_ratios(record)
+    diagnostico = diagnostico_juez_digital(record)
+    valoracion = valoracion_empresa(cascada["ebitda"])
+
+    pdf_bytes = generate_resumen_ejecutivo_pdf(
+        cascada, ratios, diagnostico, valoracion,
+        society_name, period_year, period_month,
+    )
+    _save_report_record(db, society_id, "resumen_ejecutivo", period_year, period_month, user.id)
+
+    filename = f"ResumenEjecutivo_{society_name}_{period_year}_{period_month:02d}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/export-csv/{society_id}/{report_type}")
+async def export_csv(
+    society_id: str,
+    report_type: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    period_year: int = Query(None),
+    period_month: int = Query(None),
+    year1: int = Query(None),
+    month1: int = Query(None),
+    year2: int = Query(None),
+    month2: int = Query(None),
+    from_year: int = Query(None),
+    from_month: int = Query(None),
+    to_year: int = Query(None),
+    to_month: int = Query(None),
+):
+    """Exporta datos financieros como CSV."""
+    db = get_supabase()
+
+    valid_types = {"cascada", "trends", "comparison", "budget_variance"}
+    if report_type not in valid_types:
+        raise HTTPException(status_code=400, detail=f"Tipo invalido. Validos: {valid_types}")
+
+    if report_type == "cascada":
+        if not period_year or not period_month:
+            raise HTTPException(status_code=400, detail="period_year y period_month requeridos")
+        record = _get_financial_record(db, society_id, period_year, period_month)
+        cascada = calcular_cascada(record)
+        ratios = calcular_ratios(record)
+        csv_bytes = export_cascada_csv(cascada, ratios)
+        filename = f"cascada_{period_year}_{period_month:02d}.csv"
+
+    elif report_type == "trends":
+        fy = from_year or period_year or 2026
+        fm = from_month or 1
+        ty = to_year or period_year or 2026
+        tm = to_month or 12
+        records = (
+            db.table("financial_records").select("*")
+            .eq("society_id", society_id)
+            .order("period_year")
+            .order("period_month")
+            .execute()
+        )
+        filtered = [
+            r for r in (records.data or [])
+            if (r["period_year"] > fy or (r["period_year"] == fy and r["period_month"] >= fm))
+            and (r["period_year"] < ty or (r["period_year"] == ty and r["period_month"] <= tm))
+        ]
+        trends = calcular_tendencias(filtered)
+        csv_bytes = export_trends_csv(trends)
+        filename = f"tendencias_{fy}_{fm:02d}_a_{ty}_{tm:02d}.csv"
+
+    elif report_type == "comparison":
+        if not all([year1, month1, year2, month2]):
+            raise HTTPException(status_code=400, detail="year1, month1, year2, month2 requeridos")
+        rec_a = _get_financial_record(db, society_id, year1, month1)
+        rec_b = _get_financial_record(db, society_id, year2, month2)
+        comparison = comparar_periodos(rec_a, rec_b)
+        csv_bytes = export_comparison_csv(comparison)
+        filename = f"comparativo_{year1}_{month1:02d}_vs_{year2}_{month2:02d}.csv"
+
+    else:  # budget_variance
+        if not period_year or not period_month:
+            raise HTTPException(status_code=400, detail="period_year y period_month requeridos")
+        record = _get_financial_record(db, society_id, period_year, period_month)
+        budget_result = (
+            db.table("budget_targets").select("*")
+            .eq("society_id", society_id)
+            .eq("period_year", period_year)
+            .eq("period_month", period_month)
+            .limit(1)
+            .execute()
+        )
+        if not budget_result.data:
+            raise HTTPException(status_code=404, detail="Presupuesto no encontrado para ese periodo")
+        variance = calcular_varianza_presupuesto(record, budget_result.data[0])
+        csv_bytes = export_budget_variance_csv(variance)
+        filename = f"presupuesto_vs_real_{period_year}_{period_month:02d}.csv"
+
+    _save_report_record(db, society_id, "csv_export", period_year, period_month, user.id)
+
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 def _save_report_record(db, society_id: str, report_type: str, period_year, period_month, user_id: str):

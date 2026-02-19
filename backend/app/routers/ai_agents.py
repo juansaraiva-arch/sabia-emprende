@@ -11,7 +11,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
+from app.auth import AuthenticatedUser, get_current_user
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -131,7 +132,7 @@ def gpt4o_json(system_prompt: str, user_content, model: str = "gpt-4o") -> dict:
 # ============================================
 
 @router.post("/scan-receipt")
-async def scan_receipt(file: UploadFile = File(...)):
+async def scan_receipt(file: UploadFile = File(...), user: AuthenticatedUser = Depends(get_current_user)):
     """
     Recibe imagen de factura/recibo.
     GPT-4o Vision extrae: total, ITBMS, proveedor, categoría.
@@ -193,7 +194,7 @@ async def scan_receipt(file: UploadFile = File(...)):
 # ============================================
 
 @router.post("/voice-expense")
-async def voice_expense(file: UploadFile = File(...)):
+async def voice_expense(file: UploadFile = File(...), user: AuthenticatedUser = Depends(get_current_user)):
     """
     Recibe audio de cualquier formato (incluido 3GP/AMR de Android).
     Transcribe con Whisper. GPT-4o extrae intención financiera.
@@ -315,7 +316,7 @@ class SimplifyRequest(BaseModel):
 
 
 @router.post("/simplify-legal")
-async def simplify_legal(req: SimplifyRequest):
+async def simplify_legal(req: SimplifyRequest, user: AuthenticatedUser = Depends(get_current_user)):
     """
     Recibe texto jurídico complejo.
     GPT-4o lo traduce a lenguaje coloquial simple.
@@ -371,7 +372,7 @@ class SurvivalRequest(BaseModel):
 
 
 @router.post("/survival-alert")
-async def survival_alert(req: SurvivalRequest):
+async def survival_alert(req: SurvivalRequest, user: AuthenticatedUser = Depends(get_current_user)):
     """
     Recibe datos financieros.
     GPT-4o genera mensaje empático sobre oxígeno financiero.

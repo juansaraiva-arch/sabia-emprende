@@ -205,3 +205,90 @@ class AuditLogEntry(BaseModel):
     formula_changed: Optional[str] = None
     nlp_raw_input: Optional[str] = None
     created_at: str
+
+
+# --- Presupuesto (Fase 10) ---
+class BudgetTargetCreate(BaseModel):
+    society_id: str
+    period_year: int = Field(ge=2020, le=2040)
+    period_month: int = Field(ge=1, le=12)
+    revenue_target: float = Field(ge=0, default=0)
+    cogs_target: float = Field(ge=0, default=0)
+    opex_rent_target: float = Field(ge=0, default=0)
+    opex_payroll_target: float = Field(ge=0, default=0)
+    opex_other_target: float = Field(ge=0, default=0)
+    notes: Optional[str] = None
+
+
+class BudgetTargetUpdate(BaseModel):
+    revenue_target: Optional[float] = Field(None, ge=0)
+    cogs_target: Optional[float] = Field(None, ge=0)
+    opex_rent_target: Optional[float] = Field(None, ge=0)
+    opex_payroll_target: Optional[float] = Field(None, ge=0)
+    opex_other_target: Optional[float] = Field(None, ge=0)
+    notes: Optional[str] = None
+
+
+# --- Multi-Periodo (Fase 10) ---
+class TrendPoint(BaseModel):
+    year: int
+    month: int
+    label: str
+    revenue: float
+    cogs: float
+    gross_profit: float
+    total_opex: float
+    ebitda: float
+    net_income: float
+    gross_margin_pct: float
+    ebitda_margin_pct: float
+    net_margin_pct: float
+
+
+class TrendResponse(BaseModel):
+    points: list[TrendPoint]
+    growth_rates: dict[str, float]
+    moving_averages: dict[str, list[Optional[float]]]
+
+
+class ComparisonResponse(BaseModel):
+    period_a: dict
+    period_b: dict
+    deltas: dict[str, float]
+    pct_changes: dict[str, float]
+    improvements: list[str]
+    deteriorations: list[str]
+
+
+class ForecastPoint(BaseModel):
+    year: int
+    month: int
+    label: str
+    revenue: float
+    ebitda: float
+    net_income: float
+    confidence_low: float
+    confidence_high: float
+
+
+class ForecastResponse(BaseModel):
+    historical: list[TrendPoint]
+    projected: list[ForecastPoint]
+    method: str
+
+
+class BudgetVarianceItem(BaseModel):
+    metric: str
+    metric_key: str
+    actual: float
+    budget: float
+    variance: float
+    variance_pct: float
+    status: str
+
+
+class BudgetVsActualResponse(BaseModel):
+    period_year: int
+    period_month: int
+    items: list[BudgetVarianceItem]
+    overall_score: float

@@ -18,7 +18,7 @@ import {
   Receipt,
   BadgeCheck,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import LegalSimplifierButton from "@/components/LegalSimplifierButton";
 import SmartTooltip from "@/components/SmartTooltip";
 
@@ -302,6 +302,7 @@ export default function LegalVault() {
       setDocuments((prev) => [newDoc, ...prev]);
 
       try {
+        const supabase = createClient();
         const { error } = await supabase.storage
           .from("kyc_documents")
           .upload(storagePath, file, {

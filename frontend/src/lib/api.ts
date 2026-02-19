@@ -1,24 +1,54 @@
 /**
  * Cliente API para comunicarse con el backend FastAPI.
  * Next.js redirige /api/* al backend via rewrites en next.config.ts.
+ *
+ * Fase 9: Autenticacion real con Supabase JWT.
+ * En DEMO_MODE, fallback a x-user-id header para compatibilidad.
  */
 
+import { createClient } from "@/lib/supabase/client";
+
 const API_BASE = "/api";
+const IS_DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const userId = "demo-user-001"; // TODO: Reemplazar con auth real
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+
+  // Obtener token JWT de la sesion de Supabase
+  try {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    } else if (IS_DEMO_MODE) {
+      // Fallback para desarrollo local sin auth configurado
+      headers["x-user-id"] = "demo-user-001";
+    }
+  } catch {
+    if (IS_DEMO_MODE) {
+      headers["x-user-id"] = "demo-user-001";
+    }
+  }
 
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      "x-user-id": userId,
-      ...options.headers,
-    },
+    headers,
   });
+
+  // Si la sesion expiro, redirigir a login
+  if (res.status === 401 && !IS_DEMO_MODE) {
+    if (typeof window !== "undefined") {
+      window.location.href = "/auth/login?error=session_expired";
+    }
+    throw new Error("Sesion expirada. Redirigiendo al login...");
+  }
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: res.statusText }));
@@ -26,6 +56,62 @@ async function apiFetch<T>(
   }
 
   return res.json();
+}
+
+/**
+ * Fetch binario (PDF/CSV) del API. Misma logica de auth que apiFetch pero retorna Blob.
+ */
+async function apiFetchBlob(
+  path: string,
+  options: RequestInit = {}
+): Promise<Blob> {
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string>),
+  };
+
+  try {
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    } else if (IS_DEMO_MODE) {
+      headers["x-user-id"] = "demo-user-001";
+    }
+  } catch {
+    if (IS_DEMO_MODE) {
+      headers["x-user-id"] = "demo-user-001";
+    }
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+
+  if (res.status === 401 && !IS_DEMO_MODE) {
+    if (typeof window !== "undefined") {
+      window.location.href = "/auth/login?error=session_expired";
+    }
+    throw new Error("Sesion expirada.");
+  }
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(error.detail || "Error en la API");
+  }
+
+  return res.blob();
+}
+
+/**
+ * Dispara descarga de un Blob en el navegador.
+ */
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // --- Sociedades ---
@@ -255,4 +341,116 @@ export const auditApi = {
   getFinancialHistory: (recordId: string) =>
     apiFetch<{ data: any[] }>(`/audit/logs/financial/${recordId}`),
   getNlpHistory: () => apiFetch<{ data: any[] }>("/audit/logs/nlp"),
+};
+
+// --- Multi-Periodo (Fase 10) ---
+export const multiperiodApi = {
+  getTrends: (
+    societyId: string,
+    fromYear: number,
+    fromMonth: number,
+    toYear: number,
+    toMonth: number
+  ) =>
+    apiFetch<any>(
+      `/financial/trends/${societyId}?from_year=${fromYear}&from_month=${fromMonth}&to_year=${toYear}&to_month=${toMonth}`
+    ),
+  getComparison: (
+    societyId: string,
+    year1: number,
+    month1: number,
+    year2: number,
+    month2: number
+  ) =>
+    apiFetch<any>(
+      `/financial/comparison/${societyId}/${year1}/${month1}/${year2}/${month2}`
+    ),
+  getForecast: (societyId: string, monthsAhead = 6) =>
+    apiFetch<any>(
+      `/financial/forecast/${societyId}?months_ahead=${monthsAhead}`
+    ),
+  getBudgetVsActual: (societyId: string, year: number, month: number) =>
+    apiFetch<any>(`/financial/budget-vs-actual/${societyId}/${year}/${month}`),
+};
+
+// --- Presupuesto (Fase 10) ---
+export const budgetApi = {
+  createOrUpdate: (body: any) =>
+    apiFetch<{ success: boolean; data: any; action: string }>(
+      "/budget/targets",
+      { method: "POST", body: JSON.stringify(body) }
+    ),
+  list: (societyId: string, periodYear?: number) => {
+    let url = `/budget/targets/${societyId}`;
+    if (periodYear) url += `?period_year=${periodYear}`;
+    return apiFetch<{ data: any[] }>(url);
+  },
+  get: (societyId: string, year: number, month: number) =>
+    apiFetch<{ data: any }>(
+      `/budget/targets/${societyId}/${year}/${month}`
+    ),
+  update: (targetId: string, body: any) =>
+    apiFetch<{ success: boolean; data: any }>(
+      `/budget/targets/${targetId}`,
+      { method: "PUT", body: JSON.stringify(body) }
+    ),
+  delete: (targetId: string) =>
+    apiFetch<{ success: boolean }>(`/budget/targets/${targetId}`, {
+      method: "DELETE",
+    }),
+};
+
+// --- Reportes Ejecutivos (Fase 11) ---
+export const reportsApi = {
+  // PDF downloads
+  downloadEstadoResultados: (societyId: string, year: number, month: number) =>
+    apiFetchBlob(
+      `/reports/estado-resultados/${societyId}?period_year=${year}&period_month=${month}`
+    ),
+  downloadBalanceGeneral: (societyId: string, year: number, month: number) =>
+    apiFetchBlob(
+      `/reports/balance-general/${societyId}?period_year=${year}&period_month=${month}`
+    ),
+  downloadFlujoCaja: (societyId: string, monthsAhead = 6) =>
+    apiFetchBlob(
+      `/reports/flujo-caja/${societyId}?months_ahead=${monthsAhead}`
+    ),
+  downloadResumenEjecutivo: (societyId: string, year: number, month: number) =>
+    apiFetchBlob(
+      `/reports/resumen-ejecutivo/${societyId}?period_year=${year}&period_month=${month}`
+    ),
+
+  // CSV exports
+  downloadCsvCascada: (societyId: string, year: number, month: number) =>
+    apiFetchBlob(
+      `/reports/export-csv/${societyId}/cascada?period_year=${year}&period_month=${month}`
+    ),
+  downloadCsvTrends: (
+    societyId: string,
+    fromYear: number,
+    fromMonth: number,
+    toYear: number,
+    toMonth: number
+  ) =>
+    apiFetchBlob(
+      `/reports/export-csv/${societyId}/trends?from_year=${fromYear}&from_month=${fromMonth}&to_year=${toYear}&to_month=${toMonth}`
+    ),
+  downloadCsvComparison: (
+    societyId: string,
+    year1: number,
+    month1: number,
+    year2: number,
+    month2: number
+  ) =>
+    apiFetchBlob(
+      `/reports/export-csv/${societyId}/comparison?year1=${year1}&month1=${month1}&year2=${year2}&month2=${month2}`
+    ),
+  downloadCsvBudgetVariance: (societyId: string, year: number, month: number) =>
+    apiFetchBlob(
+      `/reports/export-csv/${societyId}/budget_variance?period_year=${year}&period_month=${month}`
+    ),
+
+  // Report history
+  getHistory: (societyId: string, limit = 20) =>
+    apiFetch<{ data: any[] }>(`/reports/history/${societyId}?limit=${limit}`),
 };

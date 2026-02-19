@@ -639,7 +639,8 @@ CREATE TABLE public.generated_reports (
 
     report_type TEXT NOT NULL CHECK (report_type IN (
         'libro_diario', 'libro_mayor', 'balance_comprobacion',
-        'estado_resultados', 'balance_general'
+        'estado_resultados', 'balance_general',
+        'flujo_caja', 'resumen_ejecutivo', 'csv_export'
     )),
     period_year INT NOT NULL,
     period_month INT NOT NULL,

@@ -4,9 +4,10 @@ El usuario escribe en español plano y el sistema interpreta la acción financie
 Fase 5: Para intents contables, genera asientos de doble partida.
 """
 from datetime import date
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Depends
 from app.database import get_supabase
 from app.models import NLPQuery, NLPResponse
+from app.auth import AuthenticatedUser, get_current_user
 from app.engines.nlp_engine import interpret_query
 from app.engines.financial_engine import (
     calcular_cascada,
@@ -85,7 +86,7 @@ def _build_journal_entry_from_nlp(
 
 
 @router.post("/interpret", response_model=NLPResponse)
-async def interpret_natural_language(body: NLPQuery, x_user_id: str = Header(...)):
+async def interpret_natural_language(body: NLPQuery, user: AuthenticatedUser = Depends(get_current_user)):
     """
     Interpreta una frase en español plano y ejecuta la acción correspondiente.
 
@@ -101,7 +102,7 @@ async def interpret_natural_language(body: NLPQuery, x_user_id: str = Header(...
 
     # 2. Log en audit_logs (NLP tracking)
     db.table("audit_logs").insert({
-        "user_id": x_user_id,
+        "user_id": user.id,
         "action_type": "nlp_query_executed",
         "action_description": interpretation.get("description", "Query NLP"),
         "nlp_raw_input": body.query,
@@ -122,7 +123,7 @@ async def interpret_natural_language(body: NLPQuery, x_user_id: str = Header(...
     # 3a. Acciones contables (Fase 5) — generan asientos de doble partida
     if action in ACCOUNTING_ACTIONS:
         entry_preview = _build_journal_entry_from_nlp(
-            action, data, body.society_id, interpretation["description"], x_user_id
+            action, data, body.society_id, interpretation["description"], user.id
         )
         if entry_preview:
             # Validar que cuadra

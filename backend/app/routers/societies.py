@@ -2,18 +2,19 @@
 Router: Sociedades (SA, SRL, SE)
 CRUD de entidades legales panameñas.
 """
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Depends
 from app.database import get_supabase
 from app.models import SocietyCreate
+from app.auth import AuthenticatedUser, get_current_user
 
 router = APIRouter()
 
 
 @router.post("/")
-async def create_society(body: SocietyCreate, x_user_id: str = Header(...)):
+async def create_society(body: SocietyCreate, user: AuthenticatedUser = Depends(get_current_user)):
     db = get_supabase()
     data = {
-        "user_id": x_user_id,
+        "user_id": user.id,
         **body.model_dump(),
         "entity_type": body.entity_type.value,
         "fiscal_regime": body.fiscal_regime.value,
@@ -27,20 +28,20 @@ async def create_society(body: SocietyCreate, x_user_id: str = Header(...)):
 
 
 @router.get("/")
-async def list_societies(x_user_id: str = Header(...)):
+async def list_societies(user: AuthenticatedUser = Depends(get_current_user)):
     db = get_supabase()
-    result = db.table("societies").select("*").eq("user_id", x_user_id).execute()
+    result = db.table("societies").select("*").eq("user_id", user.id).execute()
     return {"data": result.data}
 
 
 @router.get("/{society_id}")
-async def get_society(society_id: str, x_user_id: str = Header(...)):
+async def get_society(society_id: str, user: AuthenticatedUser = Depends(get_current_user)):
     db = get_supabase()
     result = (
         db.table("societies")
         .select("*")
         .eq("id", society_id)
-        .eq("user_id", x_user_id)
+        .eq("user_id", user.id)
         .single()
         .execute()
     )
@@ -50,13 +51,13 @@ async def get_society(society_id: str, x_user_id: str = Header(...)):
 
 
 @router.patch("/{society_id}")
-async def update_society(society_id: str, body: dict, x_user_id: str = Header(...)):
+async def update_society(society_id: str, body: dict, user: AuthenticatedUser = Depends(get_current_user)):
     db = get_supabase()
     result = (
         db.table("societies")
         .update(body)
         .eq("id", society_id)
-        .eq("user_id", x_user_id)
+        .eq("user_id", user.id)
         .execute()
     )
     return {"success": True, "data": result.data}

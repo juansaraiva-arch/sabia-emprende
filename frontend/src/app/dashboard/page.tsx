@@ -21,6 +21,9 @@ import {
   BookMarked,
   CheckSquare,
   Lock,
+  ArrowLeftRight,
+  Target,
+  FileBarChart,
 } from "lucide-react";
 import type { FinancialRecord } from "@/lib/calculations";
 import SabiaLogo from "@/components/SabiaLogo";
@@ -50,7 +53,16 @@ import LibroDiario from "@/components/accounting/LibroDiario";
 import LibroMayor from "@/components/accounting/LibroMayor";
 import BalanceComprobacion from "@/components/accounting/BalanceComprobacion";
 import PeriodClosingPanel from "@/components/accounting/PeriodClosingPanel";
+import PeriodSelector from "@/components/PeriodSelector";
+import TrendsChart from "@/components/charts/TrendsChart";
+import ForecastSection from "@/components/ForecastSection";
+import ComparisonView from "@/components/charts/ComparisonView";
+import BudgetChart from "@/components/charts/BudgetChart";
+import BudgetEntryForm from "@/components/BudgetEntryForm";
+import ReportGenerator from "@/components/ReportGenerator";
 import { computeAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
+import { periodLabel, getPresetRange } from "@/lib/calculations";
+import type { PeriodKey, PeriodPreset } from "@/lib/calculations";
 import {
   MOCK_RECORD,
   MOCK_12_MONTHS,
@@ -58,6 +70,13 @@ import {
   computeMockBreakeven,
   computeMandibulasData,
 } from "@/lib/mockData";
+import {
+  MOCK_BUDGET_TARGETS,
+  computeMockTrends,
+  computeMockComparison,
+  computeMockForecast,
+  computeMockBudgetVsActual,
+} from "@/lib/multiperiodMockData";
 
 // ============================================
 // TIPOS
@@ -75,7 +94,11 @@ type NegocioTab =
   | "simulador"
   | "lab"
   | "valoracion"
-  | "nomina";
+  | "nomina"
+  | "tendencias"
+  | "comparativo"
+  | "presupuesto"
+  | "reportes";
 type LegalTab = "boveda" | "vigilante" | "auditoria";
 
 // ============================================
@@ -95,6 +118,16 @@ export default function Dashboard() {
 
   const [diagnosis, setDiagnosis] = useState<any>(() => computeMockDiagnosis(MOCK_RECORD));
   const [breakeven, setBreakeven] = useState<any>(() => computeMockBreakeven(MOCK_RECORD));
+
+  // Multi-periodo state (Fase 10)
+  const [trendRange, setTrendRange] = useState<{ from: PeriodKey; to: PeriodKey }>({
+    from: { year: 2026, month: 1 },
+    to: { year: 2026, month: 12 },
+  });
+  const [comparePeriodA, setComparePeriodA] = useState<PeriodKey>({ year: 2026, month: 1 });
+  const [comparePeriodB, setComparePeriodB] = useState<PeriodKey>({ year: 2026, month: 6 });
+  const [budgetPeriod, setBudgetPeriod] = useState<PeriodKey>({ year: 2026, month: 6 });
+  const [budgetSaving, setBudgetSaving] = useState(false);
 
   const societyId = "demo-society-001";
 
@@ -164,6 +197,55 @@ export default function Dashboard() {
     [hasBulkData, bulkRecords]
   );
 
+  // Multi-periodo computed data (Fase 10)
+  const trendsData = useMemo(() => {
+    const data = hasBulkData ? bulkRecords as any : MOCK_12_MONTHS;
+    const fromIdx = trendRange.from.month - 1;
+    const toIdx = trendRange.to.month;
+    const sliced = data.slice(fromIdx, toIdx);
+    return computeMockTrends(sliced, trendRange.from.year);
+  }, [hasBulkData, bulkRecords, trendRange]);
+
+  const forecastData = useMemo(() => {
+    const data = hasBulkData ? bulkRecords as any : MOCK_12_MONTHS;
+    return computeMockForecast(data, 6, 2026);
+  }, [hasBulkData, bulkRecords]);
+
+  const comparisonData = useMemo(() => {
+    const data = hasBulkData ? bulkRecords as any : MOCK_12_MONTHS;
+    const idxA = comparePeriodA.month - 1;
+    const idxB = comparePeriodB.month - 1;
+    if (idxA >= 0 && idxA < data.length && idxB >= 0 && idxB < data.length) {
+      return computeMockComparison(data[idxA], data[idxB]);
+    }
+    return null;
+  }, [hasBulkData, bulkRecords, comparePeriodA, comparePeriodB]);
+
+  const budgetVsActualData = useMemo(() => {
+    const data = hasBulkData ? bulkRecords as any : MOCK_12_MONTHS;
+    const idx = budgetPeriod.month - 1;
+    const budget = MOCK_BUDGET_TARGETS.find(
+      (b) => b.period_year === budgetPeriod.year && b.period_month === budgetPeriod.month
+    );
+    if (idx >= 0 && idx < data.length && budget) {
+      return computeMockBudgetVsActual(data[idx], budget);
+    }
+    return null;
+  }, [hasBulkData, bulkRecords, budgetPeriod]);
+
+  const handlePreset = (preset: PeriodPreset) => {
+    const range = getPresetRange(preset, 2026, 12);
+    setTrendRange(range);
+  };
+
+  const handleBudgetSave = (data: any) => {
+    setBudgetSaving(true);
+    // En demo mode, simplemente simulamos guardar
+    setTimeout(() => {
+      setBudgetSaving(false);
+    }, 500);
+  };
+
   const negocioTabs: { key: NegocioTab; label: string; icon: React.ReactNode }[] = [
     { key: "cascada", label: "Cascada", icon: <BarChart3 size={14} /> },
     { key: "mandibulas", label: "Mandibulas", icon: <Skull size={14} /> },
@@ -174,6 +256,10 @@ export default function Dashboard() {
     { key: "lab", label: "Estrategia de Precios", icon: <FlaskConical size={14} /> },
     { key: "valoracion", label: "Valor del Negocio", icon: <Gem size={14} /> },
     { key: "nomina", label: "Costo Real de Personal", icon: <DollarSign size={14} /> },
+    { key: "tendencias", label: "Tendencias", icon: <TrendingUp size={14} /> },
+    { key: "comparativo", label: "Comparativo", icon: <ArrowLeftRight size={14} /> },
+    { key: "presupuesto", label: "Presupuesto", icon: <Target size={14} /> },
+    { key: "reportes", label: "Reportes", icon: <FileBarChart size={14} /> },
   ];
 
   const legalTabs: { key: LegalTab; label: string; icon: React.ReactNode }[] = [
@@ -386,6 +472,99 @@ export default function Dashboard() {
               {activeNegocioTab === "lab" && <LabPrecios />}
               {activeNegocioTab === "valoracion" && <ValoracionTab record={currentRecord} />}
               {activeNegocioTab === "nomina" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Costo Real de Personal — Panama 2026</h2><PayrollEngine societyId={societyId} /></div>)}
+
+              {/* Tab Tendencias (Fase 10) */}
+              {activeNegocioTab === "tendencias" && (
+                <div className="space-y-4">
+                  <h2 className="text-lg lg:text-xl font-bold text-slate-800">Tendencias Multi-Periodo</h2>
+                  <PeriodSelector
+                    mode="range"
+                    from={trendRange.from}
+                    to={trendRange.to}
+                    onChangeFrom={(p) => setTrendRange((prev) => ({ ...prev, from: p }))}
+                    onChangeTo={(p) => setTrendRange((prev) => ({ ...prev, to: p }))}
+                    onPreset={handlePreset}
+                  />
+                  <TrendsChart
+                    points={trendsData.points}
+                    growthRates={trendsData.growth_rates}
+                    movingAverages={trendsData.moving_averages}
+                  />
+                  <div className="border-t border-slate-200 pt-4 mt-4">
+                    <ForecastSection
+                      historical={forecastData.historical}
+                      projected={forecastData.projected}
+                      method={forecastData.method}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Tab Comparativo (Fase 10) */}
+              {activeNegocioTab === "comparativo" && (
+                <div className="space-y-4">
+                  <h2 className="text-lg lg:text-xl font-bold text-slate-800">Comparativo de Periodos</h2>
+                  <PeriodSelector
+                    mode="compare"
+                    periodA={comparePeriodA}
+                    periodB={comparePeriodB}
+                    onChangePeriodA={setComparePeriodA}
+                    onChangePeriodB={setComparePeriodB}
+                  />
+                  {comparisonData ? (
+                    <ComparisonView
+                      data={comparisonData}
+                      labelA={periodLabel(comparePeriodA.year, comparePeriodA.month)}
+                      labelB={periodLabel(comparePeriodB.year, comparePeriodB.month)}
+                    />
+                  ) : (
+                    <EmptyState text="Selecciona dos periodos validos para comparar." />
+                  )}
+                </div>
+              )}
+
+              {/* Tab Presupuesto (Fase 10) */}
+              {activeNegocioTab === "presupuesto" && (
+                <div className="space-y-6">
+                  <h2 className="text-lg lg:text-xl font-bold text-slate-800">Presupuesto vs Real</h2>
+                  <PeriodSelector
+                    mode="single"
+                    value={budgetPeriod}
+                    onChange={setBudgetPeriod}
+                    label="Periodo"
+                  />
+                  {budgetVsActualData ? (
+                    <BudgetChart
+                      items={budgetVsActualData.items}
+                      overallScore={budgetVsActualData.overall_score}
+                    />
+                  ) : (
+                    <EmptyState text="No hay presupuesto configurado para este periodo." />
+                  )}
+                  <div className="border-t border-slate-200 pt-4">
+                    <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                      <Target size={14} className="text-emerald-500" />
+                      Configurar Presupuesto
+                    </h3>
+                    <BudgetEntryForm
+                      period={budgetPeriod}
+                      initialData={MOCK_BUDGET_TARGETS.find(
+                        (b) => b.period_year === budgetPeriod.year && b.period_month === budgetPeriod.month
+                      )}
+                      onSave={handleBudgetSave}
+                      saving={budgetSaving}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Tab Reportes (Fase 11) */}
+              {activeNegocioTab === "reportes" && (
+                <div className="space-y-4">
+                  <h2 className="text-lg lg:text-xl font-bold text-slate-800">Reportes Ejecutivos</h2>
+                  <ReportGenerator societyId={societyId} />
+                </div>
+              )}
             </div>
           </div>
         )}

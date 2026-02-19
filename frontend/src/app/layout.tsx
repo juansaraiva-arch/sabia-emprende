@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Montserrat, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/components/AuthProvider";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -31,7 +32,7 @@ export default function RootLayout({
         className={`${montserrat.variable} ${playfair.variable} font-sans`}
         suppressHydrationWarning
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

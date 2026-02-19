@@ -2,8 +2,9 @@
 Router: Nómina Completa Panamá 2026
 CRUD de empleados + Asistencia + XIII Mes + Liquidación + KPI Ausentismo.
 """
-from fastapi import APIRouter, HTTPException, Header, Query
+from fastapi import APIRouter, HTTPException, Depends, Query
 from app.database import get_supabase
+from app.auth import AuthenticatedUser, get_current_user
 from app.models import PayrollEntryCreateFull, AttendanceRecordCreate
 from app.engines.panama_payroll import (
     calcular_carga_panama,
@@ -22,7 +23,7 @@ router = APIRouter()
 # ============================================
 
 @router.post("/employees")
-async def create_employee(body: PayrollEntryCreateFull, x_user_id: str = Header(...)):
+async def create_employee(body: PayrollEntryCreateFull, user: AuthenticatedUser = Depends(get_current_user)):
     """Crear un empleado en la nómina de una sociedad."""
     db = get_supabase()
 
@@ -55,7 +56,7 @@ async def create_employee(body: PayrollEntryCreateFull, x_user_id: str = Header(
 @router.get("/employees/{society_id}")
 async def list_employees(
     society_id: str,
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
     active_only: bool = Query(True, description="Solo empleados activos"),
 ):
     """Listar empleados de una sociedad con costos calculados."""
@@ -92,7 +93,7 @@ async def list_employees(
 
 
 @router.get("/employees/{society_id}/{employee_id}")
-async def get_employee(society_id: str, employee_id: str, x_user_id: str = Header(...)):
+async def get_employee(society_id: str, employee_id: str, user: AuthenticatedUser = Depends(get_current_user)):
     """Obtener detalle de un empleado específico."""
     db = get_supabase()
     row = (
@@ -128,7 +129,7 @@ async def get_employee(society_id: str, employee_id: str, x_user_id: str = Heade
 
 @router.patch("/employees/{society_id}/{employee_id}")
 async def update_employee(
-    society_id: str, employee_id: str, body: dict, x_user_id: str = Header(...)
+    society_id: str, employee_id: str, body: dict, user: AuthenticatedUser = Depends(get_current_user)
 ):
     """Actualizar datos de un empleado."""
     db = get_supabase()
@@ -146,7 +147,7 @@ async def update_employee(
 
 @router.delete("/employees/{society_id}/{employee_id}")
 async def delete_employee(
-    society_id: str, employee_id: str, x_user_id: str = Header(...)
+    society_id: str, employee_id: str, user: AuthenticatedUser = Depends(get_current_user)
 ):
     """Eliminar un empleado de la nómina."""
     db = get_supabase()
@@ -165,7 +166,7 @@ async def delete_employee(
 # ============================================
 
 @router.get("/total/{society_id}")
-async def get_payroll_total(society_id: str, x_user_id: str = Header(...)):
+async def get_payroll_total(society_id: str, user: AuthenticatedUser = Depends(get_current_user)):
     """Calcular nómina total de una sociedad (solo empleados activos)."""
     db = get_supabase()
     rows = (
@@ -194,7 +195,7 @@ async def get_payroll_total(society_id: str, x_user_id: str = Header(...)):
 # ============================================
 
 @router.post("/attendance")
-async def create_attendance(body: AttendanceRecordCreate, x_user_id: str = Header(...)):
+async def create_attendance(body: AttendanceRecordCreate, user: AuthenticatedUser = Depends(get_current_user)):
     """Registrar evento de asistencia (vacación, falta, feriado trabajado, etc.)."""
     db = get_supabase()
 
@@ -263,7 +264,7 @@ async def create_attendance(body: AttendanceRecordCreate, x_user_id: str = Heade
 @router.get("/attendance/{society_id}")
 async def list_attendance(
     society_id: str,
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
     employee_id: str = Query(None, description="Filtrar por empleado"),
     record_type: str = Query(None, description="Filtrar por tipo"),
 ):
@@ -292,7 +293,7 @@ async def list_attendance(
 async def get_xiii_mes(
     society_id: str,
     months_in_tercio: int = Query(1, ge=1, le=4, description="Meses del tercio actual"),
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Consultar reserva acumulada de XIII Mes para la sociedad."""
     db = get_supabase()
@@ -326,7 +327,7 @@ async def calculate_liquidacion(
     employee_id: str,
     exit_reason: str = Query(..., description="renuncia, despido, mutuo_acuerdo, fin_contrato"),
     months_current_tercio: int = Query(0, ge=0, le=4),
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Calcular liquidación laboral de un empleado."""
     db = get_supabase()
@@ -362,7 +363,7 @@ async def get_absenteeism_kpi(
     society_id: str,
     period_year: int = Query(2026),
     period_month: int = Query(1, ge=1, le=12),
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
 ):
     """
     Índice de Ausentismo:

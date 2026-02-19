@@ -3,8 +3,9 @@ Router: Sistema Contable Completo
 Plan de Cuentas + Libro Diario + Libro Mayor + Balance de Comprobacion + Cierre de Periodo.
 Puente: asientos → financial_records para alimentar dashboards existentes.
 """
-from fastapi import APIRouter, HTTPException, Header, Query
+from fastapi import APIRouter, HTTPException, Header, Depends, Query
 from app.database import get_supabase
+from app.auth import AuthenticatedUser, get_current_user
 from app.models import AccountCreate, JournalEntryCreate, PeriodCloseRequest
 from app.engines.accounting_engine import (
     get_default_chart_of_accounts,
@@ -22,7 +23,7 @@ router = APIRouter()
 # ============================================
 
 @router.post("/chart/initialize/{society_id}")
-async def initialize_chart_of_accounts(society_id: str, x_user_id: str = Header(...)):
+async def initialize_chart_of_accounts(society_id: str, user: AuthenticatedUser = Depends(get_current_user)):
     """Inicializa el plan de cuentas default para una sociedad."""
     db = get_supabase()
 
@@ -48,7 +49,7 @@ async def initialize_chart_of_accounts(society_id: str, x_user_id: str = Header(
 @router.get("/chart/{society_id}")
 async def list_chart_of_accounts(
     society_id: str,
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
     active_only: bool = Query(True),
 ):
     """Listar plan de cuentas de una sociedad."""
@@ -67,7 +68,7 @@ async def list_chart_of_accounts(
 
 
 @router.post("/chart")
-async def create_account(body: AccountCreate, x_user_id: str = Header(...)):
+async def create_account(body: AccountCreate, user: AuthenticatedUser = Depends(get_current_user)):
     """Crear una nueva cuenta en el plan."""
     db = get_supabase()
     data = body.model_dump()
@@ -77,7 +78,7 @@ async def create_account(body: AccountCreate, x_user_id: str = Header(...)):
 
 @router.patch("/chart/{society_id}/{account_code}")
 async def update_account(
-    society_id: str, account_code: str, body: dict, x_user_id: str = Header(...)
+    society_id: str, account_code: str, body: dict, user: AuthenticatedUser = Depends(get_current_user)
 ):
     """Actualizar una cuenta del plan."""
     db = get_supabase()
@@ -98,7 +99,7 @@ async def update_account(
 # ============================================
 
 @router.post("/journal")
-async def create_journal_entry(body: JournalEntryCreate, x_user_id: str = Header(...)):
+async def create_journal_entry(body: JournalEntryCreate, user: AuthenticatedUser = Depends(get_current_user)):
     """
     Crear un asiento contable de doble partida.
     Valida que DEBE == HABER antes de guardar.
@@ -184,7 +185,7 @@ async def create_journal_entry(body: JournalEntryCreate, x_user_id: str = Header
         "attachment_url": body.attachment_url,
         "total_debe": validation["total_debe"],
         "total_haber": validation["total_haber"],
-        "created_by": x_user_id,
+        "created_by": user.id,
     }
     entry_result = db.table("journal_entries").insert(entry_data).execute()
     entry_id = entry_result.data[0]["id"]
@@ -222,7 +223,7 @@ async def create_journal_entry(body: JournalEntryCreate, x_user_id: str = Header
 @router.get("/journal/{society_id}")
 async def list_journal_entries(
     society_id: str,
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
     period_year: int = Query(None),
     period_month: int = Query(None),
     limit: int = Query(50, le=200),
@@ -247,7 +248,7 @@ async def list_journal_entries(
 
 
 @router.get("/journal/{society_id}/{entry_id}")
-async def get_journal_entry(society_id: str, entry_id: str, x_user_id: str = Header(...)):
+async def get_journal_entry(society_id: str, entry_id: str, user: AuthenticatedUser = Depends(get_current_user)):
     """Obtener detalle de un asiento."""
     db = get_supabase()
     result = (
@@ -264,7 +265,7 @@ async def get_journal_entry(society_id: str, entry_id: str, x_user_id: str = Hea
 
 
 @router.delete("/journal/{society_id}/{entry_id}")
-async def delete_journal_entry(society_id: str, entry_id: str, x_user_id: str = Header(...)):
+async def delete_journal_entry(society_id: str, entry_id: str, user: AuthenticatedUser = Depends(get_current_user)):
     """Eliminar un asiento (solo si el periodo esta abierto)."""
     db = get_supabase()
 
@@ -304,7 +305,7 @@ async def delete_journal_entry(society_id: str, entry_id: str, x_user_id: str = 
 async def get_ledger(
     society_id: str,
     account_code: str,
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
     period_year: int = Query(None),
     period_month: int = Query(None),
 ):
@@ -365,7 +366,7 @@ async def get_ledger(
 @router.get("/trial-balance/{society_id}")
 async def get_trial_balance(
     society_id: str,
-    x_user_id: str = Header(...),
+    user: AuthenticatedUser = Depends(get_current_user),
     period_year: int = Query(None),
     period_month: int = Query(None),
 ):
@@ -412,7 +413,7 @@ async def get_trial_balance(
 # ============================================
 
 @router.get("/periods/{society_id}")
-async def list_periods(society_id: str, x_user_id: str = Header(...)):
+async def list_periods(society_id: str, user: AuthenticatedUser = Depends(get_current_user)):
     """Listar periodos contables."""
     db = get_supabase()
     result = (
@@ -427,7 +428,7 @@ async def list_periods(society_id: str, x_user_id: str = Header(...)):
 
 
 @router.post("/periods/close")
-async def close_period(body: PeriodCloseRequest, x_user_id: str = Header(...)):
+async def close_period(body: PeriodCloseRequest, user: AuthenticatedUser = Depends(get_current_user)):
     """Cerrar un periodo contable. Bloquea edicion de asientos."""
     db = get_supabase()
 
@@ -438,7 +439,7 @@ async def close_period(body: PeriodCloseRequest, x_user_id: str = Header(...)):
         "period_month": body.period_month,
         "status": "closed",
         "closed_at": "now()",
-        "closed_by": x_user_id,
+        "closed_by": user.id,
     }
 
     db.table("accounting_periods").upsert(
@@ -460,7 +461,7 @@ async def close_period(body: PeriodCloseRequest, x_user_id: str = Header(...)):
 
 
 @router.post("/periods/reopen")
-async def reopen_period(body: PeriodCloseRequest, x_user_id: str = Header(...), x_admin_code: str = Header(default="")):
+async def reopen_period(body: PeriodCloseRequest, user: AuthenticatedUser = Depends(get_current_user), x_admin_code: str = Header(default="")):
     """Reabrir un periodo cerrado (requiere codigo de admin)."""
     # Fase 7: Validacion de codigo admin para reabrir
     if x_admin_code != "SABIA-REOPEN-2026":
@@ -473,7 +474,7 @@ async def reopen_period(body: PeriodCloseRequest, x_user_id: str = Header(...), 
     db.table("accounting_periods").update({
         "status": "reopened",
         "reopened_at": "now()",
-        "reopened_by": x_user_id,
+        "reopened_by": user.id,
     }).eq("society_id", body.society_id).eq(
         "period_year", body.period_year
     ).eq("period_month", body.period_month).execute()

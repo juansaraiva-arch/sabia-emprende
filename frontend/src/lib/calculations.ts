@@ -260,6 +260,53 @@ export function computeValoracion(
 }
 
 // ============================================
+// MULTI-PERIODO (Fase 10)
+// ============================================
+
+export type PeriodKey = { year: number; month: number };
+
+const MONTHS_ES = [
+  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+];
+
+export function periodLabel(year: number, month: number): string {
+  return `${MONTHS_ES[month - 1]} ${year}`;
+}
+
+export function periodCompare(a: PeriodKey, b: PeriodKey): number {
+  if (a.year !== b.year) return a.year - b.year;
+  return a.month - b.month;
+}
+
+export type PeriodPreset = "last_quarter" | "last_semester" | "last_year" | "ytd";
+
+export function getPresetRange(preset: PeriodPreset, refYear = 2026, refMonth = 6): { from: PeriodKey; to: PeriodKey } {
+  const to = { year: refYear, month: refMonth };
+  switch (preset) {
+    case "last_quarter": {
+      let m = refMonth - 2;
+      let y = refYear;
+      if (m < 1) { m += 12; y -= 1; }
+      return { from: { year: y, month: m }, to };
+    }
+    case "last_semester": {
+      let m = refMonth - 5;
+      let y = refYear;
+      if (m < 1) { m += 12; y -= 1; }
+      return { from: { year: y, month: m }, to };
+    }
+    case "last_year": {
+      let m = refMonth;
+      let y = refYear - 1;
+      return { from: { year: y, month: m + 1 > 12 ? 1 : m + 1 }, to };
+    }
+    case "ytd":
+      return { from: { year: refYear, month: 1 }, to };
+  }
+}
+
+// ============================================
 // OXIGENO (Ratios de liquidez)
 // ============================================
 

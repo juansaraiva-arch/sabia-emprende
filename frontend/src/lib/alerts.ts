@@ -331,3 +331,96 @@ export function countByPriority(alerts: StrategicAlert[]): Record<AlertPriority,
   }
   return counts;
 }
+
+
+// ============================================
+// COMPLIANCE ALERTS
+// ============================================
+
+export interface ComplianceDeadline {
+  id: string;
+  name: string;
+  dueDate: Date;
+  category: AlertCategory;
+  description: string;
+  penaltyDescription: string;
+}
+
+/** Genera alertas de cumplimiento basadas en fechas limite de DGI y CSS */
+export function computeComplianceAlerts(today: Date = new Date()): StrategicAlert[] {
+  const alerts: StrategicAlert[] = [];
+  const currentMonth = today.getMonth(); // 0-indexed
+  const currentDay = today.getDate();
+
+  // ITBMS - Declaracion mensual (dia 15 del mes siguiente)
+  const itbmsDueDay = 15;
+  if (currentDay >= 10 && currentDay <= itbmsDueDay) {
+    alerts.push({
+      id: 'compliance-itbms-monthly',
+      priority: currentDay >= 13 ? 'red' : 'orange',
+      category: 'dgi',
+      title: 'Declaracion ITBMS pendiente',
+      message: `La declaracion mensual del ITBMS vence el dia ${itbmsDueDay} de este mes. ${currentDay >= 13 ? 'URGENTE: quedan menos de 3 dias.' : 'Tienes pocos dias para presentarla.'}`,
+      emoji: '🧾',
+      promptHint: 'Como calculo mi ITBMS este mes?',
+    });
+  }
+
+  // Renta estimada - pagos trimestrales (jun, sep, dic)
+  const rentaEstimadaMonths = [5, 8, 11]; // junio, septiembre, diciembre
+  if (rentaEstimadaMonths.includes(currentMonth) && currentDay <= 30) {
+    const daysLeft = 30 - currentDay;
+    alerts.push({
+      id: 'compliance-renta-estimada',
+      priority: daysLeft <= 5 ? 'red' : daysLeft <= 15 ? 'orange' : 'yellow',
+      category: 'dgi',
+      title: 'Pago trimestral de Renta Estimada',
+      message: `Este mes corresponde pago trimestral de renta estimada. Quedan ${daysLeft} dias.`,
+      emoji: '💰',
+      promptHint: 'Cuanto debo pagar de renta estimada?',
+    });
+  }
+
+  // CSS - Planilla (cuota obrero-patronal, dia 15 del mes siguiente)
+  if (currentDay >= 8 && currentDay <= 15) {
+    alerts.push({
+      id: 'compliance-css-planilla',
+      priority: currentDay >= 13 ? 'red' : 'orange',
+      category: 'capital_humano',
+      title: 'Cuota CSS obrero-patronal',
+      message: `El pago de la cuota obrero-patronal a la CSS vence el dia 15. ${currentDay >= 13 ? 'URGENTE: presente antes de la fecha limite para evitar recargos.' : 'Prepare el pago con anticipacion.'}`,
+      emoji: '🏥',
+      promptHint: 'Como calculo las cuotas CSS de mis empleados?',
+    });
+  }
+
+  // Declaracion de Renta Anual - marzo 31
+  if (currentMonth === 2) { // marzo
+    const daysLeft = 31 - currentDay;
+    alerts.push({
+      id: 'compliance-renta-anual',
+      priority: daysLeft <= 5 ? 'red' : daysLeft <= 15 ? 'orange' : 'yellow',
+      category: 'dgi',
+      title: 'Declaracion de Renta Anual',
+      message: `La declaracion jurada de renta del ano anterior vence el 31 de marzo. Quedan ${daysLeft} dias.`,
+      emoji: '📋',
+      promptHint: 'Que necesito para mi declaracion de renta anual?',
+    });
+  }
+
+  // Aviso de Operaciones - enero 31
+  if (currentMonth === 0) { // enero
+    const daysLeft = 31 - currentDay;
+    alerts.push({
+      id: 'compliance-aviso-operaciones',
+      priority: daysLeft <= 5 ? 'red' : daysLeft <= 15 ? 'orange' : 'yellow',
+      category: 'legal',
+      title: 'Aviso de Operaciones',
+      message: `El Aviso de Operaciones debe renovarse antes del 31 de enero. Quedan ${daysLeft} dias.`,
+      emoji: '📄',
+      promptHint: 'Como renuevo mi aviso de operaciones?',
+    });
+  }
+
+  return alerts;
+}

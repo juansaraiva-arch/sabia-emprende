@@ -127,11 +127,14 @@ export const societiesApi = {
 
 // --- Motor Financiero ---
 export const financialApi = {
-  createRecord: (body: any) =>
-    apiFetch<{ data: any }>("/financial/records", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
+  createRecord: (body: any, autoJournal = false) =>
+    apiFetch<{ data: any; journal_entries_created?: number }>(
+      `/financial/records${autoJournal ? "?auto_journal=true" : ""}`,
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      }
+    ),
   listRecords: (societyId: string) =>
     apiFetch<{ data: any[] }>(`/financial/records/${societyId}`),
   getCascade: (societyId: string, year: number, month: number) =>
@@ -453,4 +456,17 @@ export const reportsApi = {
   // Report history
   getHistory: (societyId: string, limit = 20) =>
     apiFetch<{ data: any[] }>(`/reports/history/${societyId}?limit=${limit}`),
+
+  // Email reports
+  emailReport: (
+    societyId: string,
+    reportType: string,
+    year: number,
+    month: number,
+    recipients: string
+  ) =>
+    apiFetch<{ success: boolean; message: string }>(
+      `/reports/email/${societyId}?report_type=${reportType}&period_year=${year}&period_month=${month}&recipients=${encodeURIComponent(recipients)}`,
+      { method: "POST" }
+    ),
 };

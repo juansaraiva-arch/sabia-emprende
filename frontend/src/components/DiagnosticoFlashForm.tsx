@@ -30,7 +30,7 @@ import SmartTooltip from "@/components/SmartTooltip";
 // ============================================
 
 interface DiagnosticoFlashFormProps {
-  onSave: (record: FinancialRecord) => void;
+  onSave: (record: FinancialRecord, autoJournal?: boolean) => void;
   onBackToMenu?: () => void;
 }
 
@@ -191,6 +191,7 @@ export default function DiagnosticoFlashForm({
   const [data, setData] = useState<FormData>({ ...INITIAL_DATA });
   const [step3Open, setStep3Open] = useState(false);
   const [step4Open, setStep4Open] = useState(false);
+  const [autoJournal, setAutoJournal] = useState(false);
 
   // --- Setter helper ---
   const set = (field: keyof FormData) => (value: number) => {
@@ -225,7 +226,7 @@ export default function DiagnosticoFlashForm({
   // --- Save ---
   const handleSave = () => {
     const record: FinancialRecord = { ...data };
-    onSave(record);
+    onSave(record, autoJournal);
   };
 
   return (
@@ -672,6 +673,24 @@ export default function DiagnosticoFlashForm({
                 </div>
               </div>
             )}
+
+            {/* Auto-Journal Toggle */}
+            <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={autoJournal}
+                onChange={(e) => setAutoJournal(e.target.checked)}
+                className="w-5 h-5 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+              />
+              <div>
+                <span className="text-sm font-bold text-slate-700">
+                  Generar asientos contables
+                </span>
+                <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                  Crea automaticamente los asientos de doble partida en el Libro Diario
+                </p>
+              </div>
+            </label>
 
             {/* Save Button */}
             <button

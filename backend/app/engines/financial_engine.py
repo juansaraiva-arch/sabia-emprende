@@ -26,7 +26,8 @@ def calcular_cascada(record: dict) -> dict:
     total_opex = opex_rent + opex_payroll + opex_other
     ebitda = gross_profit - total_opex
     ebit = ebitda - depreciation
-    net_income = ebit - interest - tax
+    ebt = ebit - interest
+    net_income = ebt - tax
 
     return {
         "revenue": revenue,
@@ -35,15 +36,20 @@ def calcular_cascada(record: dict) -> dict:
         "total_opex": round(total_opex, 2),
         "ebitda": round(ebitda, 2),
         "ebit": round(ebit, 2),
+        "ebt": round(ebt, 2),
         "net_income": round(net_income, 2),
         "waterfall_steps": [
             {"label": "Ventas", "value": revenue, "type": "increase"},
             {"label": "Costo Ventas", "value": -cogs, "type": "decrease"},
-            {"label": "Ut. Bruta", "value": gross_profit, "type": "total"},
+            {"label": "= Ut. Bruta", "value": gross_profit, "type": "total"},
             {"label": "OPEX", "value": -total_opex, "type": "decrease"},
-            {"label": "EBITDA", "value": ebitda, "type": "total"},
-            {"label": "Depr/Int/Imp", "value": -(depreciation + interest + tax), "type": "decrease"},
-            {"label": "Ut. Neta", "value": net_income, "type": "total"},
+            {"label": "= EBITDA", "value": ebitda, "type": "total"},
+            {"label": "Depreciacion", "value": -depreciation, "type": "decrease"},
+            {"label": "= EBIT", "value": ebit, "type": "total"},
+            {"label": "Int. Financieros", "value": -interest, "type": "decrease"},
+            {"label": "= EBT", "value": ebt, "type": "total"},
+            {"label": "Impuestos", "value": -tax, "type": "decrease"},
+            {"label": "= Ut. Neta", "value": net_income, "type": "total"},
         ],
     }
 

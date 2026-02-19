@@ -18,7 +18,7 @@ import CsvUploader from "./CsvUploader";
 // ============================================
 
 interface DataEntryWizardProps {
-  onRecordSaved: (record: FinancialRecord) => void;
+  onRecordSaved: (record: FinancialRecord, autoJournal?: boolean) => void;
   onBulkRecordsSaved: (records: FinancialRecord[]) => void;
   onNavigateHome?: () => void;
 }

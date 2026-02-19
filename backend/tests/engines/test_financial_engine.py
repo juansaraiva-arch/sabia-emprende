@@ -18,13 +18,14 @@ from app.engines.financial_engine import (
 
 class TestCalcularCascada:
     def test_profitable_business(self, sample_financial_record):
-        """Negocio rentable -> waterfall correcto."""
+        """Negocio rentable -> waterfall correcto con 5 niveles."""
         result = calcular_cascada(sample_financial_record)
         assert result["gross_profit"] == 30000  # 50000 - 20000
         assert result["total_opex"] == 15000  # 3000 + 8000 + 4000
         assert result["ebitda"] == 15000  # 30000 - 15000
         assert result["ebit"] == 14500  # 15000 - 500
-        assert result["net_income"] == 14000  # 14500 - 300 - 200
+        assert result["ebt"] == 14200  # 14500 - 300
+        assert result["net_income"] == 14000  # 14200 - 200
 
     def test_zero_revenue(self, zero_revenue_record):
         """Revenue 0 -> net_income negativo."""
@@ -44,12 +45,29 @@ class TestCalcularCascada:
         assert result["revenue"] == 0
         assert result["gross_profit"] == 0
         assert result["ebitda"] == 0
+        assert result["ebt"] == 0
         assert result["net_income"] == 0
 
     def test_waterfall_steps_count(self, sample_financial_record):
-        """waterfall_steps tiene 7 elementos."""
+        """waterfall_steps tiene 11 elementos (5 niveles P&L)."""
         result = calcular_cascada(sample_financial_record)
-        assert len(result["waterfall_steps"]) == 7
+        assert len(result["waterfall_steps"]) == 11
+
+    def test_ebt_calculated(self, sample_financial_record):
+        """EBT = EBIT - Intereses (5to nivel cascada)."""
+        result = calcular_cascada(sample_financial_record)
+        # ebit = 14500, interest = 300, ebt = 14200
+        assert result["ebt"] == 14200
+
+    def test_waterfall_ebt_step_exists(self, sample_financial_record):
+        """Waterfall contiene paso '= EBT' como nivel separado."""
+        result = calcular_cascada(sample_financial_record)
+        labels = [s["label"] for s in result["waterfall_steps"]]
+        assert "= EBT" in labels
+        assert "= EBIT" in labels
+        assert "Depreciacion" in labels
+        assert "Int. Financieros" in labels
+        assert "Impuestos" in labels
 
     def test_values_rounded(self, sample_financial_record):
         """Valores redondeados a 2 decimales."""

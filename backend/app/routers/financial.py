@@ -19,6 +19,7 @@ from app.engines.multiperiod_engine import (
     calcular_varianza_presupuesto,
 )
 from app.engines.panama_payroll import calcular_carga_panama, calcular_nomina_total
+from app.engines.accounting_engine import generate_journal_from_financial_record, validate_journal_entry
 from app.auth import AuthenticatedUser, get_current_user
 
 router = APIRouter()
@@ -27,11 +28,89 @@ router = APIRouter()
 # --- CRUD ---
 
 @router.post("/records")
-async def create_record(body: FinancialRecordCreate, user: AuthenticatedUser = Depends(get_current_user)):
+async def create_record(
+    body: FinancialRecordCreate,
+    user: AuthenticatedUser = Depends(get_current_user),
+    auto_journal: bool = Query(False, description="Auto-generar asientos contables"),
+):
     db = get_supabase()
     data = body.model_dump()
     result = db.table("financial_records").insert(data).execute()
-    return {"success": True, "data": result.data}
+
+    # Auto-generar asientos contables si se solicita
+    journal_entries_created = 0
+    if auto_journal and result.data:
+        record_data = result.data[0] if isinstance(result.data, list) else result.data
+        society_id = record_data.get("society_id", data.get("society_id"))
+        period_year = record_data.get("period_year", data.get("period_year"))
+        period_month = record_data.get("period_month", data.get("period_month"))
+
+        # Verificar que el plan de cuentas esta inicializado
+        coa_check = (
+            db.table("chart_of_accounts")
+            .select("id")
+            .eq("society_id", society_id)
+            .limit(1)
+            .execute()
+        )
+        if coa_check.data:
+            # Verificar que el periodo esta abierto
+            period_check = (
+                db.table("accounting_periods")
+                .select("status")
+                .eq("society_id", society_id)
+                .eq("period_year", period_year)
+                .eq("period_month", period_month)
+                .execute()
+            )
+            period_open = True
+            if period_check.data and period_check.data[0].get("status") == "closed":
+                period_open = False
+
+            if period_open:
+                entries = generate_journal_from_financial_record(data)
+                from datetime import date as date_type
+                entry_date = f"{period_year}-{period_month:02d}-01"
+
+                for entry in entries:
+                    # Validar partida doble
+                    validation = validate_journal_entry(entry["lines"])
+                    if not validation["valid"]:
+                        continue
+
+                    # Insertar asiento
+                    journal_data = {
+                        "society_id": society_id,
+                        "entry_date": entry_date,
+                        "description": entry["description"],
+                        "source": "auto_from_financial",
+                        "total_debe": validation["total_debe"],
+                        "total_haber": validation["total_haber"],
+                    }
+                    try:
+                        je_result = db.table("journal_entries").insert(journal_data).execute()
+                        if je_result.data:
+                            je_id = je_result.data[0]["id"]
+                            # Insertar lineas del asiento
+                            for i, line in enumerate(entry["lines"]):
+                                line_data = {
+                                    "entry_id": je_id,
+                                    "account_code": line["account_code"],
+                                    "debe": line["debe"],
+                                    "haber": line["haber"],
+                                    "line_order": i + 1,
+                                }
+                                db.table("journal_lines").insert(line_data).execute()
+                            journal_entries_created += 1
+                    except Exception:
+                        # Si falla un asiento individual, continuar con el siguiente
+                        pass
+
+    return {
+        "success": True,
+        "data": result.data,
+        "journal_entries_created": journal_entries_created,
+    }
 
 
 @router.get("/records/{society_id}")

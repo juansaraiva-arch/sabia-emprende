@@ -14,6 +14,8 @@ import {
   FileText,
   CheckCircle,
   AlertCircle,
+  Mail,
+  Send,
 } from "lucide-react";
 import PeriodSelector from "@/components/PeriodSelector";
 import { reportsApi } from "@/lib/api";
@@ -162,6 +164,9 @@ export default function ReportGenerator({ societyId }: ReportGeneratorProps) {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [emailRecipients, setEmailRecipients] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   // Lookup the selected report config
   const selected = REPORTS.find((r) => r.id === selectedReport) || null;
@@ -390,22 +395,83 @@ export default function ReportGenerator({ societyId }: ReportGeneratorProps) {
         </div>
       )}
 
-      {/* Download Button */}
+      {/* Action Buttons */}
       {selected && (
-        <button
-          onClick={handleDownload}
-          disabled={downloading}
-          className="inline-flex items-center gap-2 bg-emerald-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {downloading ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <Download size={16} />
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Download Button */}
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="inline-flex items-center gap-2 bg-emerald-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {downloading ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Download size={16} />
+            )}
+            {downloading
+              ? "Generando..."
+              : `Descargar ${selected.title}`}
+          </button>
+
+          {/* Email Button (solo PDFs: estado_resultados, balance_general, resumen_ejecutivo) */}
+          {selected.format === "pdf" && selected.id !== "flujo_caja" && (
+            <button
+              onClick={() => setShowEmailInput(!showEmailInput)}
+              className="inline-flex items-center gap-2 bg-[#1B2838] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#2a3d52] transition-colors"
+            >
+              <Mail size={16} />
+              Enviar por Email
+            </button>
           )}
-          {downloading
-            ? "Generando..."
-            : `Descargar ${selected.title}`}
-        </button>
+        </div>
+      )}
+
+      {/* Email Input */}
+      {showEmailInput && selected && selected.format === "pdf" && (
+        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
+          <input
+            type="text"
+            placeholder="correo@ejemplo.com (separar con comas)"
+            value={emailRecipients}
+            onChange={(e) => setEmailRecipients(e.target.value)}
+            className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30"
+          />
+          <button
+            onClick={async () => {
+              if (!emailRecipients.trim()) return;
+              setSendingEmail(true);
+              setError(null);
+              try {
+                const reportType = selected.id as string;
+                const result = await reportsApi.emailReport(
+                  societyId,
+                  reportType,
+                  period.year,
+                  period.month,
+                  emailRecipients.trim()
+                );
+                setSuccessMsg(result.message || "Email enviado correctamente");
+                setShowEmailInput(false);
+                setEmailRecipients("");
+                setTimeout(() => setSuccessMsg(null), 4000);
+              } catch (e: any) {
+                setError(e.message || "Error al enviar el email");
+              } finally {
+                setSendingEmail(false);
+              }
+            }}
+            disabled={sendingEmail || !emailRecipients.trim()}
+            className="inline-flex items-center gap-1.5 bg-[#C9A84C] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#b8973e] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {sendingEmail ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Send size={14} />
+            )}
+            Enviar
+          </button>
+        </div>
       )}
 
       {/* Error Toast */}

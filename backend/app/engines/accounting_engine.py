@@ -285,3 +285,103 @@ def aggregate_to_financial_record(
         "source": "accounting",
         **{k: round(v, 2) for k, v in field_sums.items()},
     }
+
+
+# ==============================================================
+# PUENTE INVERSO: financial_records → Asientos Contables
+# ==============================================================
+
+# Mapeo: campo de financial_record → cuentas DEBE/HABER
+_FINANCIAL_TO_JOURNAL: list[dict] = [
+    {
+        "field": "revenue",
+        "debe_account": "1.1.1",   # Caja y Bancos
+        "haber_account": "4.1.1",  # Ventas de Bienes
+        "description": "Ingreso por ventas del periodo",
+    },
+    {
+        "field": "cogs",
+        "debe_account": "5.1.1",   # Costo de Mercancia Vendida
+        "haber_account": "1.1.1",  # Caja y Bancos
+        "description": "Costo de mercancia vendida",
+    },
+    {
+        "field": "opex_rent",
+        "debe_account": "5.2.1",   # Alquiler y Mantenimiento
+        "haber_account": "1.1.1",  # Caja y Bancos
+        "description": "Pago de alquiler",
+    },
+    {
+        "field": "opex_payroll",
+        "debe_account": "5.2.2",   # Salarios y Planilla
+        "haber_account": "1.1.1",  # Caja y Bancos
+        "description": "Pago de nomina",
+    },
+    {
+        "field": "opex_other",
+        "debe_account": "5.2.9",   # Otros Gastos Operativos
+        "haber_account": "1.1.1",  # Caja y Bancos
+        "description": "Otros gastos operativos",
+    },
+    {
+        "field": "depreciation",
+        "debe_account": "5.4.1",   # Gasto de Depreciacion
+        "haber_account": "1.2.4",  # Depreciacion Acumulada (contra-activo)
+        "description": "Depreciacion del periodo",
+    },
+    {
+        "field": "interest_expense",
+        "debe_account": "5.3.1",   # Intereses Bancarios
+        "haber_account": "1.1.1",  # Caja y Bancos
+        "description": "Pago de intereses bancarios",
+    },
+    {
+        "field": "tax_expense",
+        "debe_account": "5.5.1",   # ISR del Periodo
+        "haber_account": "2.1.7",  # ISR por Pagar
+        "description": "Provision ISR del periodo",
+    },
+]
+
+
+def generate_journal_from_financial_record(record: dict) -> list[dict]:
+    """
+    Genera asientos contables de partida doble a partir de un financial_record.
+    Solo genera asientos para campos con valor > 0.
+
+    Returns: Lista de asientos, cada uno con:
+    {
+        "description": str,
+        "source": "auto_from_financial",
+        "lines": [
+            {"account_code": str, "debe": float, "haber": float},
+            {"account_code": str, "debe": float, "haber": float},
+        ]
+    }
+    """
+    entries = []
+
+    for mapping in _FINANCIAL_TO_JOURNAL:
+        value = float(record.get(mapping["field"], 0))
+        if value <= 0:
+            continue
+
+        entry = {
+            "description": mapping["description"],
+            "source": "auto_from_financial",
+            "lines": [
+                {
+                    "account_code": mapping["debe_account"],
+                    "debe": round(value, 2),
+                    "haber": 0,
+                },
+                {
+                    "account_code": mapping["haber_account"],
+                    "debe": 0,
+                    "haber": round(value, 2),
+                },
+            ],
+        }
+        entries.append(entry)
+
+    return entries

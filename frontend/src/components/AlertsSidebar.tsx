@@ -12,7 +12,10 @@ import {
   FileText,
   Droplets,
   ChevronRight,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
+import { isSoundEnabled, setSoundEnabled } from "@/lib/sounds";
 import type { StrategicAlert, AlertCategory, AlertPriority } from "@/lib/alerts";
 import { countByPriority } from "@/lib/alerts";
 
@@ -101,7 +104,14 @@ const PRIORITY_LABELS: Record<AlertPriority, string> = {
 
 export default function AlertsSidebar({ alerts, isOpen, onClose }: AlertsSidebarProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
   const counts = countByPriority(alerts);
+
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    setSoundEnabled(next);
+  };
 
   // Agrupar por categoria
   const grouped = alerts.reduce<Record<AlertCategory, StrategicAlert[]>>(
@@ -141,12 +151,21 @@ export default function AlertsSidebar({ alerts, isOpen, onClose }: AlertsSidebar
               Alertas Estrategicas
             </h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors text-slate-400 hover:text-slate-600"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleSound}
+              title={soundOn ? "Silenciar alertas" : "Activar sonido alertas"}
+              className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors text-slate-400 hover:text-slate-600"
+            >
+              {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors text-slate-400 hover:text-slate-600"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Summary badges */}

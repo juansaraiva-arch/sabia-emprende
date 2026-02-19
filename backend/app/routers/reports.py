@@ -515,6 +515,84 @@ async def export_csv(
     )
 
 
+@router.post("/email/{society_id}")
+async def email_report(
+    society_id: str,
+    user: AuthenticatedUser = Depends(get_current_user),
+    report_type: str = Query(..., description="estado_resultados, balance_general, resumen_ejecutivo"),
+    period_year: int = Query(2026),
+    period_month: int = Query(1, ge=1, le=12),
+    recipients: str = Query(..., description="Emails separados por coma"),
+):
+    """Envia un reporte PDF por email a los destinatarios."""
+    from app.engines.email_sender import is_email_configured, send_report_email
+
+    if not is_email_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Email no configurado. Configure SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD en .env",
+        )
+
+    db = get_supabase()
+    to_emails = [e.strip() for e in recipients.split(",") if e.strip()]
+    if not to_emails:
+        raise HTTPException(status_code=400, detail="Debe proporcionar al menos un email destinatario")
+
+    # Generar PDF segun tipo de reporte
+    valid_types = {"estado_resultados", "balance_general", "resumen_ejecutivo"}
+    if report_type not in valid_types:
+        raise HTTPException(status_code=400, detail=f"Tipo invalido. Validos: {valid_types}")
+
+    record = _get_financial_record(db, society_id, period_year, period_month)
+    society = db.table("societies").select("legal_name").eq("id", society_id).single().execute()
+    society_name = society.data.get("legal_name", "Empresa") if society.data else "Empresa"
+
+    MONTHS_ES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                 "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    period_label = f"{MONTHS_ES[period_month]} {period_year}"
+
+    if report_type == "estado_resultados":
+        cascada = calcular_cascada(record)
+        ratios = calcular_ratios(record)
+        pdf_bytes = generate_estado_resultados_pdf(cascada, ratios, society_name, period_year, period_month)
+        filename = f"Estado_Resultados_{period_label}.pdf"
+    elif report_type == "balance_general":
+        pdf_bytes = generate_balance_general_pdf(record, society_name, period_year, period_month)
+        filename = f"Balance_General_{period_label}.pdf"
+    else:  # resumen_ejecutivo
+        cascada = calcular_cascada(record)
+        ratios = calcular_ratios(record)
+        diagnostico = diagnostico_juez_digital(record)
+        valoracion = valoracion_empresa(cascada["ebitda"])
+        pdf_bytes = generate_resumen_ejecutivo_pdf(
+            cascada, ratios, diagnostico, valoracion, society_name, period_year, period_month
+        )
+        filename = f"Resumen_Ejecutivo_{period_label}.pdf"
+
+    # Enviar email
+    body_html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px;">
+        <h2 style="color: #1B2838;">SABIA EMPRENDE</h2>
+        <p>Adjunto encontrara el reporte <strong>{report_type.replace('_', ' ').title()}</strong>
+        de <strong>{society_name}</strong> correspondiente a <strong>{period_label}</strong>.</p>
+        <p style="color: #666; font-size: 12px;">Este reporte fue generado automaticamente por SABIA EMPRENDE.</p>
+    </div>
+    """
+
+    result = send_report_email(
+        to_emails=to_emails,
+        subject=f"Reporte {report_type.replace('_', ' ').title()} - {society_name} - {period_label}",
+        body_html=body_html,
+        attachment_bytes=pdf_bytes,
+        attachment_filename=filename,
+    )
+
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["message"])
+
+    return result
+
+
 def _save_report_record(db, society_id: str, report_type: str, period_year, period_month, user_id: str):
     """Guarda registro de reporte generado."""
     try:

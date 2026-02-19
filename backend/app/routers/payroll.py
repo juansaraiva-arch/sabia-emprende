@@ -408,8 +408,10 @@ async def get_absenteeism_kpi(
     )
 
     unjustified = len(absences.data)
-    working_days = 22  # Promedio días laborales por mes
-    absenteeism_pct = (unjustified / (active_count * working_days)) * 100
+    # Usar calendario real de Panama en vez de hardcoded 22
+    from app.engines.panama_calendar import dias_laborables
+    working_days = dias_laborables(period_year, period_month)
+    absenteeism_pct = (unjustified / (active_count * working_days)) * 100 if working_days > 0 else 0
 
     status = "ok"
     if absenteeism_pct > 5:

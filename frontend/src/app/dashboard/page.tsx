@@ -60,7 +60,8 @@ import ComparisonView from "@/components/charts/ComparisonView";
 import BudgetChart from "@/components/charts/BudgetChart";
 import BudgetEntryForm from "@/components/BudgetEntryForm";
 import ReportGenerator from "@/components/ReportGenerator";
-import { computeAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
+import { computeAlerts, computeComplianceAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
+import { playAlertSound, isSoundEnabled } from "@/lib/sounds";
 import { periodLabel, getPresetRange } from "@/lib/calculations";
 import type { PeriodKey, PeriodPreset } from "@/lib/calculations";
 import {
@@ -138,11 +139,16 @@ export default function Dashboard() {
     }
   };
 
-  const handleRecordSaved = (record: FinancialRecord) => {
+  const handleRecordSaved = (record: FinancialRecord, autoJournal?: boolean) => {
     setCurrentRecord(record);
     setDiagnosis(computeMockDiagnosis(record));
     setBreakeven(computeMockBreakeven(record));
     setActiveSection("negocio");
+    // TODO: When connected to backend, call financialApi.createRecord(record, autoJournal)
+    // to persist the record and optionally generate journal entries
+    if (autoJournal) {
+      console.log("[SABIA] Auto-journal solicitado — se generaran asientos al conectar con backend");
+    }
   };
 
   const handleBulkRecordsSaved = (records: FinancialRecord[]) => {
@@ -177,15 +183,29 @@ export default function Dashboard() {
     setActiveLegalTab("boveda");
   };
 
-  // Alertas estrategicas
+  // Alertas estrategicas (financieras + compliance DGI/CSS)
   const [alertsSidebarOpen, setAlertsSidebarOpen] = useState(false);
-  const strategicAlerts = useMemo(
-    () => computeAlerts(currentRecord),
-    [currentRecord]
-  );
+  const soundPlayedRef = React.useRef(false);
+  const strategicAlerts = useMemo(() => {
+    const financial = computeAlerts(currentRecord);
+    const compliance = computeComplianceAlerts();
+    // Merge y ordenar por prioridad
+    const all = [...financial, ...compliance];
+    const priorityOrder: Record<string, number> = { red: 0, orange: 1, yellow: 2, green: 3 };
+    all.sort((a, b) => (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3));
+    return all;
+  }, [currentRecord]);
   const topAlert = useMemo(() => getTopAlert(strategicAlerts), [strategicAlerts]);
   const alertCounts = useMemo(() => countByPriority(strategicAlerts), [strategicAlerts]);
   const nonGreenAlerts = strategicAlerts.filter((a) => a.priority !== "green");
+
+  // Sonido de alerta para prioridades criticas (una sola vez por sesion)
+  React.useEffect(() => {
+    if (!soundPlayedRef.current && alertCounts.red > 0 && isSoundEnabled()) {
+      playAlertSound("danger");
+      soundPlayedRef.current = true;
+    }
+  }, [alertCounts.red]);
 
   const ebitdaMargin = diagnosis?.ratios?.margins?.ebitda_margin_pct ?? 0;
   const totalCosts = (diagnosis?.cascada?.cogs ?? 0) + (diagnosis?.cascada?.total_opex ?? 0);

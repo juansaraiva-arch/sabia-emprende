@@ -489,6 +489,27 @@ async def reopen_period(body: PeriodCloseRequest, user: AuthenticatedUser = Depe
     return {"success": True, "message": f"Periodo {body.period_month}/{body.period_year} reabierto."}
 
 
+@router.post("/scheduled/monthly-tasks")
+async def trigger_monthly_tasks(
+    society_id: str = Query(...),
+    recipient_emails: str = Query("", description="Emails separados por coma"),
+    user: AuthenticatedUser = Depends(get_current_user),
+):
+    """
+    Ejecuta tareas programadas mensuales:
+    - Auto-cierre de periodo (si es ultimo dia del mes)
+    - Auto-envio de reportes (si es 1ro del mes)
+
+    Puede ser invocado por un cron job externo o Supabase Edge Function.
+    """
+    from app.engines.scheduled_tasks import run_monthly_tasks
+
+    emails = [e.strip() for e in recipient_emails.split(",") if e.strip()] if recipient_emails else []
+
+    result = await run_monthly_tasks(db, society_id, emails)
+    return result
+
+
 # ============================================
 # HELPER: Auto-aggregate asientos → financial_records
 # ============================================

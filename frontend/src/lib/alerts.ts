@@ -187,19 +187,20 @@ export function computeAlerts(record: FinancialRecord): StrategicAlert[] {
 
   // Nomina excesiva vs Utilidad Bruta
   // Factor 1.36: Costo Real Empresa (Ley 462/2025)
+  // Umbral: 30% segun especificacion ("planilla supero el 30% de tu U.B.")
   const FACTOR_COSTO_REAL = 1.36;
   const grossProfit = record.revenue - record.cogs;
   const costoRealNomina = record.opex_payroll * FACTOR_COSTO_REAL;
   const payrollRatio = grossProfit > 0 ? (costoRealNomina / grossProfit) * 100 : 0;
-  if (payrollRatio > 45 && record.opex_payroll > 0) {
+  if (payrollRatio > 30 && record.opex_payroll > 0) {
     alerts.push({
       id: "payroll_high",
-      priority: "orange",
+      priority: payrollRatio > 45 ? "red" : "orange",
       category: "capital_humano",
-      title: "Nomina Alta vs Utilidad Bruta",
-      message: `La nomina consume ${payrollRatio.toFixed(1)}% de tu utilidad bruta (meta: <35%). Necesitas mas productividad o ajustar plantilla.`,
-      emoji: "👥",
-      promptHint: `La nomina consume ${payrollRatio.toFixed(1)}% de la utilidad bruta`,
+      title: "Sobrecosto Laboral",
+      message: `La nomina consume ${payrollRatio.toFixed(1)}% de tu utilidad bruta (meta: <30%). ${payrollRatio > 45 ? "CRITICO: Necesitas reducir plantilla o subir productividad urgentemente." : "Necesitas mas productividad o ajustar plantilla."}`,
+      emoji: "💸",
+      promptHint: `Sobrecosto Laboral: la planilla supero el 30% de tu U.B.`,
     });
   }
 
@@ -352,6 +353,42 @@ export function computeComplianceAlerts(today: Date = new Date()): StrategicAler
   const currentMonth = today.getMonth(); // 0-indexed
   const currentDay = today.getDate();
 
+  // ---- FERIADO PROXIMO (48 horas de anticipacion) ----
+  const FERIADOS_2026 = [
+    { m: 0, d: 1, n: "Ano Nuevo" },
+    { m: 0, d: 9, n: "Dia de los Martires" },
+    { m: 1, d: 14, n: "Carnaval (Sabado)" },
+    { m: 1, d: 15, n: "Carnaval (Domingo)" },
+    { m: 1, d: 16, n: "Carnaval (Lunes)" },
+    { m: 1, d: 17, n: "Carnaval (Martes)" },
+    { m: 3, d: 2, n: "Jueves Santo" },
+    { m: 3, d: 3, n: "Viernes Santo" },
+    { m: 4, d: 1, n: "Dia del Trabajo" },
+    { m: 10, d: 3, n: "Separacion de Colombia" },
+    { m: 10, d: 4, n: "Dia de la Bandera" },
+    { m: 10, d: 5, n: "Consolidacion Separatista (Colon)" },
+    { m: 10, d: 10, n: "Grito de Independencia (Los Santos)" },
+    { m: 10, d: 28, n: "Independencia de Espana" },
+    { m: 11, d: 8, n: "Dia de las Madres" },
+    { m: 11, d: 25, n: "Navidad" },
+  ];
+  for (const fer of FERIADOS_2026) {
+    const ferDate = new Date(2026, fer.m, fer.d);
+    const diffMs = ferDate.getTime() - today.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    if (diffHours > 0 && diffHours <= 48) {
+      alerts.push({
+        id: `holiday-48h-${fer.m}-${fer.d}`,
+        priority: "orange",
+        category: "capital_humano",
+        title: `Feriado Proximo: ${fer.n}`,
+        message: `Manana es feriado nacional (${fer.n}). Si el equipo labora, se aplica recargo del 150% automaticamente (triple pago). Planifica turnos.`,
+        emoji: "🗓️",
+        promptHint: `Feriado manana: ${fer.n} — recargo 150% si se trabaja`,
+      });
+    }
+  }
+
   // ITBMS - Declaracion mensual (dia 15 del mes siguiente)
   const itbmsDueDay = 15;
   if (currentDay >= 10 && currentDay <= itbmsDueDay) {
@@ -420,6 +457,50 @@ export function computeComplianceAlerts(today: Date = new Date()): StrategicAler
       emoji: '📄',
       promptHint: 'Como renuevo mi aviso de operaciones?',
     });
+  }
+
+  return alerts;
+}
+
+// ============================================
+// PAYROLL/HR ALERTS (Capital Humano)
+// ============================================
+
+/** Genera alertas de ausentismo basadas en KPI de asistencia */
+export function computePayrollAlerts(
+  ausentismoPercent?: number,
+  empleadosConVacacionesPendientes?: { nombre: string; diasPendientes: number }[],
+): StrategicAlert[] {
+  const alerts: StrategicAlert[] = [];
+
+  // Ausentismo Critico (>5% = amarillo, >8% = rojo)
+  if (ausentismoPercent !== undefined && ausentismoPercent > 5) {
+    alerts.push({
+      id: "ausentismo-critico",
+      priority: ausentismoPercent > 8 ? "red" : "orange",
+      category: "capital_humano",
+      title: "Ausentismo Critico",
+      message: `El equipo supero el ${ausentismoPercent.toFixed(1)}% de faltas este mes. ${ausentismoPercent > 8 ? "CRITICO: Alto riesgo de incumplimiento con clientes y sobrecarga del personal restante." : "Alerta: Falta de personal puede afectar la generacion de ingresos."}`,
+      emoji: "👥",
+      promptHint: `Ausentismo critico: ${ausentismoPercent.toFixed(1)}% de faltas`,
+    });
+  }
+
+  // Vacaciones Acumuladas >30 dias
+  if (empleadosConVacacionesPendientes) {
+    for (const emp of empleadosConVacacionesPendientes) {
+      if (emp.diasPendientes > 30) {
+        alerts.push({
+          id: `vacaciones-acumuladas-${emp.nombre.toLowerCase().replace(/\s/g, "-")}`,
+          priority: emp.diasPendientes > 45 ? "red" : "orange",
+          category: "capital_humano",
+          title: "Vacaciones Acumuladas",
+          message: `${emp.nombre} tiene ${emp.diasPendientes} dias de vacaciones pendientes. Impacto en Pasivo Laboral. Planifica su salida antes de que se acumule mas.`,
+          emoji: "🏖️",
+          promptHint: `${emp.nombre} tiene >${emp.diasPendientes} dias de vacaciones pendientes`,
+        });
+      }
+    }
   }
 
   return alerts;

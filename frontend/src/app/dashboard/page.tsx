@@ -24,6 +24,8 @@ import {
   ArrowLeftRight,
   Target,
   FileBarChart,
+  Package,
+  ClipboardList,
 } from "lucide-react";
 import type { FinancialRecord } from "@/lib/calculations";
 import SabiaLogo from "@/components/SabiaLogo";
@@ -53,6 +55,8 @@ import LibroDiario from "@/components/accounting/LibroDiario";
 import LibroMayor from "@/components/accounting/LibroMayor";
 import BalanceComprobacion from "@/components/accounting/BalanceComprobacion";
 import PeriodClosingPanel from "@/components/accounting/PeriodClosingPanel";
+import LibroInventarios from "@/components/accounting/LibroInventarios";
+import LibroActas from "@/components/accounting/LibroActas";
 import PeriodSelector from "@/components/PeriodSelector";
 import TrendsChart from "@/components/charts/TrendsChart";
 import ForecastSection from "@/components/ForecastSection";
@@ -85,7 +89,7 @@ import {
 
 type Section = "datos" | "negocio" | "legal";
 type DatosMode = "flash" | "contabilidad";
-type ContabilidadTab = "plan_cuentas" | "libro_diario" | "libro_mayor" | "balance_comprobacion" | "cierre_periodo";
+type ContabilidadTab = "plan_cuentas" | "libro_diario" | "libro_mayor" | "balance_comprobacion" | "libro_inventarios" | "libro_actas" | "cierre_periodo";
 type NegocioTab =
   | "cascada"
   | "mandibulas"
@@ -384,6 +388,8 @@ export default function Dashboard() {
                     { key: "libro_diario" as ContabilidadTab, label: "Libro Diario", icon: <BookOpen size={14} /> },
                     { key: "libro_mayor" as ContabilidadTab, label: "Libro Mayor", icon: <BookMarked size={14} /> },
                     { key: "balance_comprobacion" as ContabilidadTab, label: "Balance Comprobacion", icon: <CheckSquare size={14} /> },
+                    { key: "libro_inventarios" as ContabilidadTab, label: "Inventarios y Balances", icon: <Package size={14} /> },
+                    { key: "libro_actas" as ContabilidadTab, label: "Libro de Actas", icon: <ClipboardList size={14} /> },
                     { key: "cierre_periodo" as ContabilidadTab, label: "Cierre y Reportes", icon: <Lock size={14} /> },
                   ]).map((tab) => (
                     <button
@@ -407,6 +413,8 @@ export default function Dashboard() {
                   {activeContabilidadTab === "libro_diario" && <LibroDiario societyId={societyId} />}
                   {activeContabilidadTab === "libro_mayor" && <LibroMayor societyId={societyId} />}
                   {activeContabilidadTab === "balance_comprobacion" && <BalanceComprobacion societyId={societyId} />}
+                  {activeContabilidadTab === "libro_inventarios" && <LibroInventarios societyId={societyId} />}
+                  {activeContabilidadTab === "libro_actas" && <LibroActas societyId={societyId} />}
                   {activeContabilidadTab === "cierre_periodo" && <PeriodClosingPanel societyId={societyId} />}
                 </div>
               </div>

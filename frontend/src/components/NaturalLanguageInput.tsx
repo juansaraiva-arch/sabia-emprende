@@ -20,6 +20,35 @@ const EXAMPLES = [
   "Si subo el precio un 10%, que pasa?",
 ];
 
+// Smart Prompt: Respuestas proactivas basadas en contexto
+function getProactiveMessages(topAlert: StrategicAlert | null): string[] {
+  if (!topAlert) return [];
+  const msgs: string[] = [];
+
+  // Deteccion de ausentismo
+  if (topAlert.id === "ausentismo-critico") {
+    msgs.push("Detecte faltas injustificadas. He recalculado el costo patronal (13.25%) ahorrandote el sobrecosto de los dias no laborados.");
+  }
+  // Vacaciones acumuladas
+  if (topAlert.id.startsWith("vacaciones-acumuladas")) {
+    msgs.push("Tu colaborador tiene vacaciones pendientes. Planifica su salida para reducir el Pasivo Laboral acumulado.");
+  }
+  // ITBMS provision
+  if (topAlert.id === "itbms_obligatorio" || topAlert.id === "itbms_vs_cash") {
+    msgs.push("Alerta: Asegurate de provisionar el 7% de ITBMS de cada venta. No uses ese dinero — es del fisco.");
+  }
+  // XIII Mes
+  if (topAlert.id === "xiii_mes_warning") {
+    msgs.push("Tienes acumulado de XIII Mes que podria afectar tu flujo de caja. Quieres ver como impacta?");
+  }
+  // Empresa saludable
+  if (topAlert.priority === "green") {
+    msgs.push("Tu empresa esta saludable y escalable. En que mas puedo ayudarte hoy?");
+  }
+
+  return msgs;
+}
+
 export default function NaturalLanguageInput({
   societyId,
   onResult,
@@ -150,6 +179,17 @@ export default function NaturalLanguageInput({
           <p className="text-xs font-bold text-emerald-700">
             {topAlert.message}
           </p>
+        </div>
+      )}
+
+      {/* Proactive Messages */}
+      {topAlert && getProactiveMessages(topAlert).length > 0 && (
+        <div className="mb-4 space-y-1">
+          {getProactiveMessages(topAlert).map((msg, i) => (
+            <p key={i} className="text-[11px] text-slate-500 italic px-1">
+              💡 {msg}
+            </p>
+          ))}
         </div>
       )}
 

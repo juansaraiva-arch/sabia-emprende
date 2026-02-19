@@ -289,6 +289,19 @@ export default function LibroDiario({ societyId }: LibroDiarioProps) {
                 className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none"
               />
             </div>
+            <div>
+              <label className="text-xs text-slate-600 font-medium">Comprobante (foto/PDF)</label>
+              <input
+                type="text"
+                value={newEntry.attachment_url}
+                onChange={(e) => setNewEntry({ ...newEntry, attachment_url: e.target.value })}
+                placeholder="URL del comprobante o factura adjunta"
+                className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">
+                Sube tu factura/recibo a la Boveda KYC y pega la URL aqui para vincular permanentemente.
+              </p>
+            </div>
           </div>
 
           {/* Lines table */}

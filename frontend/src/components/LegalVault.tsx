@@ -408,33 +408,48 @@ export default function LegalVault() {
 
         {showChecklist && (
           <div className="p-4 space-y-4">
-            {/* Registro Mercantil */}
+            {/* Carpeta 1: Registro Mercantil */}
             <ChecklistSection
-              title="Registro Mercantil"
+              title="Carpeta 1: Registro Mercantil"
               icon={<Building2 size={14} />}
               color="violet"
               items={CHECKLIST_CONSTITUCION.filter((i) => i.category === "registro")}
               checkedItems={checkedItems}
               onToggle={toggleCheckItem}
             />
-            {/* Fiscal */}
+            {/* Carpeta 2: Historial Impositivo */}
             <ChecklistSection
-              title="Obligaciones Fiscales"
+              title="Carpeta 2: Historial Impositivo"
               icon={<Receipt size={14} />}
               color="blue"
               items={CHECKLIST_CONSTITUCION.filter((i) => i.category === "fiscal")}
               checkedItems={checkedItems}
               onToggle={toggleCheckItem}
             />
-            {/* Laboral */}
+            {/* Carpeta 3: Archivo de Personal */}
             <ChecklistSection
-              title="Obligaciones Laborales"
+              title="Carpeta 3: Archivo de Personal"
               icon={<UserCheck size={14} />}
               color="emerald"
               items={CHECKLIST_CONSTITUCION.filter((i) => i.category === "laboral")}
               checkedItems={checkedItems}
               onToggle={toggleCheckItem}
             />
+
+            {/* Alerta: Cedulas Faltantes (cross-reference con nomina) */}
+            {!checkedItems["cedulas_empleados"] && (
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <AlertTriangle size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-xs font-bold text-amber-700">
+                    Expediente de Nomina incompleto
+                  </p>
+                  <p className="text-[10px] text-amber-600 mt-0.5">
+                    Faltan cedulas de empleados en el Archivo de Personal. Cada colaborador en la planilla debe tener su cedula archivada en la Boveda KYC para cumplimiento legal.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Resumen */}
             {completedRequired === totalRequired && (

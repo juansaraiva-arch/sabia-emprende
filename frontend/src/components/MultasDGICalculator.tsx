@@ -7,7 +7,7 @@ import SmartTooltip from "@/components/SmartTooltip";
 // MULTAS Y SANCIONES DGI PANAMA 2026
 // ============================================
 
-type MultaType = "isr_tardia" | "itbms_tardia" | "css_tardia" | "tasa_unica";
+type MultaType = "isr_tardia" | "itbms_tardia" | "css_tardia" | "no_presentacion" | "tasa_unica";
 
 interface MultaConfig {
   key: MultaType;
@@ -42,6 +42,14 @@ const MULTA_CONFIGS: MultaConfig[] = [
       "Recargo del 10% sobre cuotas adeudadas + 1% de interes mensual. Puede escalar a sanciones administrativas.",
     hasMonths: true,
     hasAmount: true,
+  },
+  {
+    key: "no_presentacion",
+    label: "No Presentacion de Informes",
+    description:
+      "Multa de $1,000 a $5,000 por no presentar informes de ventas o Planilla 03 (reporte anual de compensaciones).",
+    hasMonths: false,
+    hasAmount: false,
   },
   {
     key: "tasa_unica",
@@ -115,6 +123,21 @@ function calcularMulta(
       interes,
       total: recargo + interes,
       desglose,
+    };
+  }
+
+  if (tipo === "no_presentacion") {
+    return {
+      multaBase: 1000,
+      recargo: 0,
+      interes: 0,
+      total: 5000,
+      desglose: [
+        "Multa minima: $1,000",
+        "Multa maxima: $5,000",
+        "Aplica por no presentar informes de ventas o Planilla 03",
+        "El monto exacto depende de la gravedad y reincidencia",
+      ],
     };
   }
 

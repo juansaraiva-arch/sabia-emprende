@@ -70,8 +70,6 @@ import { playAlertSound, isSoundEnabled } from "@/lib/sounds";
 import { periodLabel, getPresetRange } from "@/lib/calculations";
 import type { PeriodKey, PeriodPreset } from "@/lib/calculations";
 import {
-  MOCK_RECORD,
-  MOCK_12_MONTHS,
   computeMockDiagnosis,
   computeMockBreakeven,
   computeMandibulasData,
@@ -118,12 +116,13 @@ export default function Dashboard() {
   const [activeNegocioTab, setActiveNegocioTab] = useState<NegocioTab>("cascada");
   const [activeLegalTab, setActiveLegalTab] = useState<LegalTab>("boveda");
 
-  const [currentRecord, setCurrentRecord] = useState<FinancialRecord>(MOCK_RECORD as FinancialRecord);
-  const [bulkRecords, setBulkRecords] = useState<FinancialRecord[]>(MOCK_12_MONTHS as FinancialRecord[]);
+  const [currentRecord, setCurrentRecord] = useState<FinancialRecord | null>(null);
+  const [bulkRecords, setBulkRecords] = useState<FinancialRecord[]>([]);
   const [hasBulkData, setHasBulkData] = useState(false);
 
-  const [diagnosis, setDiagnosis] = useState<any>(() => computeMockDiagnosis(MOCK_RECORD));
-  const [breakeven, setBreakeven] = useState<any>(() => computeMockBreakeven(MOCK_RECORD));
+  const [diagnosis, setDiagnosis] = useState<any>(null);
+  const [breakeven, setBreakeven] = useState<any>(null);
+  const hasData = currentRecord !== null;
 
   // Multi-periodo state (Fase 10)
   const [trendRange, setTrendRange] = useState<{ from: PeriodKey; to: PeriodKey }>({
@@ -192,6 +191,7 @@ export default function Dashboard() {
   const [alertsSidebarOpen, setAlertsSidebarOpen] = useState(false);
   const soundPlayedRef = React.useRef(false);
   const strategicAlerts = useMemo(() => {
+    if (!currentRecord) return computeComplianceAlerts();
     const financial = computeAlerts(currentRecord);
     const compliance = computeComplianceAlerts();
     // Merge y ordenar por prioridad
@@ -239,45 +239,45 @@ export default function Dashboard() {
   const isMordida = totalCosts > revenue && revenue > 0;
 
   const mandibulasData = useMemo(
-    () => computeMandibulasData(hasBulkData ? bulkRecords as any : MOCK_12_MONTHS),
-    [hasBulkData, bulkRecords]
+    () => bulkRecords.length > 0 ? computeMandibulasData(bulkRecords as any) : null,
+    [bulkRecords]
   );
 
   // Multi-periodo computed data (Fase 10)
   const trendsData = useMemo(() => {
-    const data = hasBulkData ? bulkRecords as any : MOCK_12_MONTHS;
+    if (bulkRecords.length === 0) return null;
     const fromIdx = trendRange.from.month - 1;
     const toIdx = trendRange.to.month;
-    const sliced = data.slice(fromIdx, toIdx);
-    return computeMockTrends(sliced, trendRange.from.year);
-  }, [hasBulkData, bulkRecords, trendRange]);
+    const sliced = bulkRecords.slice(fromIdx, toIdx);
+    return sliced.length > 0 ? computeMockTrends(sliced as any, trendRange.from.year) : null;
+  }, [bulkRecords, trendRange]);
 
   const forecastData = useMemo(() => {
-    const data = hasBulkData ? bulkRecords as any : MOCK_12_MONTHS;
-    return computeMockForecast(data, 6, 2026);
-  }, [hasBulkData, bulkRecords]);
+    if (bulkRecords.length === 0) return null;
+    return computeMockForecast(bulkRecords as any, 6, 2026);
+  }, [bulkRecords]);
 
   const comparisonData = useMemo(() => {
-    const data = hasBulkData ? bulkRecords as any : MOCK_12_MONTHS;
+    if (bulkRecords.length === 0) return null;
     const idxA = comparePeriodA.month - 1;
     const idxB = comparePeriodB.month - 1;
-    if (idxA >= 0 && idxA < data.length && idxB >= 0 && idxB < data.length) {
-      return computeMockComparison(data[idxA], data[idxB]);
+    if (idxA >= 0 && idxA < bulkRecords.length && idxB >= 0 && idxB < bulkRecords.length) {
+      return computeMockComparison(bulkRecords[idxA] as any, bulkRecords[idxB] as any);
     }
     return null;
-  }, [hasBulkData, bulkRecords, comparePeriodA, comparePeriodB]);
+  }, [bulkRecords, comparePeriodA, comparePeriodB]);
 
   const budgetVsActualData = useMemo(() => {
-    const data = hasBulkData ? bulkRecords as any : MOCK_12_MONTHS;
+    if (bulkRecords.length === 0) return null;
     const idx = budgetPeriod.month - 1;
     const budget = MOCK_BUDGET_TARGETS.find(
       (b) => b.period_year === budgetPeriod.year && b.period_month === budgetPeriod.month
     );
-    if (idx >= 0 && idx < data.length && budget) {
-      return computeMockBudgetVsActual(data[idx], budget);
+    if (idx >= 0 && idx < bulkRecords.length && budget) {
+      return computeMockBudgetVsActual(bulkRecords[idx] as any, budget);
     }
     return null;
-  }, [hasBulkData, bulkRecords, budgetPeriod]);
+  }, [bulkRecords, budgetPeriod]);
 
   const handlePreset = (preset: PeriodPreset) => {
     const range = getPresetRange(preset, 2026, 12);
@@ -458,6 +458,17 @@ export default function Dashboard() {
         {/* SECCION 2: MI DIRECTOR FINANCIERO PTY */}
         {activeSection === "negocio" && (
           <div className="space-y-4">
+            {!hasData && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-3">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-100 mx-auto">
+                  <BarChart3 size={24} className="text-emerald-600" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-700">Aun no hay datos financieros</h3>
+                <p className="text-sm text-slate-400 max-w-md mx-auto">
+                  Ve a <button onClick={() => setActiveSection("datos")} className="text-emerald-600 font-semibold underline">Mi Contabilidad</button> e ingresa los datos de tu negocio para generar tu diagnostico financiero completo.
+                </p>
+              </div>
+            )}
             {diagnosis && (
               <div className="bg-slate-800 text-white p-4 lg:p-6 rounded-2xl shadow-lg border-l-8 border-amber-400">
                 <h3 className="text-base lg:text-lg font-bold mb-1">Veredicto: {diagnosis.verdict}</h3>
@@ -520,44 +531,50 @@ export default function Dashboard() {
                         </div>
                       </div>
                       {/* Tarjeta B: Balance General */}
-                      <BalanceGeneralCard record={currentRecord} />
+                      {currentRecord && <BalanceGeneralCard record={currentRecord} />}
                     </div>
                   ) : (<EmptyState text="Carga datos en 'Mi Contabilidad' para ver la cascada." />)}
                 </div>
               )}
-              {activeNegocioTab === "mandibulas" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-6">Mandibulas: Ventas vs Costos</h2><MandibulasChart data={mandibulasData} /></div>)}
+              {activeNegocioTab === "mandibulas" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-6">Mandibulas: Ventas vs Costos</h2>{mandibulasData ? <MandibulasChart data={mandibulasData} /> : <EmptyState text="Ingresa datos de multiples meses en 'Mi Contabilidad' para ver el grafico de Mandibulas." />}</div>)}
               {activeNegocioTab === "semaforo" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-6">Semaforo Integral</h2>{diagnosis?.ratios ? <RatioGauges ratios={diagnosis.ratios} /> : <EmptyState text="Carga datos para ver el semaforo." />}</div>)}
               {activeNegocioTab === "equilibrio" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-6">Mapa de Supervivencia</h2>{breakeven ? <BreakevenChart breakevenMonthly={breakeven.breakeven_monthly} currentSales={breakeven.current_sales} marginOfSafety={breakeven.margin_of_safety} zone={breakeven.zone} contributionMarginPct={breakeven.contribution_margin_pct} targetSales={breakeven.target_sales} /> : <EmptyState text="Carga datos para ver el punto de equilibrio." />}</div>)}
-              {activeNegocioTab === "oxigeno" && <OxigenoTab record={currentRecord} />}
-              {activeNegocioTab === "simulador" && <SimuladorEstrategico record={currentRecord} />}
+              {activeNegocioTab === "oxigeno" && (hasData ? <OxigenoTab record={currentRecord!} /> : <EmptyState text="Ingresa datos en 'Mi Contabilidad' para ver el analisis de Oxigeno." />)}
+              {activeNegocioTab === "simulador" && (hasData ? <SimuladorEstrategico record={currentRecord!} /> : <EmptyState text="Ingresa datos en 'Mi Contabilidad' para usar el Simulador." />)}
               {activeNegocioTab === "lab" && <LabPrecios />}
-              {activeNegocioTab === "valoracion" && <ValoracionTab record={currentRecord} />}
+              {activeNegocioTab === "valoracion" && (hasData ? <ValoracionTab record={currentRecord!} /> : <EmptyState text="Ingresa datos en 'Mi Contabilidad' para ver la Valoracion de tu Negocio." />)}
               {activeNegocioTab === "nomina" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Costo Real de Personal — Panama 2026</h2><PayrollEngine societyId={societyId} /></div>)}
 
               {/* Tab Tendencias (Fase 10) */}
               {activeNegocioTab === "tendencias" && (
                 <div className="space-y-4">
                   <h2 className="text-lg lg:text-xl font-bold text-slate-800">Tendencias Multi-Periodo</h2>
-                  <PeriodSelector
-                    mode="range"
-                    from={trendRange.from}
-                    to={trendRange.to}
-                    onChangeFrom={(p) => setTrendRange((prev) => ({ ...prev, from: p }))}
-                    onChangeTo={(p) => setTrendRange((prev) => ({ ...prev, to: p }))}
-                    onPreset={handlePreset}
-                  />
-                  <TrendsChart
-                    points={trendsData.points}
-                    growthRates={trendsData.growth_rates}
-                    movingAverages={trendsData.moving_averages}
-                  />
-                  <div className="border-t border-slate-200 pt-4 mt-4">
-                    <ForecastSection
-                      historical={forecastData.historical}
-                      projected={forecastData.projected}
-                      method={forecastData.method}
-                    />
-                  </div>
+                  {trendsData && forecastData ? (
+                    <>
+                      <PeriodSelector
+                        mode="range"
+                        from={trendRange.from}
+                        to={trendRange.to}
+                        onChangeFrom={(p) => setTrendRange((prev) => ({ ...prev, from: p }))}
+                        onChangeTo={(p) => setTrendRange((prev) => ({ ...prev, to: p }))}
+                        onPreset={handlePreset}
+                      />
+                      <TrendsChart
+                        points={trendsData.points}
+                        growthRates={trendsData.growth_rates}
+                        movingAverages={trendsData.moving_averages}
+                      />
+                      <div className="border-t border-slate-200 pt-4 mt-4">
+                        <ForecastSection
+                          historical={forecastData.historical}
+                          projected={forecastData.projected}
+                          method={forecastData.method}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <EmptyState text="Ingresa datos de multiples meses en 'Mi Contabilidad' para ver tendencias y proyecciones." />
+                  )}
                 </div>
               )}
 

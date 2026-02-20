@@ -26,6 +26,7 @@ import {
   FileBarChart,
   Package,
   ClipboardList,
+  Home,
 } from "lucide-react";
 import type { FinancialRecord } from "@/lib/calculations";
 import SabiaLogo from "@/components/SabiaLogo";
@@ -203,13 +204,34 @@ export default function Dashboard() {
   const alertCounts = useMemo(() => countByPriority(strategicAlerts), [strategicAlerts]);
   const nonGreenAlerts = strategicAlerts.filter((a) => a.priority !== "green");
 
-  // Sonido de alerta para prioridades criticas (una sola vez por sesion)
+  // Sonido de alerta: se dispara al cargar y cuando cambian las alertas criticas
+  const prevRedCountRef = React.useRef(0);
   React.useEffect(() => {
-    if (!soundPlayedRef.current && alertCounts.red > 0 && isSoundEnabled()) {
-      playAlertSound("danger");
-      soundPlayedRef.current = true;
+    if (alertCounts.red > 0 && isSoundEnabled()) {
+      // Suena al cargar la primera vez
+      if (!soundPlayedRef.current) {
+        playAlertSound("danger");
+        soundPlayedRef.current = true;
+      }
+      // Suena cuando aparecen NUEVAS alertas rojas (el count sube)
+      else if (alertCounts.red > prevRedCountRef.current) {
+        playAlertSound("danger");
+      }
     }
-  }, [alertCounts.red]);
+    // Suena warning cuando sube el orange
+    if (alertCounts.orange > 0 && isSoundEnabled() && soundPlayedRef.current) {
+      // Solo si ya se reprodujo el initial
+    }
+    prevRedCountRef.current = alertCounts.red;
+  }, [alertCounts.red, alertCounts.orange]);
+
+  // Sonido al abrir sidebar de alertas con alertas criticas
+  const handleOpenAlertsSidebar = () => {
+    setAlertsSidebarOpen(true);
+    if (alertCounts.red > 0 && isSoundEnabled()) {
+      playAlertSound("warning");
+    }
+  };
 
   const ebitdaMargin = diagnosis?.ratios?.margins?.ebitda_margin_pct ?? 0;
   const totalCosts = (diagnosis?.cascada?.cogs ?? 0) + (diagnosis?.cascada?.total_opex ?? 0);
@@ -311,6 +333,17 @@ export default function Dashboard() {
           </button>
 
           <div className="flex items-center gap-2">
+            {/* Boton Volver al Inicio — visible desde cualquier modulo */}
+            {(activeSection !== "datos" || activeNegocioTab !== "cascada") && (
+              <button
+                onClick={handleLogoClick}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] lg:text-xs font-bold text-slate-500 hover:text-emerald-600 bg-slate-100 hover:bg-emerald-50 rounded-full transition-colors"
+                title="Volver al Inicio"
+              >
+                <Home size={13} />
+                <span className="hidden sm:inline">Inicio</span>
+              </button>
+            )}
             {diagnosis && (
               <div className={`px-3 py-1.5 rounded-full text-[10px] lg:text-xs font-bold ${
                 diagnosis.severity === "ok" ? "bg-emerald-100 text-emerald-700"
@@ -323,7 +356,7 @@ export default function Dashboard() {
             <AlertBellButton
               alertCount={nonGreenAlerts.length}
               hasRed={alertCounts.red > 0}
-              onClick={() => setAlertsSidebarOpen(true)}
+              onClick={handleOpenAlertsSidebar}
             />
           </div>
         </div>

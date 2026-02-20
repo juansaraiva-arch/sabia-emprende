@@ -90,9 +90,10 @@ function calcularCargaLocal(
     const seP = salario * 0.015;
     const rpP = salario * 0.015;
     const decimo = salario / 12;
-    const vac = (salario / 30) * 2.5 / 12;
+    const vac = salario * 0.0909;          // 9.09% — 30 dias por cada 11 meses laborados
+    const cesantia = salario * 0.0225;     // 2.25% — Fondo de Cesantia (Prima + Indemnizacion)
     const prima = years > 0 ? (salario / 4) / 12 : 0;
-    const carga = ssP + seP + rpP + decimo + vac + prima;
+    const carga = ssP + seP + rpP + decimo + vac + cesantia + prima;
 
     const ssE = salario * 0.0975;
     const seE = salario * 0.0125;
@@ -108,8 +109,9 @@ function calcularCargaLocal(
         "CSS Patronal (13.25%)": r2(ssP),
         "Seguro Educativo Patr. (1.50%)": r2(seP),
         "Riesgos Prof. (1.50%)": r2(rpP),
+        "Fondo Cesantia (2.25%)": r2(cesantia),
         "Prov. XIII Mes (8.33%)": r2(decimo),
-        "Prov. Vacaciones": r2(vac),
+        "Prov. Vacaciones (9.09%)": r2(vac),
         "Prov. Prima Antiguedad": r2(prima),
         "CSS Empleado (9.75%)": r2(ssE),
         "SE Empleado (1.25%)": r2(seE),
@@ -151,6 +153,7 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
     employeeName: string;
   } | null>(null);
   const [xiiiMes, setXiiiMes] = useState<any>(null);
+  const [attendanceCounts, setAttendanceCounts] = useState<Record<string, number>>({});
 
   // Load employees from API
   const loadEmployees = useCallback(async () => {
@@ -192,16 +195,51 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
     loadXIIIMes();
   }, [loadXIIIMes]);
 
+  // Load attendance counts (unjustified absences for current month)
+  const loadAttendanceCounts = useCallback(async () => {
+    if (!societyId || employees.length === 0) return;
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const counts: Record<string, number> = {};
+    for (const emp of employees) {
+      try {
+        const res = await payrollApi.getAttendance(emp.id, month, year);
+        const records = res?.data || res || [];
+        const unjustified = Array.isArray(records)
+          ? records.filter((r: any) => r.record_type === "unjustified_absence").length
+          : 0;
+        if (unjustified > 0) counts[emp.id] = unjustified;
+      } catch {
+        // Ignore — no attendance data
+      }
+    }
+    setAttendanceCounts(counts);
+  }, [societyId, employees]);
+
+  useEffect(() => {
+    loadAttendanceCounts();
+  }, [loadAttendanceCounts]);
+
+  /** Salario ajustado por faltas injustificadas: (Base/30) * (30 - Faltas) */
+  function salarioAjustado(empId: string, salarioBase: number): number {
+    const faltas = attendanceCounts[empId] || 0;
+    if (faltas > 0) return r2((salarioBase / 30) * (30 - faltas));
+    return salarioBase;
+  }
+
   // Computed totals
   const totals = useMemo(() => {
     const active = employees.filter((e) => e.is_active);
     const totalGross = active.reduce((s, e) => s + (e.gross_salary || 0), 0);
     const totalEmployerCost = active.reduce((s, e) => {
-      const calc = e.employer_cost || calcularCargaLocal(e.gross_salary, e.contract_type, e.years_worked).employerCost;
+      const adj = salarioAjustado(e.id, e.gross_salary);
+      const calc = calcularCargaLocal(adj, e.contract_type, e.years_worked).employerCost;
       return s + calc;
     }, 0);
     const totalNet = active.reduce((s, e) => {
-      const calc = e.employee_net || calcularCargaLocal(e.gross_salary, e.contract_type, e.years_worked).employeeNet;
+      const adj = salarioAjustado(e.id, e.gross_salary);
+      const calc = calcularCargaLocal(adj, e.contract_type, e.years_worked).employeeNet;
       return s + calc;
     }, 0);
 
@@ -221,15 +259,17 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
       freelanceCount,
       costoAnual: r2(totalEmployerCost * 12),
     };
-  }, [employees]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employees, attendanceCounts]);
 
   // Chart data
   const chartData = useMemo(() => {
     return employees
       .filter((e) => e.is_active)
       .map((e) => {
+        const adj = salarioAjustado(e.id, e.gross_salary);
         const calc = calcularCargaLocal(
-          e.gross_salary,
+          adj,
           e.contract_type,
           e.years_worked
         );
@@ -238,35 +278,38 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
             (e.employee_name || "").length > 12
               ? e.employee_name.substring(0, 12) + "..."
               : e.employee_name || "Sin nombre",
-          "Costo Empresa": e.employer_cost || calc.employerCost,
-          "Neto Empleado": e.employee_net || calc.employeeNet,
-          Bruto: e.gross_salary,
+          "Costo Empresa": calc.employerCost,
+          "Neto Empleado": calc.employeeNet,
+          Bruto: adj,
         };
       });
-  }, [employees]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employees, attendanceCounts]);
 
   // Selected detail
   const selectedDetail = useMemo(() => {
     if (!selectedId) return null;
     const emp = employees.find((e) => e.id === selectedId);
     if (!emp) return null;
+    const adj = salarioAjustado(emp.id, emp.gross_salary);
+    const faltas = attendanceCounts[emp.id] || 0;
     const calc = calcularCargaLocal(
-      emp.gross_salary,
+      adj,
       emp.contract_type,
       emp.years_worked
     );
     return {
       ...emp,
-      employer_cost: emp.employer_cost || calc.employerCost,
-      employee_net: emp.employee_net || calc.employeeNet,
-      total_deductions: emp.total_deductions || calc.totalDeductions,
-      carga_patronal_pct: emp.carga_patronal_pct || calc.cargaPatronalPct,
-      breakdown:
-        emp.breakdown && Object.keys(emp.breakdown).length > 0
-          ? emp.breakdown
-          : calc.breakdown,
+      salario_ajustado: adj,
+      faltas_injustificadas: faltas,
+      employer_cost: calc.employerCost,
+      employee_net: calc.employeeNet,
+      total_deductions: calc.totalDeductions,
+      carga_patronal_pct: calc.cargaPatronalPct,
+      breakdown: calc.breakdown,
     };
-  }, [selectedId, employees]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, employees, attendanceCounts]);
 
   // ---- HANDLERS ----
 
@@ -381,8 +424,8 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
             Ley 462 de 2025 — CSS Patronal actualizada al 13.25%
           </p>
           <p className="text-[10px] text-amber-600 mt-0.5">
-            Incluye: XIII Mes, Vacaciones, Prima de Antiguedad, ISR progresivo
-            (3 tramos DGI). Datos guardados en la nube.
+            Incluye: XIII Mes, Vacaciones (9.09%), Fondo Cesantia (2.25%), Prima de
+            Antiguedad, ISR progresivo (3 tramos DGI). Descuento automatico por faltas.
           </p>
         </div>
       </div>
@@ -489,14 +532,16 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
 
           <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
             {employees.map((emp) => {
+              const adj = salarioAjustado(emp.id, emp.gross_salary);
+              const faltasCount = attendanceCounts[emp.id] || 0;
               const calc = calcularCargaLocal(
-                emp.gross_salary,
+                adj,
                 emp.contract_type,
                 emp.years_worked
               );
-              const ec = emp.employer_cost || calc.employerCost;
-              const en = emp.employee_net || calc.employeeNet;
-              const cp = emp.carga_patronal_pct || calc.cargaPatronalPct;
+              const ec = calc.employerCost;
+              const en = calc.employeeNet;
+              const cp = calc.cargaPatronalPct;
               const isSelected = selectedId === emp.id;
               const isPlanilla =
                 emp.contract_type === "planilla" ||
@@ -646,6 +691,60 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
                         </div>
                       </>
                     )}
+
+                    {/* Fecha ingreso / salida */}
+                    {isPlanilla && (
+                      <div className="flex items-center gap-2 mt-1.5 w-full flex-wrap">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-slate-400">Ingreso:</span>
+                          <input
+                            type="date"
+                            value={emp.entry_date || ""}
+                            onChange={(e) =>
+                              updateEmployee(emp.id, "entry_date", e.target.value)
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[10px] px-1 py-0.5 bg-transparent outline-none border border-slate-200 rounded text-slate-600 focus:border-blue-400"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-slate-400">Salida:</span>
+                          <input
+                            type="date"
+                            value={emp.exit_date || ""}
+                            onChange={(e) =>
+                              updateEmployee(emp.id, "exit_date", e.target.value)
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[10px] px-1 py-0.5 bg-transparent outline-none border border-slate-200 rounded text-slate-600 focus:border-blue-400"
+                          />
+                        </div>
+                        {emp.exit_date && (
+                          <select
+                            value={emp.exit_reason || ""}
+                            onChange={(e) =>
+                              updateEmployee(emp.id, "exit_reason", e.target.value)
+                            }
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[10px] px-1 py-0.5 border border-slate-200 rounded bg-white text-slate-600 outline-none focus:border-blue-400"
+                          >
+                            <option value="">Motivo...</option>
+                            <option value="renuncia">Renuncia</option>
+                            <option value="despido">Despido</option>
+                            <option value="mutuo_acuerdo">Mutuo Acuerdo</option>
+                          </select>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Faltas injustificadas badge */}
+                    {faltasCount > 0 && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="text-[9px] px-1.5 py-0.5 bg-red-100 text-red-700 rounded font-bold">
+                          {faltasCount} falta{faltasCount > 1 ? "s" : ""} injustificada{faltasCount > 1 ? "s" : ""} — Salario ajustado: ${adj.toLocaleString("es-PA")}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Vacation info for planilla */}
@@ -776,6 +875,17 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
           {/* Detalle del empleado seleccionado */}
           {selectedDetail && (
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+              {/* Alerta de faltas injustificadas */}
+              {(selectedDetail as any).faltas_injustificadas > 0 && (
+                <div className="mb-3 p-2 rounded-lg bg-red-50 border border-red-200">
+                  <p className="text-[11px] text-red-700 font-bold">
+                    ⚠️ {(selectedDetail as any).faltas_injustificadas} falta{(selectedDetail as any).faltas_injustificadas > 1 ? "s" : ""} injustificada{(selectedDetail as any).faltas_injustificadas > 1 ? "s" : ""} este mes
+                  </p>
+                  <p className="text-[10px] text-red-600">
+                    Salario ajustado: ${(selectedDetail as any).salario_ajustado?.toLocaleString("es-PA")} (de ${selectedDetail.gross_salary.toLocaleString("es-PA")})
+                  </p>
+                </div>
+              )}
               <h4 className="text-sm font-bold text-slate-700 mb-3">
                 Desglose: {selectedDetail.employee_name || "Sin nombre"}
                 <span className="text-[10px] text-slate-500 ml-2 font-normal">
@@ -937,10 +1047,11 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
       <p className="text-[10px] text-slate-400 italic border-t border-slate-100 pt-3">
         Basado en legislacion laboral de Panama 2026.{" "}
         <strong>Ley 462 de 2025</strong>: CSS Patronal 13.25%, SE 1.50%,
-        Riesgos Prof. 1.50%, XIII Mes, Vacaciones (30 dias/ano), Prima de
-        Antiguedad (1 semana/ano). ISR segun tabla DGI mensual 2026 (3
-        tramos progresivos). Esto es una estimacion educativa, no constituye
-        asesoria legal ni contable.
+        Riesgos Prof. 1.50%, Fondo Cesantia 2.25%, XIII Mes (8.33%),
+        Vacaciones (9.09%), Prima de Antiguedad (1 semana/ano). Descuento
+        automatico por faltas injustificadas: (Salario/30) x (30 - Faltas).
+        ISR segun tabla DGI mensual 2026 (3 tramos progresivos). Esto es
+        una estimacion educativa, no constituye asesoria legal ni contable.
       </p>
 
       {/* ====== ATTENDANCE MODAL ====== */}

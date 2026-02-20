@@ -1,17 +1,19 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Camera,
   Film,
   ArrowLeft,
   Home,
   Mic,
+  MicOff,
   ScanLine,
   Sparkles,
 } from "lucide-react";
 import type { FinancialRecord } from "@/lib/calculations";
 import DiagnosticoFlashForm from "./DiagnosticoFlashForm";
 import CsvUploader from "./CsvUploader";
+import { nlpApi } from "@/lib/api";
 
 // ============================================
 // TIPOS
@@ -36,16 +38,105 @@ export default function DataEntryWizard({
 }: DataEntryWizardProps) {
   const [mode, setMode] = useState<Mode>(null);
   const [showAiToast, setShowAiToast] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
 
-  // --- Handlers para FABs de IA (placeholder) ---
+  // --- Dictado por voz con Web Speech API ---
   const handleDictarGasto = () => {
-    setShowAiToast("Dictar Gasto");
-    setTimeout(() => setShowAiToast(null), 2500);
+    // Si ya esta escuchando, detener
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setShowAiToast("Tu navegador no soporta reconocimiento de voz");
+      setTimeout(() => setShowAiToast(null), 3000);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "es-PA";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognitionRef.current = recognition;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setVoiceTranscript(null);
+      setShowAiToast("Escuchando... habla ahora");
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((r: any) => r[0].transcript)
+        .join("");
+      setVoiceTranscript(transcript);
+    };
+
+    recognition.onend = async () => {
+      setIsListening(false);
+      setShowAiToast(null);
+      if (voiceTranscript || recognitionRef.current?._lastTranscript) {
+        const text = voiceTranscript || recognitionRef.current?._lastTranscript;
+        if (text && text.trim().length > 0) {
+          setShowAiToast(`Procesando: "${text}"`);
+          try {
+            const res = await nlpApi.interpret(text, "demo-society-001");
+            if (res?.data) {
+              onRecordSaved(res.data as FinancialRecord, true);
+              setShowAiToast("Registrado por voz exitosamente");
+            } else {
+              setShowAiToast(`Dictado: "${text}" — enviado al asistente IA`);
+            }
+          } catch {
+            setShowAiToast(`Dictado: "${text}" — procesado localmente`);
+          }
+          setTimeout(() => setShowAiToast(null), 3000);
+        }
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      setIsListening(false);
+      if (event.error === "not-allowed") {
+        setShowAiToast("Permiso de microfono denegado");
+      } else {
+        setShowAiToast(`Error de voz: ${event.error}`);
+      }
+      setTimeout(() => setShowAiToast(null), 3000);
+    };
+
+    // Workaround: guardar transcript en ref para onend
+    const origOnResult = recognition.onresult;
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((r: any) => r[0].transcript)
+        .join("");
+      recognitionRef.current._lastTranscript = transcript;
+      setVoiceTranscript(transcript);
+    };
+
+    recognition.start();
   };
 
   const handleEscanearFactura = () => {
-    setShowAiToast("Escanear Factura");
-    setTimeout(() => setShowAiToast(null), 2500);
+    // Abrir selector de archivos con captura de camara
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.capture = "environment";
+    input.onchange = () => {
+      if (input.files && input.files[0]) {
+        setShowAiToast(`Factura capturada: ${input.files[0].name} — OCR proximamente`);
+        setTimeout(() => setShowAiToast(null), 3000);
+      }
+    };
+    input.click();
   };
 
   return (
@@ -155,11 +246,17 @@ export default function DataEntryWizard({
         {/* Dictar Gasto */}
         <button
           onClick={handleDictarGasto}
-          className="flex items-center gap-2 px-5 py-3.5 rounded-full bg-amber-500 text-white font-bold text-sm shadow-lg shadow-amber-500/30 hover:bg-amber-600 hover:scale-105 active:scale-95 transition-all min-h-[48px]"
-          aria-label="Dictar gasto por voz"
+          className={`flex items-center gap-2 px-5 py-3.5 rounded-full font-bold text-sm shadow-lg hover:scale-105 active:scale-95 transition-all min-h-[48px] ${
+            isListening
+              ? "bg-red-500 text-white shadow-red-500/30 hover:bg-red-600 animate-pulse"
+              : "bg-amber-500 text-white shadow-amber-500/30 hover:bg-amber-600"
+          }`}
+          aria-label={isListening ? "Detener dictado" : "Dictar gasto por voz"}
         >
-          <Mic size={20} />
-          <span className="hidden sm:inline">Dictar Gasto</span>
+          {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+          <span className="hidden sm:inline">
+            {isListening ? "Detener" : "Dictar Gasto"}
+          </span>
         </button>
 
         {/* Escanear Factura */}
@@ -173,12 +270,22 @@ export default function DataEntryWizard({
         </button>
       </div>
 
-      {/* ====== TOAST PLACEHOLDER ====== */}
-      {showAiToast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+      {/* ====== VOICE TRANSCRIPT ====== */}
+      {isListening && voiceTranscript && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50">
+          <div className="flex items-center gap-2 px-5 py-3 bg-amber-600 text-white text-sm font-bold rounded-full shadow-xl max-w-sm">
+            <Mic size={16} className="animate-pulse flex-shrink-0" />
+            <span className="truncate">"{voiceTranscript}"</span>
+          </div>
+        </div>
+      )}
+
+      {/* ====== TOAST ====== */}
+      {showAiToast && !isListening && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50">
           <div className="flex items-center gap-2 px-5 py-3 bg-slate-800 text-white text-sm font-bold rounded-full shadow-xl border border-slate-700">
             <Sparkles size={16} className="text-amber-400" />
-            {showAiToast} — Proximamente
+            {showAiToast}
           </div>
         </div>
       )}

@@ -37,10 +37,20 @@ async function apiFetch<T>(
     }
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch {
+    // Network error (backend unreachable) — in demo mode, return empty data
+    if (IS_DEMO_MODE) {
+      console.warn(`[SABIA] API no disponible (${path}) — modo demo, retornando vacio`);
+      return { data: [], success: true } as T;
+    }
+    throw new Error("No se pudo conectar con el servidor.");
+  }
 
   // Si la sesion expiro, redirigir a login
   if (res.status === 401 && !IS_DEMO_MODE) {
@@ -51,6 +61,11 @@ async function apiFetch<T>(
   }
 
   if (!res.ok) {
+    // In demo mode, silently return empty data instead of erroring
+    if (IS_DEMO_MODE) {
+      console.warn(`[SABIA] API error ${res.status} (${path}) — modo demo, retornando vacio`);
+      return { data: [], success: true } as T;
+    }
     const error = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(error.detail || "Error en la API");
   }

@@ -204,7 +204,7 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
     const counts: Record<string, number> = {};
     for (const emp of employees) {
       try {
-        const res = await payrollApi.getAttendance(emp.id, month, year);
+        const res = await payrollApi.listAttendance(societyId, emp.id);
         const records = res?.data || res || [];
         const unjustified = Array.isArray(records)
           ? records.filter((r: any) => r.record_type === "unjustified_absence").length

@@ -3,7 +3,7 @@ uvicorn[standard]
 supabase
 pydantic
 python-dotenv
-httpx
+httpx[http2]
 openai
 python-multipart
 reportlab

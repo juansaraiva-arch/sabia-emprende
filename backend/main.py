@@ -1,5 +1,5 @@
 """
-SABIA EMPRENDE - FastAPI Backend
+Mi Director Financiero PTY - FastAPI Backend
 Motor financiero + Capa de Lenguaje Natural + Session Logging
 """
 from fastapi import FastAPI, Depends, HTTPException, Request
@@ -13,13 +13,13 @@ from app.routers import financial, societies, nlp, audit, ai_agents, payroll, ac
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("SABIA EMPRENDE API iniciando...")
+    print("Mi Director Financiero PTY API iniciando...")
     yield
-    print("SABIA EMPRENDE API cerrando...")
+    print("Mi Director Financiero PTY API cerrando...")
 
 
 app = FastAPI(
-    title="SABIA EMPRENDE API",
+    title="Mi Director Financiero PTY API",
     description="Motor financiero y legal para emprendedores en Panamá",
     version="0.1.0",
     lifespan=lifespan,
@@ -47,4 +47,4 @@ app.include_router(budget.router, prefix="/api/budget", tags=["Presupuesto"])
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "app": "SABIA EMPRENDE", "version": "0.1.0"}
+    return {"status": "ok", "app": "Mi Director Financiero PTY", "version": "0.1.0"}

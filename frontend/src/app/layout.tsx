@@ -17,7 +17,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "SABIA EMPRENDE | Tu Aliado Estratégico",
+  title: "Mi Director Financiero PTY | Tu Aliado Estratégico",
   description:
     "Plataforma de Alta Dirección financiera y legal para emprendedores panameños. Tu Aliado Estratégico.",
 };

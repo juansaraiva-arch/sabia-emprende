@@ -1,5 +1,5 @@
 """
-Fixtures compartidos para tests de SABIA EMPRENDE.
+Fixtures compartidos para tests de Mi Director Financiero PTY.
 """
 import pytest
 

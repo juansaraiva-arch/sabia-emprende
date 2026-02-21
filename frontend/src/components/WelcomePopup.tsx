@@ -27,9 +27,9 @@ export default function WelcomePopup({ onDismiss, onStart }: WelcomePopupProps) 
             <SabiaLogo size={80} iconOnly />
           </div>
           <h2 className="text-2xl font-extrabold text-white font-heading mb-1">
-            SABIA EMPRENDE
+            Mi Director Financiero PTY
           </h2>
-          <p className="text-sm text-amber-400 font-medium">Tu Aliado Estrategico</p>
+          <p className="text-sm text-amber-400 font-medium">Tu Aliado Estratégico</p>
         </div>
 
         {/* Body */}

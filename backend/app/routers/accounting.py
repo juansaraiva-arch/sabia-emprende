@@ -464,7 +464,7 @@ async def close_period(body: PeriodCloseRequest, user: AuthenticatedUser = Depen
 async def reopen_period(body: PeriodCloseRequest, user: AuthenticatedUser = Depends(get_current_user), x_admin_code: str = Header(default="")):
     """Reabrir un periodo cerrado (requiere codigo de admin)."""
     # Fase 7: Validacion de codigo admin para reabrir
-    if x_admin_code != "SABIA-REOPEN-2026":
+    if x_admin_code != "MIDF-REOPEN-2026":
         raise HTTPException(
             status_code=403,
             detail="Se requiere el codigo de administrador para reabrir un periodo cerrado."

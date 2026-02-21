@@ -1,6 +1,6 @@
 """
 Middleware: Rate limiting y configuracion CORS.
-SABIA EMPRENDE
+Mi Director Financiero PTY
 """
 import os
 import time

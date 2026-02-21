@@ -1,5 +1,5 @@
 """
-Utilidad de envio de email — SABIA EMPRENDE
+Utilidad de envio de email — Mi Director Financiero PTY
 Configurable via variables de entorno. Degrada gracefully si no hay SMTP configurado.
 Usa stdlib smtplib + email (sin dependencias externas).
 
@@ -9,7 +9,7 @@ Variables de entorno:
     SMTP_USER: Usuario/email para autenticacion
     SMTP_PASSWORD: Contrasena o app password
     SMTP_FROM_EMAIL: Email remitente (default = SMTP_USER)
-    SMTP_FROM_NAME: Nombre del remitente (default = SABIA EMPRENDE)
+    SMTP_FROM_NAME: Nombre del remitente (default = Mi Director Financiero PTY)
 """
 import os
 import smtplib
@@ -58,7 +58,7 @@ def send_report_email(
     smtp_user = os.getenv("SMTP_USER", "")
     smtp_password = os.getenv("SMTP_PASSWORD", "")
     from_email = os.getenv("SMTP_FROM_EMAIL", smtp_user)
-    from_name = os.getenv("SMTP_FROM_NAME", "SABIA EMPRENDE")
+    from_name = os.getenv("SMTP_FROM_NAME", "Mi Director Financiero PTY")
 
     try:
         # Construir mensaje

@@ -6,7 +6,7 @@ color 0A
 echo.
 echo  ============================================
 echo       SABIA EMPRENDE - Demo Interactiva
-echo       Tu Aliado Estrategico para Panama
+echo       Tu Aliado Estratégico para Panama
 echo  ============================================
 echo.
 

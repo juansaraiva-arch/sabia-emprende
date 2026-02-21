@@ -572,10 +572,10 @@ async def email_report(
     # Enviar email
     body_html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px;">
-        <h2 style="color: #1B2838;">SABIA EMPRENDE</h2>
+        <h2 style="color: #1B2838;">Mi Director Financiero PTY</h2>
         <p>Adjunto encontrara el reporte <strong>{report_type.replace('_', ' ').title()}</strong>
         de <strong>{society_name}</strong> correspondiente a <strong>{period_label}</strong>.</p>
-        <p style="color: #666; font-size: 12px;">Este reporte fue generado automaticamente por SABIA EMPRENDE.</p>
+        <p style="color: #666; font-size: 12px;">Este reporte fue generado automaticamente por Mi Director Financiero PTY.</p>
     </div>
     """
 

@@ -434,7 +434,7 @@ verdict, detail, severity = get_verdict(cascada, ox, ratios)
 col_h1, col_h2 = st.columns([3, 1])
 with col_h1:
     st.markdown("# 🌿 SABIA EMPRENDE")
-    st.markdown("*Tu Aliado Estrategico para Panama*")
+    st.markdown("*Tu Aliado Estratégico para Panama*")
 with col_h2:
     badge_class = f"badge-{severity}"
     st.markdown(f"""
@@ -733,7 +733,7 @@ with tab3:
 st.markdown("---")
 st.markdown(
     "<p style='text-align:center; color:#94a3b8; font-size:12px;'>"
-    "SABIA EMPRENDE v1.0 — Tu Aliado Estrategico para Panama 🇵🇦 | "
+    "SABIA EMPRENDE v1.0 — Tu Aliado Estratégico para Panama 🇵🇦 | "
     "Demo Streamlit</p>",
     unsafe_allow_html=True,
 )

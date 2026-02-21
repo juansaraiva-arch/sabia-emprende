@@ -1,5 +1,5 @@
 """
-Modulo de Autenticacion — SABIA EMPRENDE
+Modulo de Autenticacion — Mi Director Financiero PTY
 Valida JWT de Supabase y extrae identidad del usuario.
 Soporta DEMO_MODE para desarrollo local sin Supabase Auth.
 """

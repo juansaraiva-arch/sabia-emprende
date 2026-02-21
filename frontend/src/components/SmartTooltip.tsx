@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { HelpCircle } from "lucide-react";
 
 // ============================================
-// GLOSARIO INTELIGENTE — SABIA EMPRENDE
+// GLOSARIO INTELIGENTE — MI DIRECTOR FINANCIERO PTY
 // Diccionario de terminos financieros para
 // emprendedores panamenos
 // ============================================
@@ -337,7 +337,7 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
   },
   gap_fiscal: {
     titulo: "Gap Fiscal (Brecha)",
-    explicacion: "Diferencia entre lo declarado en tu contabilidad y lo que el fisco espera. Genera riesgo de auditoria, multas e intereses. SABIA EMPRENDE te ayuda a cerrarlo.",
+    explicacion: "Diferencia entre lo declarado en tu contabilidad y lo que el fisco espera. Genera riesgo de auditoria, multas e intereses. Mi Director Financiero PTY te ayuda a cerrarlo.",
   },
   paz_y_salvo: {
     titulo: "Paz y Salvo DGI/Municipal",

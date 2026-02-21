@@ -72,6 +72,15 @@ def _build_journal_entry_from_nlp(
         }
         lines.append(line)
 
+    # Generar razonamiento para el usuario
+    detected_word = data.get("concept_raw", concept_key)
+    reasoning = (
+        f"Detecte la palabra '{detected_word}' en tu mensaje. "
+        f"Esto corresponde a la categoria '{mapping['description']}'. "
+        f"Se registra como DEBE en la cuenta {mapping['lines'][0]['account_code']} "
+        f"y HABER en la cuenta {mapping['lines'][1]['account_code']}."
+    )
+
     return {
         "society_id": society_id,
         "entry_date": entry_date_str,
@@ -82,6 +91,7 @@ def _build_journal_entry_from_nlp(
         "lines": lines,
         "concept_key": concept_key,
         "concept_description": mapping["description"],
+        "reasoning": reasoning,
     }
 
 
@@ -147,6 +157,7 @@ async def interpret_natural_language(body: NLPQuery, user: AuthenticatedUser = D
                 description=interpretation["description"],
                 data={
                     "requires_confirmation": True,
+                    "reasoning": entry_preview.get("reasoning", ""),
                     "journal_entry_preview": {
                         "entry_date": entry_preview["entry_date"],
                         "description": entry_preview["description"],

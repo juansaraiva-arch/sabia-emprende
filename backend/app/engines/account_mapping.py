@@ -24,6 +24,7 @@ DEFAULT_CHART_OF_ACCOUNTS = [
     {"code": "1.1.3", "name": "Inventario", "type": "activo", "level": 3, "parent": "1.1", "normal_balance": "debe"},
     {"code": "1.1.4", "name": "Anticipos a Proveedores", "type": "activo", "level": 3, "parent": "1.1", "normal_balance": "debe"},
     {"code": "1.1.5", "name": "ITBMS por Cobrar (Credito Fiscal)", "type": "activo", "level": 3, "parent": "1.1", "normal_balance": "debe"},
+    {"code": "1.1.6", "name": "Pagos Anticipados", "type": "activo", "level": 3, "parent": "1.1", "normal_balance": "debe"},
 
     {"code": "1.2", "name": "Activo No Corriente", "type": "activo", "level": 2, "is_header": True, "parent": "1", "normal_balance": "debe"},
     {"code": "1.2.1", "name": "Mobiliario y Equipo", "type": "activo", "level": 3, "parent": "1.2", "normal_balance": "debe"},
@@ -31,6 +32,8 @@ DEFAULT_CHART_OF_ACCOUNTS = [
     {"code": "1.2.3", "name": "Vehiculos", "type": "activo", "level": 3, "parent": "1.2", "normal_balance": "debe"},
     {"code": "1.2.4", "name": "Depreciacion Acumulada", "type": "activo", "level": 3, "parent": "1.2", "normal_balance": "haber"},
     {"code": "1.2.5", "name": "Depositos en Garantia", "type": "activo", "level": 3, "parent": "1.2", "normal_balance": "debe"},
+    {"code": "1.2.6", "name": "Activos Intangibles (Software, Licencias)", "type": "activo", "level": 3, "parent": "1.2", "normal_balance": "debe"},
+    {"code": "1.2.7", "name": "Mejoras a Propiedad Arrendada", "type": "activo", "level": 3, "parent": "1.2", "normal_balance": "debe"},
 
     # --- 2. PASIVOS ---
     {"code": "2", "name": "Pasivos", "type": "pasivo", "level": 1, "is_header": True, "normal_balance": "haber"},
@@ -43,6 +46,8 @@ DEFAULT_CHART_OF_ACCOUNTS = [
     {"code": "2.1.5", "name": "XIII Mes por Pagar", "type": "pasivo", "level": 3, "parent": "2.1", "normal_balance": "haber"},
     {"code": "2.1.6", "name": "Vacaciones por Pagar", "type": "pasivo", "level": 3, "parent": "2.1", "normal_balance": "haber"},
     {"code": "2.1.7", "name": "ISR por Pagar", "type": "pasivo", "level": 3, "parent": "2.1", "normal_balance": "haber"},
+    {"code": "2.1.8", "name": "Anticipos de Clientes", "type": "pasivo", "level": 3, "parent": "2.1", "normal_balance": "haber"},
+    {"code": "2.1.9", "name": "Otras Cuentas por Pagar", "type": "pasivo", "level": 3, "parent": "2.1", "normal_balance": "haber"},
 
     {"code": "2.2", "name": "Pasivo No Corriente", "type": "pasivo", "level": 2, "is_header": True, "parent": "2", "normal_balance": "haber"},
     {"code": "2.2.1", "name": "Prestamos Bancarios Largo Plazo", "type": "pasivo", "level": 3, "parent": "2.2", "normal_balance": "haber"},
@@ -52,6 +57,7 @@ DEFAULT_CHART_OF_ACCOUNTS = [
     {"code": "3.1", "name": "Capital Social", "type": "patrimonio", "level": 2, "parent": "3", "normal_balance": "haber"},
     {"code": "3.2", "name": "Utilidades Retenidas", "type": "patrimonio", "level": 2, "parent": "3", "normal_balance": "haber"},
     {"code": "3.3", "name": "Utilidad del Periodo", "type": "patrimonio", "level": 2, "parent": "3", "normal_balance": "haber"},
+    {"code": "3.4", "name": "Reserva Legal", "type": "patrimonio", "level": 2, "parent": "3", "normal_balance": "haber"},
 
     # --- 4. INGRESOS ---
     {"code": "4", "name": "Ingresos", "type": "ingreso", "level": 1, "is_header": True, "normal_balance": "haber"},
@@ -62,6 +68,7 @@ DEFAULT_CHART_OF_ACCOUNTS = [
     {"code": "4.2", "name": "Otros Ingresos", "type": "ingreso", "level": 2, "is_header": True, "parent": "4", "normal_balance": "haber"},
     {"code": "4.2.1", "name": "Ingresos Financieros (Intereses)", "type": "ingreso", "level": 3, "parent": "4.2", "normal_balance": "haber"},
     {"code": "4.2.2", "name": "Otros Ingresos No Operativos", "type": "ingreso", "level": 3, "parent": "4.2", "normal_balance": "haber"},
+    {"code": "4.2.3", "name": "Ganancia en Venta de Activos", "type": "ingreso", "level": 3, "parent": "4.2", "normal_balance": "haber"},
 
     # --- 5. COSTOS Y GASTOS ---
     {"code": "5", "name": "Costos y Gastos", "type": "costo_gasto", "level": 1, "is_header": True, "normal_balance": "debe"},
@@ -69,6 +76,7 @@ DEFAULT_CHART_OF_ACCOUNTS = [
     {"code": "5.1", "name": "Costo de Ventas", "type": "costo_gasto", "level": 2, "is_header": True, "parent": "5", "normal_balance": "debe"},
     {"code": "5.1.1", "name": "Costo de Mercancia Vendida", "type": "costo_gasto", "level": 3, "parent": "5.1", "normal_balance": "debe"},
     {"code": "5.1.2", "name": "Costo de Servicios Prestados", "type": "costo_gasto", "level": 3, "parent": "5.1", "normal_balance": "debe"},
+    {"code": "5.1.3", "name": "Flete y Acarreo de Mercancia", "type": "costo_gasto", "level": 3, "parent": "5.1", "normal_balance": "debe"},
 
     {"code": "5.2", "name": "Gastos Operativos (OPEX)", "type": "costo_gasto", "level": 2, "is_header": True, "parent": "5", "normal_balance": "debe"},
     {"code": "5.2.1", "name": "Alquiler y Mantenimiento", "type": "costo_gasto", "level": 3, "parent": "5.2", "normal_balance": "debe"},
@@ -80,6 +88,14 @@ DEFAULT_CHART_OF_ACCOUNTS = [
     {"code": "5.2.7", "name": "Honorarios Profesionales", "type": "costo_gasto", "level": 3, "parent": "5.2", "normal_balance": "debe"},
     {"code": "5.2.8", "name": "Transporte y Combustible", "type": "costo_gasto", "level": 3, "parent": "5.2", "normal_balance": "debe"},
     {"code": "5.2.9", "name": "Otros Gastos Operativos", "type": "costo_gasto", "level": 3, "parent": "5.2", "normal_balance": "debe"},
+    {"code": "5.2.10", "name": "Capacitacion y Entrenamiento", "type": "costo_gasto", "level": 3, "parent": "5.2", "normal_balance": "debe"},
+    {"code": "5.2.11", "name": "Gastos de Representacion", "type": "costo_gasto", "level": 3, "parent": "5.2", "normal_balance": "debe"},
+    {"code": "5.2.12", "name": "Limpieza y Aseo", "type": "costo_gasto", "level": 3, "parent": "5.2", "normal_balance": "debe"},
+    {"code": "5.2.13", "name": "Suscripciones y Membresias", "type": "costo_gasto", "level": 3, "parent": "5.2", "normal_balance": "debe"},
+    {"code": "5.2.14", "name": "Reparaciones y Mantenimiento Equipo", "type": "costo_gasto", "level": 3, "parent": "5.2", "normal_balance": "debe"},
+    {"code": "5.2.15", "name": "Donaciones", "type": "costo_gasto", "level": 3, "parent": "5.2", "normal_balance": "debe"},
+    {"code": "5.2.16", "name": "Gastos de Viaje", "type": "costo_gasto", "level": 3, "parent": "5.2", "normal_balance": "debe"},
+    {"code": "5.2.17", "name": "Gastos Legales y Notariales", "type": "costo_gasto", "level": 3, "parent": "5.2", "normal_balance": "debe"},
 
     {"code": "5.3", "name": "Gastos Financieros", "type": "costo_gasto", "level": 2, "is_header": True, "parent": "5", "normal_balance": "debe"},
     {"code": "5.3.1", "name": "Intereses Bancarios", "type": "costo_gasto", "level": 3, "parent": "5.3", "normal_balance": "debe"},
@@ -87,10 +103,12 @@ DEFAULT_CHART_OF_ACCOUNTS = [
 
     {"code": "5.4", "name": "Depreciacion y Amortizacion", "type": "costo_gasto", "level": 2, "is_header": True, "parent": "5", "normal_balance": "debe"},
     {"code": "5.4.1", "name": "Gasto de Depreciacion", "type": "costo_gasto", "level": 3, "parent": "5.4", "normal_balance": "debe"},
+    {"code": "5.4.2", "name": "Amortizacion de Intangibles", "type": "costo_gasto", "level": 3, "parent": "5.4", "normal_balance": "debe"},
 
     {"code": "5.5", "name": "Impuestos", "type": "costo_gasto", "level": 2, "is_header": True, "parent": "5", "normal_balance": "debe"},
     {"code": "5.5.1", "name": "ISR del Periodo", "type": "costo_gasto", "level": 3, "parent": "5.5", "normal_balance": "debe"},
     {"code": "5.5.2", "name": "Tasa Unica Municipal", "type": "costo_gasto", "level": 3, "parent": "5.5", "normal_balance": "debe"},
+    {"code": "5.5.3", "name": "Aviso de Operacion", "type": "costo_gasto", "level": 3, "parent": "5.5", "normal_balance": "debe"},
 ]
 
 
@@ -239,6 +257,57 @@ CONCEPT_TO_ACCOUNTS = {
         ],
     },
 
+    # --- GASTOS ADICIONALES (categorias NLP comunes) ---
+    "combustible": {
+        "description": "Pago de combustible/gasolina",
+        "lines": [
+            {"account_code": "5.2.8", "debe": True, "description": "Gasto combustible"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "viaticos": {
+        "description": "Pago de viaticos",
+        "lines": [
+            {"account_code": "5.2.9", "debe": True, "description": "Gasto viaticos"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "suministros": {
+        "description": "Compra de suministros de oficina",
+        "lines": [
+            {"account_code": "5.2.6", "debe": True, "description": "Suministros oficina"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "seguros": {
+        "description": "Pago de seguro",
+        "lines": [
+            {"account_code": "5.2.4", "debe": True, "description": "Gasto de seguro"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "mantenimiento": {
+        "description": "Pago de mantenimiento",
+        "lines": [
+            {"account_code": "5.2.1", "debe": True, "description": "Gasto mantenimiento"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "comida_clientes": {
+        "description": "Almuerzo/comida con clientes",
+        "lines": [
+            {"account_code": "5.2.11", "debe": True, "description": "Gasto representacion"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "gasto_general": {
+        "description": "Gasto general",
+        "lines": [
+            {"account_code": "5.2.9", "debe": True, "description": "Otros gastos"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+
     # --- DEPRECIACION ---
     "depreciacion": {
         "description": "Registro de depreciacion mensual",
@@ -263,6 +332,92 @@ CONCEPT_TO_ACCOUNTS = {
             {"account_code": "1.1.1", "haber": True, "description": "Pago al socio"},
         ],
     },
+
+    # --- CATEGORIAS PYME ADICIONALES ---
+    "capacitacion": {
+        "description": "Pago de capacitacion/entrenamiento",
+        "lines": [
+            {"account_code": "5.2.10", "debe": True, "description": "Gasto capacitacion"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "representacion": {
+        "description": "Gastos de representacion",
+        "lines": [
+            {"account_code": "5.2.11", "debe": True, "description": "Gasto representacion"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "limpieza": {
+        "description": "Pago de limpieza/aseo",
+        "lines": [
+            {"account_code": "5.2.12", "debe": True, "description": "Gasto limpieza"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "suscripciones": {
+        "description": "Pago de suscripciones/membresias",
+        "lines": [
+            {"account_code": "5.2.13", "debe": True, "description": "Suscripciones y membresias"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "reparaciones": {
+        "description": "Reparacion de equipo",
+        "lines": [
+            {"account_code": "5.2.14", "debe": True, "description": "Reparaciones equipo"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "donaciones": {
+        "description": "Donacion",
+        "lines": [
+            {"account_code": "5.2.15", "debe": True, "description": "Gasto donacion"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "viajes": {
+        "description": "Gastos de viaje",
+        "lines": [
+            {"account_code": "5.2.16", "debe": True, "description": "Gasto de viaje"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "gastos_legales": {
+        "description": "Gastos legales/notariales",
+        "lines": [
+            {"account_code": "5.2.17", "debe": True, "description": "Gastos legales"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "flete": {
+        "description": "Flete de mercancia",
+        "lines": [
+            {"account_code": "5.1.3", "debe": True, "description": "Flete y acarreo"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "aviso_operacion": {
+        "description": "Pago de Aviso de Operacion",
+        "lines": [
+            {"account_code": "5.5.3", "debe": True, "description": "Aviso de Operacion"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "comisiones_bancarias": {
+        "description": "Pago de comisiones bancarias",
+        "lines": [
+            {"account_code": "5.3.2", "debe": True, "description": "Comisiones bancarias"},
+            {"account_code": "1.1.1", "haber": True, "description": "Pago desde banco"},
+        ],
+    },
+    "amortizacion": {
+        "description": "Amortizacion de intangibles",
+        "lines": [
+            {"account_code": "5.4.2", "debe": True, "description": "Amortizacion intangibles"},
+            {"account_code": "1.2.6", "haber": True, "description": "Activos intangibles"},
+        ],
+    },
 }
 
 
@@ -281,6 +436,7 @@ ACCOUNT_TYPE_TO_FINANCIAL_FIELD = {
     # Costo de ventas → cogs
     "5.1.1": "cogs",
     "5.1.2": "cogs",
+    "5.1.3": "cogs",           # Flete y Acarreo
 
     # OPEX desglosado
     "5.2.1": "opex_rent",
@@ -292,15 +448,25 @@ ACCOUNT_TYPE_TO_FINANCIAL_FIELD = {
     "5.2.7": "opex_other",
     "5.2.8": "opex_other",
     "5.2.9": "opex_other",
+    "5.2.10": "opex_other",    # Capacitacion
+    "5.2.11": "opex_other",    # Representacion
+    "5.2.12": "opex_other",    # Limpieza
+    "5.2.13": "opex_other",    # Suscripciones
+    "5.2.14": "opex_other",    # Reparaciones
+    "5.2.15": "opex_other",    # Donaciones
+    "5.2.16": "opex_other",    # Viajes
+    "5.2.17": "opex_other",    # Gastos Legales
 
     # Financieros y depreciacion
     "5.3.1": "interest_expense",
     "5.3.2": "interest_expense",
     "5.4.1": "depreciation",
+    "5.4.2": "depreciation",   # Amortizacion
 
     # Impuestos
     "5.5.1": "tax_expense",
     "5.5.2": "tax_expense",
+    "5.5.3": "tax_expense",    # Aviso de Operacion
 
     # Balance
     "1.1.1": "cash_balance",

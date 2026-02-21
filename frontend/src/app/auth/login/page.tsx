@@ -48,9 +48,9 @@ export default function LoginPage() {
             <SabiaLogo size={64} />
           </div>
           <h1 className="font-heading text-3xl font-bold text-emerald-900">
-            SABIA EMPRENDE
+            Mi Director Financiero PTY
           </h1>
-          <p className="text-emerald-600 mt-1">Tu Aliado Estrategico</p>
+          <p className="text-emerald-600 mt-1">Tu Aliado Estratégico</p>
         </div>
 
         {/* Card */}

@@ -52,8 +52,8 @@ PATTERNS = {
 
     # --- NUEVOS: Asientos contables via NLP (Fase 5) ---
     "register_expense": [
-        r"pagu[eé]\s+(?:la\s+)?(?P<concept>luz|agua|internet|telefono|celular|seguro|gasolina|combustible|transporte)\s+(?:de\s+)?\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?",
-        r"pagu[eé]\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?\s+(?:de|por|en)\s+(?P<concept>luz|agua|internet|telefono|seguro|alquiler|renta|marketing|publicidad|honorarios|contador|abogado|gasolina)",
+        r"pagu[eé]\s+(?:la\s+|el\s+|los\s+|las\s+)?(?P<concept>luz|agua|internet|telefono|celular|seguro|seguros|gasolina|combustible|transporte|alquiler|renta|limpieza|aseo|mantenimiento|flete|envio|comision|comisiones|suscripcion|membresia|capacitacion|entrenamiento|curso|seminario|donacion|multa|notario|hotel|viaje|reparacion)\s+(?:de\s+)?\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?",
+        r"pagu[eé]\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?\s+(?:de|por|en)\s+(?P<concept>luz|agua|internet|telefono|seguro|seguros|alquiler|renta|marketing|publicidad|honorarios|contador|abogado|gasolina|combustible|limpieza|mantenimiento|flete|capacitacion|suscripcion|donacion|reparacion|viaje|hotel|comida|almuerzo|restaurante|suministros|viaticos)",
         r"(?:gast[eé]|pagu[eé])\s+\$?(?P<amount>[\d.,]+)\s*(?:mil|k)?\s+(?:en|de|por)\s+(?P<concept>\w+(?:\s+\w+)?)",
     ],
     "register_income": [
@@ -94,27 +94,103 @@ PATTERNS = {
 
 # Mapeo de conceptos NLP a claves del CONCEPT_TO_ACCOUNTS
 EXPENSE_CONCEPT_MAP = {
+    # Servicios publicos
     "luz": "servicios_publicos",
     "agua": "servicios_publicos",
     "internet": "servicios_publicos",
     "telefono": "servicios_publicos",
     "celular": "servicios_publicos",
-    "seguro": "servicios_publicos",
-    "seguros": "servicios_publicos",
+    # Seguros
+    "seguro": "seguros",
+    "seguros": "seguros",
+    "poliza": "seguros",
+    # Alquiler
     "alquiler": "alquiler",
     "renta": "alquiler",
     "arrendamiento": "alquiler",
+    # Marketing
     "marketing": "marketing",
     "publicidad": "marketing",
+    "anuncio": "marketing",
+    "propaganda": "marketing",
+    # Honorarios
     "honorarios": "honorarios",
     "contador": "honorarios",
     "abogado": "honorarios",
-    "gasolina": "servicios_publicos",
-    "combustible": "servicios_publicos",
-    "transporte": "servicios_publicos",
+    "consultor": "honorarios",
+    "consultoria": "honorarios",
+    # Transporte y combustible
+    "gasolina": "combustible",
+    "combustible": "combustible",
+    "transporte": "combustible",
+    "diesel": "combustible",
+    "uber": "combustible",
+    # Planilla
     "nomina": "planilla",
     "planilla": "planilla",
     "salarios": "planilla",
+    "sueldo": "planilla",
+    "sueldos": "planilla",
+    # Capacitacion
+    "capacitacion": "capacitacion",
+    "entrenamiento": "capacitacion",
+    "curso": "capacitacion",
+    "seminario": "capacitacion",
+    "taller": "capacitacion",
+    # Representacion
+    "representacion": "representacion",
+    "almuerzo": "representacion",
+    "cena": "representacion",
+    "restaurante": "representacion",
+    "comida": "representacion",
+    # Limpieza
+    "limpieza": "limpieza",
+    "aseo": "limpieza",
+    # Suscripciones
+    "suscripcion": "suscripciones",
+    "membresia": "suscripciones",
+    "licencia": "suscripciones",
+    "software": "suscripciones",
+    # Reparaciones
+    "reparacion": "reparaciones",
+    "reparar": "reparaciones",
+    "arreglar": "reparaciones",
+    "arreglo": "reparaciones",
+    # Donaciones
+    "donacion": "donaciones",
+    "donar": "donaciones",
+    # Viajes
+    "viaje": "viajes",
+    "hotel": "viajes",
+    "avion": "viajes",
+    "boleto": "viajes",
+    "pasaje": "viajes",
+    "hospedaje": "viajes",
+    # Gastos legales
+    "notario": "gastos_legales",
+    "notarial": "gastos_legales",
+    "legal": "gastos_legales",
+    "multa": "gastos_legales",
+    "registro publico": "gastos_legales",
+    # Flete
+    "flete": "flete",
+    "envio": "flete",
+    "acarreo": "flete",
+    "mensajeria": "flete",
+    # Aviso de Operacion
+    "aviso de operacion": "aviso_operacion",
+    # Comisiones bancarias
+    "comision bancaria": "comisiones_bancarias",
+    "comisiones": "comisiones_bancarias",
+    "comision": "comisiones_bancarias",
+    # Suministros
+    "suministros": "suministros",
+    "papeleria": "suministros",
+    "tinta": "suministros",
+    # Viaticos
+    "viaticos": "viaticos",
+    # Mantenimiento
+    "mantenimiento": "mantenimiento",
 }
 
 

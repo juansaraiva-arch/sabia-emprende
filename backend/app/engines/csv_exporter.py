@@ -1,5 +1,5 @@
 """
-Motor de exportacion CSV — SABIA EMPRENDE
+Motor de exportacion CSV — Mi Director Financiero PTY
 Genera archivos CSV desde datos del motor financiero y multi-periodo.
 Sin dependencias externas (solo stdlib: csv, io).
 """

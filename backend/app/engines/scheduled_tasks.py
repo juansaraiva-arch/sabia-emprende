@@ -1,5 +1,5 @@
 """
-Tareas programadas — SABIA EMPRENDE
+Tareas programadas — Mi Director Financiero PTY
 
 1. Auto-cierre de periodo contable: ultimo dia del mes a las 23:59.
 2. Auto-envio de reportes por email: 1ro del mes siguiente.
@@ -143,11 +143,11 @@ async def auto_send_monthly_report(
         )
 
         # Construir email HTML
-        subject = f"SABIA EMPRENDE: Reporte de Libros Contables y Estado de Patrimonio — {month_name}/{year}"
+        subject = f"Mi Director Financiero PTY: Reporte de Libros Contables y Estado de Patrimonio — {month_name}/{year}"
         body_html = f"""
         <html>
         <body style="font-family: Arial, sans-serif; color: #333;">
-            <h2 style="color: #1B2838;">SABIA EMPRENDE — Tu Aliado Estrategico</h2>
+            <h2 style="color: #1B2838;">Mi Director Financiero PTY — Tu Aliado Estratégico</h2>
             <p>Estimado usuario,</p>
             <p>Se ha completado el cierre del mes de <strong>{month_name} {year}</strong>.</p>
             <p>Adjunto encontrara los siguientes reportes:</p>
@@ -159,7 +159,7 @@ async def auto_send_monthly_report(
             Codigo de Comercio de la Republica de Panama.</p>
             <br/>
             <p style="color: #888; font-size: 12px;">
-                Generado automaticamente por SABIA EMPRENDE — Tu Aliado Estrategico para Panama.
+                Generado automaticamente por Mi Director Financiero PTY — Tu Aliado Estratégico para Panama.
             </p>
         </body>
         </html>

@@ -1,6 +1,6 @@
 /**
  * Tests unitarios para alerts.ts
- * Motor de Alertas Centralizado — SABIA EMPRENDE
+ * Motor de Alertas Centralizado — Mi Director Financiero PTY
  */
 import { describe, it, expect } from "vitest";
 import {

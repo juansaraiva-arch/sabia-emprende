@@ -5,96 +5,167 @@ import {
   ChevronRight,
   BrainCircuit,
   BarChart3,
+  BookOpen,
+  Shield,
+  Mic,
+  Camera,
 } from "lucide-react";
 import Link from "next/link";
 import SabiaLogo from "@/components/SabiaLogo";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6">
-      {/* Header */}
-      <div className="text-center mb-10 max-w-3xl">
-        <div className="flex justify-center mb-6">
-          <SabiaLogo size={100} iconOnly />
+    <main className="min-h-screen bg-[#1A242F] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#1A242F] via-[#1A242F] to-[#0F171E] pointer-events-none" />
+
+      {/* Decorative gold accent lines */}
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#C5A059] to-transparent opacity-40" />
+      <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#C5A059] to-transparent opacity-40" />
+
+      <div className="relative z-10 flex flex-col items-center w-full max-w-5xl">
+        {/* Header */}
+        <div className="text-center mb-10 max-w-3xl">
+          <div className="flex justify-center mb-6">
+            <SabiaLogo size={110} iconOnly />
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight font-heading mb-2"
+            style={{ color: "#C5A059" }}>
+            Mi Director Financiero
+          </h1>
+          <p className="text-2xl sm:text-3xl font-bold tracking-widest mb-4"
+            style={{ color: "#C5A059", opacity: 0.85 }}>
+            PTY
+          </p>
+          <p className="text-lg font-semibold mb-6" style={{ color: "#C5A059", opacity: 0.7 }}>
+            Tu Aliado Estratégico
+          </p>
+          <p className="text-slate-400 text-lg leading-relaxed max-w-xl mx-auto">
+            Constituye tu sociedad, entiende tus finanzas y toma decisiones con
+            datos reales. Sin formulas complejas.
+          </p>
         </div>
-        <h1 className="text-5xl font-extrabold text-slate-800 mb-4 tracking-tight font-heading">
-          SABIA EMPRENDE
-        </h1>
-        <p className="text-lg font-semibold mb-4" style={{ color: "#C9A84C" }}>
-          Tu Aliado Estrategico
+
+        {/* Slogan */}
+        <div className="text-center mb-12 max-w-lg">
+          <p className="text-sm italic tracking-wide" style={{ color: "#C5A059", opacity: 0.6 }}>
+            &ldquo;Mi Legado es mi Moneda. Mi Experiencia es mi Nuevo Mercado.&rdquo;
+          </p>
+        </div>
+
+        {/* CTAs principales */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-16 w-full sm:w-auto">
+          <Link
+            href="/wizard"
+            className="group relative inline-flex items-center justify-center gap-3 px-10 py-5 font-bold text-lg rounded-2xl transition-all hover:-translate-y-1 border"
+            style={{
+              backgroundColor: "rgba(197, 160, 89, 0.1)",
+              borderColor: "rgba(197, 160, 89, 0.3)",
+              color: "#C5A059",
+            }}
+          >
+            <Scale size={20} />
+            Constituir Empresa
+            <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+          </Link>
+          <Link
+            href="/dashboard"
+            className="group relative inline-flex items-center justify-center gap-3 px-10 py-5 text-[#1A242F] font-bold text-lg rounded-2xl transition-all shadow-lg hover:-translate-y-1"
+            style={{
+              backgroundColor: "#C5A059",
+              boxShadow: "0 4px 20px rgba(197, 160, 89, 0.3)",
+            }}
+          >
+            <BarChart3 size={20} />
+            Mi Director Financiero
+            <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
+
+        {/* Feature cards — 3 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-10">
+          {/* Modulo Legal */}
+          <div className="p-6 rounded-2xl border transition-all hover:-translate-y-1"
+            style={{
+              backgroundColor: "rgba(197, 160, 89, 0.05)",
+              borderColor: "rgba(197, 160, 89, 0.15)",
+            }}>
+            <div className="p-3 rounded-xl w-fit mb-4"
+              style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
+              <Scale size={24} style={{ color: "#C5A059" }} />
+            </div>
+            <h3 className="font-bold mb-2" style={{ color: "#C5A059" }}>
+              Mi Empresa
+            </h3>
+            <p className="text-sm text-slate-400">
+              Constitucion inteligente (SA, SRL, SE), boveda KYC, vigilante
+              legal y calendario fiscal Panama.
+            </p>
+          </div>
+
+          {/* Modulo Contable */}
+          <div className="p-6 rounded-2xl border transition-all hover:-translate-y-1"
+            style={{
+              backgroundColor: "rgba(197, 160, 89, 0.05)",
+              borderColor: "rgba(197, 160, 89, 0.15)",
+            }}>
+            <div className="p-3 rounded-xl w-fit mb-4"
+              style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
+              <BookOpen size={24} style={{ color: "#C5A059" }} />
+            </div>
+            <h3 className="font-bold mb-2" style={{ color: "#C5A059" }}>
+              Mi Contador
+            </h3>
+            <p className="text-sm text-slate-400">
+              Registro por voz, escaneo de facturas, asientos automaticos,
+              libro diario y mayor con partida doble.
+            </p>
+          </div>
+
+          {/* Director Financiero */}
+          <div className="p-6 rounded-2xl border transition-all hover:-translate-y-1"
+            style={{
+              backgroundColor: "rgba(197, 160, 89, 0.05)",
+              borderColor: "rgba(197, 160, 89, 0.15)",
+            }}>
+            <div className="p-3 rounded-xl w-fit mb-4"
+              style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
+              <BarChart3 size={24} style={{ color: "#C5A059" }} />
+            </div>
+            <h3 className="font-bold mb-2" style={{ color: "#C5A059" }}>
+              Mis Finanzas
+            </h3>
+            <p className="text-sm text-slate-400">
+              Cascada P&amp;L, punto de equilibrio, simulador, valoracion,
+              nomina Panama y diagnostico automatico.
+            </p>
+          </div>
+        </div>
+
+        {/* Secondary features row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full mb-12">
+          <div className="flex items-center gap-3 p-4 rounded-xl"
+            style={{ backgroundColor: "rgba(197, 160, 89, 0.05)" }}>
+            <Mic size={18} style={{ color: "#C5A059" }} />
+            <span className="text-sm text-slate-400">Dicta tus gastos por voz</span>
+          </div>
+          <div className="flex items-center gap-3 p-4 rounded-xl"
+            style={{ backgroundColor: "rgba(197, 160, 89, 0.05)" }}>
+            <Camera size={18} style={{ color: "#C5A059" }} />
+            <span className="text-sm text-slate-400">Escanea facturas con tu camara</span>
+          </div>
+          <div className="flex items-center gap-3 p-4 rounded-xl"
+            style={{ backgroundColor: "rgba(197, 160, 89, 0.05)" }}>
+            <BrainCircuit size={18} style={{ color: "#C5A059" }} />
+            <span className="text-sm text-slate-400">Habla en espanol plano</span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <p className="text-slate-600 text-sm">
+          Mi Director Financiero PTY v1.0 — Tu Aliado Estratégico para Panama
         </p>
-        <p className="text-slate-500 text-xl leading-relaxed">
-          Constituye tu sociedad, entiende tus finanzas y toma decisiones con
-          datos reales. Sin formulas complejas.
-        </p>
       </div>
-
-      {/* CTAs principales */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-16">
-        <Link
-          href="/wizard"
-          className="group relative inline-flex items-center gap-3 px-10 py-5 bg-white text-slate-800 font-bold text-lg rounded-2xl hover:bg-slate-50 transition-all shadow-lg border border-slate-200 hover:-translate-y-1"
-        >
-          <Scale size={20} className="text-emerald-600" />
-          Constituir Empresa
-          <ChevronRight className="group-hover:translate-x-1 transition-transform text-emerald-600" />
-        </Link>
-        <Link
-          href="/dashboard"
-          className="group relative inline-flex items-center gap-3 px-10 py-5 text-white font-bold text-lg rounded-2xl transition-all shadow-lg hover:-translate-y-1"
-          style={{ backgroundColor: "#1B2838", boxShadow: "0 4px 14px rgba(27,40,56,0.3)" }}
-        >
-          <BarChart3 size={20} />
-          Mi Director Financiero
-          <ChevronRight className="group-hover:translate-x-1 transition-transform" />
-        </Link>
-      </div>
-
-      {/* Feature cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-50 transition-all">
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl w-fit mb-4">
-            <Scale size={24} />
-          </div>
-          <h3 className="font-bold text-slate-800 mb-2">
-            Constitucion Inteligente
-          </h3>
-          <p className="text-sm text-slate-500">
-            SA, SRL o Sociedad de Emprendimiento. El wizard te guia segun tu
-            caso.
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-50 transition-all">
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl w-fit mb-4">
-            <BarChart3 size={24} />
-          </div>
-          <h3 className="font-bold text-slate-800 mb-2">
-            Motor de Verdad Financiera
-          </h3>
-          <p className="text-sm text-slate-500">
-            Cascada P&amp;L, punto de equilibrio, nomina Panama y diagnostico
-            automatico.
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:border-purple-300 hover:shadow-lg hover:shadow-purple-50 transition-all">
-          <div className="p-3 bg-purple-50 text-purple-600 rounded-xl w-fit mb-4">
-            <BrainCircuit size={24} />
-          </div>
-          <h3 className="font-bold text-slate-800 mb-2">
-            Habla en Espanol Plano
-          </h3>
-          <p className="text-sm text-slate-500">
-            Escribe &quot;Mis ventas fueron 50 mil&quot; y el sistema entiende. Sin
-            formulas.
-          </p>
-        </div>
-      </div>
-
-      <p className="mt-12 text-slate-400 text-sm">
-        SABIA EMPRENDE v1.0 — Tu Aliado Estrategico para Panama
-      </p>
     </main>
   );
 }

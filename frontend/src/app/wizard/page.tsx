@@ -72,7 +72,7 @@ export default function SelectorWizard() {
           </div>
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-slate-800 font-heading">
-              Cerebro Legal SABIA
+              Cerebro Legal MiDF
             </h2>
             <div className="flex items-center justify-center gap-3 text-emerald-600 font-medium">
               <span className="h-2 w-2 bg-emerald-500 rounded-full animate-bounce" />

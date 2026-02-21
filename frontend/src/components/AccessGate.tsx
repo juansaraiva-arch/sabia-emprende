@@ -56,7 +56,7 @@ export function AccessGate({ children }: { children: React.ReactNode }) {
             <Lock className="w-8 h-8 text-emerald-400" />
           </div>
           <h1 className="text-2xl font-bold text-white font-heading">
-            SABIA EMPRENDE
+            Mi Director Financiero PTY
           </h1>
           <p className="text-slate-400 mt-1 text-sm">
             Acceso restringido — Ingresa la clave del equipo
@@ -113,7 +113,7 @@ export function AccessGate({ children }: { children: React.ReactNode }) {
         </form>
 
         <p className="text-center text-slate-600 text-xs mt-6">
-          &copy; {new Date().getFullYear()} SABIA EMPRENDE — Plataforma de Alta
+          &copy; {new Date().getFullYear()} Mi Director Financiero PTY — Plataforma de Alta
           Direcci&oacute;n
         </p>
       </div>

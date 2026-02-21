@@ -1,5 +1,5 @@
 /**
- * Sistema de sonidos para alertas criticas — SABIA EMPRENDE
+ * Sistema de sonidos para alertas criticas — Mi Director Financiero PTY
  * Usa Web Audio API (sin archivos MP3, sin dependencias externas).
  * Preferencia de usuario almacenada en localStorage.
  */

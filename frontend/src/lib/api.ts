@@ -46,7 +46,7 @@ async function apiFetch<T>(
   } catch {
     // Network error (backend unreachable) — in demo mode, return empty data
     if (IS_DEMO_MODE) {
-      console.warn(`[SABIA] API no disponible (${path}) — modo demo, retornando vacio`);
+      console.warn(`[MiDF] API no disponible (${path}) — modo demo, retornando vacio`);
       return { data: [], success: true } as T;
     }
     throw new Error("No se pudo conectar con el servidor.");
@@ -63,7 +63,7 @@ async function apiFetch<T>(
   if (!res.ok) {
     // In demo mode, silently return empty data instead of erroring
     if (IS_DEMO_MODE) {
-      console.warn(`[SABIA] API error ${res.status} (${path}) — modo demo, retornando vacio`);
+      console.warn(`[MiDF] API error ${res.status} (${path}) — modo demo, retornando vacio`);
       return { data: [], success: true } as T;
     }
     const error = await res.json().catch(() => ({ detail: res.statusText }));
@@ -415,6 +415,90 @@ export const budgetApi = {
   delete: (targetId: string) =>
     apiFetch<{ success: boolean }>(`/budget/targets/${targetId}`, {
       method: "DELETE",
+    }),
+};
+
+// --- Inteligencia Artificial (Vision, Whisper, Data Merging) ---
+export const aiApi = {
+  /** Escanear factura con GPT-4o Vision */
+  scanReceipt: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const headers: Record<string, string> = {};
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      } else if (IS_DEMO_MODE) {
+        headers["x-user-id"] = "demo-user-001";
+      }
+    } catch {
+      if (IS_DEMO_MODE) headers["x-user-id"] = "demo-user-001";
+    }
+
+    const res = await fetch(`${API_BASE}/ai/scan-receipt`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    if (!res.ok) {
+      if (IS_DEMO_MODE) return { status: "demo", data: null };
+      const err = await res.json().catch(() => ({ detail: "Error de OCR" }));
+      throw new Error(err.detail);
+    }
+    return res.json();
+  },
+
+  /** Transcribir audio con Whisper + GPT-4o intent extraction */
+  voiceExpense: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const headers: Record<string, string> = {};
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      } else if (IS_DEMO_MODE) {
+        headers["x-user-id"] = "demo-user-001";
+      }
+    } catch {
+      if (IS_DEMO_MODE) headers["x-user-id"] = "demo-user-001";
+    }
+
+    const res = await fetch(`${API_BASE}/ai/voice-expense`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    if (!res.ok) {
+      if (IS_DEMO_MODE) return { status: "demo", data: null };
+      const err = await res.json().catch(() => ({ detail: "Error de voz" }));
+      throw new Error(err.detail);
+    }
+    return res.json();
+  },
+
+  /** Data Merging: fusionar datos de factura + voz en un solo registro */
+  mergeTransaction: (body: {
+    receipt_data?: any;
+    voice_data?: any;
+    voice_transcript?: string;
+    society_id?: string;
+  }) =>
+    apiFetch<any>("/ai/merge-transaction", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  /** Deduplication: verificar si una transaccion ya fue registrada */
+  checkDuplicate: (fingerprint: string, societyId: string) =>
+    apiFetch<any>("/ai/check-duplicate", {
+      method: "POST",
+      body: JSON.stringify({ fingerprint, society_id: societyId }),
     }),
 };
 

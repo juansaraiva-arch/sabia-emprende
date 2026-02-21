@@ -1,5 +1,5 @@
 """
-Motor de generacion de PDFs — SABIA EMPRENDE
+Motor de generacion de PDFs — Mi Director Financiero PTY
 Genera reportes contables y ejecutivos en PDF usando ReportLab:
 - Libro Diario
 - Libro Mayor
@@ -103,7 +103,7 @@ def generate_libro_diario_pdf(
     elements = []
 
     # Header
-    elements.append(Paragraph("SABIA EMPRENDE", styles["BrandTitle"]))
+    elements.append(Paragraph("Mi Director Financiero PTY", styles["BrandTitle"]))
     elements.append(Paragraph(
         f"Libro Diario — {society_name}<br/>"
         f"Periodo: {MONTHS_ES[period_month]} {period_year}<br/>"
@@ -163,7 +163,7 @@ def generate_libro_diario_pdf(
     # Footer
     elements.append(Spacer(1, 20))
     elements.append(Paragraph(
-        "SABIA EMPRENDE — Tu Aliado Estrategico | Generado automaticamente",
+        "Mi Director Financiero PTY — Tu Aliado Estratégico | Generado automaticamente",
         ParagraphStyle(name="Footer", parent=styles["Normal"], fontSize=7, textColor=colors.gray),
     ))
 
@@ -194,7 +194,7 @@ def generate_libro_mayor_pdf(
     if period_year and period_month:
         period_text = f"Periodo: {MONTHS_ES[period_month]} {period_year}"
 
-    elements.append(Paragraph("SABIA EMPRENDE", styles["BrandTitle"]))
+    elements.append(Paragraph("Mi Director Financiero PTY", styles["BrandTitle"]))
     elements.append(Paragraph(
         f"Libro Mayor — {society_name}<br/>"
         f"Cuenta: {ledger_data.get('account_code', '')} - {ledger_data.get('account_name', '')}<br/>"
@@ -238,7 +238,7 @@ def generate_libro_mayor_pdf(
 
     elements.append(Spacer(1, 20))
     elements.append(Paragraph(
-        "SABIA EMPRENDE — Tu Aliado Estrategico | Generado automaticamente",
+        "Mi Director Financiero PTY — Tu Aliado Estratégico | Generado automaticamente",
         ParagraphStyle(name="Footer", parent=styles["Normal"], fontSize=7, textColor=colors.gray),
     ))
 
@@ -269,7 +269,7 @@ def generate_trial_balance_pdf(
     if period_year and period_month:
         period_text = f"Periodo: {MONTHS_ES[period_month]} {period_year}"
 
-    elements.append(Paragraph("SABIA EMPRENDE", styles["BrandTitle"]))
+    elements.append(Paragraph("Mi Director Financiero PTY", styles["BrandTitle"]))
     elements.append(Paragraph(
         f"Balance de Comprobacion — {society_name}<br/>"
         f"{period_text}<br/>"
@@ -336,7 +336,7 @@ def generate_trial_balance_pdf(
 
     elements.append(Spacer(1, 20))
     elements.append(Paragraph(
-        "SABIA EMPRENDE — Tu Aliado Estrategico | Generado automaticamente",
+        "Mi Director Financiero PTY — Tu Aliado Estratégico | Generado automaticamente",
         ParagraphStyle(name="Footer", parent=styles["Normal"], fontSize=7, textColor=colors.gray),
     ))
 
@@ -368,7 +368,7 @@ def _build_doc(buffer: io.BytesIO):
 
 def _brand_header(elements: list, styles, title: str, subtitle: str):
     """Agrega header de marca estandar."""
-    elements.append(Paragraph("SABIA EMPRENDE", styles["BrandTitle"]))
+    elements.append(Paragraph("Mi Director Financiero PTY", styles["BrandTitle"]))
     elements.append(Paragraph(subtitle, styles["BrandSubtitle"]))
     elements.append(Spacer(1, 12))
 
@@ -377,7 +377,7 @@ def _brand_footer(elements: list, styles):
     """Agrega footer de marca estandar."""
     elements.append(Spacer(1, 20))
     elements.append(Paragraph(
-        "SABIA EMPRENDE — Tu Aliado Estrategico | Generado automaticamente",
+        "Mi Director Financiero PTY — Tu Aliado Estratégico | Generado automaticamente",
         ParagraphStyle(name="FooterExec", parent=styles["Normal"], fontSize=7, textColor=colors.gray),
     ))
 

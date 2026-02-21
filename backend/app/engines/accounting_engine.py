@@ -1,5 +1,5 @@
 """
-Motor Contable — SABIA EMPRENDE
+Motor Contable — Mi Director Financiero PTY
 Plan de Cuentas, validacion de asientos, Libro Mayor, Balance de Comprobacion,
 y puente automatico: asientos → financial_records.
 """

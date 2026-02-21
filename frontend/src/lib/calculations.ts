@@ -1,5 +1,5 @@
 /**
- * Funciones de calculo financiero client-side para SABIA EMPRENDE.
+ * Funciones de calculo financiero client-side para Mi Director Financiero PTY.
  * Usadas por SimuladorEstrategico, LabPrecios y ValoracionTab.
  */
 

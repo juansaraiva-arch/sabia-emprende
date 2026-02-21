@@ -1,6 +1,6 @@
 """
-Sprint 5 — Capa de Inteligencia Artificial (OpenAI)
-Endpoints: scan-receipt, voice-expense, simplify-legal, survival-alert
+Capa de Inteligencia Artificial (OpenAI) — Mi Director Financiero PTY
+Endpoints: scan-receipt, voice-expense, merge-transaction, simplify-legal, survival-alert
 Todos usan response_format={"type":"json_object"} para GPT-4o.
 """
 import os
@@ -431,3 +431,201 @@ async def survival_alert(req: SurvivalRequest, user: AuthenticatedUser = Depends
         },
         "data": result,
     }
+
+
+# ============================================
+# 5. MERGE TRANSACTION — Data Merging (foto + voz)
+# ============================================
+# Fusiona datos de factura (OCR) con contexto de voz (NLP)
+# en un solo registro contable unificado.
+
+class MergeRequest(BaseModel):
+    receipt_data: Optional[dict] = None  # Resultado de scan-receipt
+    voice_data: Optional[dict] = None    # Resultado de voice-expense
+    voice_transcript: Optional[str] = None
+    society_id: str = "demo-society-001"
+
+
+@router.post("/merge-transaction")
+async def merge_transaction(req: MergeRequest, user: AuthenticatedUser = Depends(get_current_user)):
+    """
+    Data Merging: Combina informacion de factura escaneada (OCR) con
+    contexto dictado por voz (NLP) para crear un registro contable completo.
+
+    Regla: La foto aporta monto exacto, fecha y proveedor.
+    La voz aporta categoria y contexto ("esto fue almuerzo con clientes").
+    El sistema fusiona ambos y genera el asiento de diario automaticamente.
+    """
+    from app.engines.account_mapping import CONCEPT_TO_ACCOUNTS
+
+    # Extraer datos de ambas fuentes
+    receipt = req.receipt_data or {}
+    voice = req.voice_data or {}
+
+    # Prioridad: monto de factura > monto de voz
+    amount = receipt.get("total") or voice.get("monto")
+    if not amount or amount <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="No se pudo determinar el monto. Proporciona una foto o dicta el monto.",
+        )
+
+    # Prioridad: fecha de factura > hoy
+    date_str = receipt.get("fecha") or datetime.now().strftime("%Y-%m-%d")
+
+    # Proveedor: de la factura
+    supplier = receipt.get("proveedor") or voice.get("concepto") or "No especificado"
+
+    # Categoria: voz tiene prioridad (el usuario la dice) > OCR sugiere
+    category = voice.get("categoria") or receipt.get("categoria_sugerida") or "otro"
+
+    # Tipo: voz tiene prioridad
+    tx_type = voice.get("tipo", "gasto")
+
+    # Descripcion fusionada
+    receipt_desc = receipt.get("descripcion_items", "")
+    voice_note = req.voice_transcript or voice.get("nota", "")
+    description = f"{supplier} - {receipt_desc}" if receipt_desc else supplier
+    if voice_note:
+        description += f" ({voice_note})"
+
+    # ITBMS de la factura
+    itbms = receipt.get("itbms", 0)
+
+    # Mapeo a concepto contable
+    CATEGORY_TO_CONCEPT = {
+        "alimentacion": "comida_clientes",
+        "transporte": "combustible",
+        "servicios": "servicios_publicos",
+        "suministros": "suministros",
+        "tecnologia": "suscripciones",
+        "alquiler": "alquiler",
+        "profesional": "honorarios",
+        "nomina": "planilla",
+        "ventas": "venta_contado",
+        "mantenimiento": "mantenimiento",
+        "combustible": "combustible",
+        "viaticos": "viaticos",
+        "seguros": "seguros",
+        "marketing": "marketing",
+        "capacitacion": "capacitacion",
+        "entrenamiento": "capacitacion",
+        "limpieza": "limpieza",
+        "suscripciones": "suscripciones",
+        "reparaciones": "reparaciones",
+        "donaciones": "donaciones",
+        "viaje": "viajes",
+        "legal": "gastos_legales",
+        "flete": "flete",
+        "representacion": "representacion",
+        "otro": "gasto_general",
+    }
+
+    concept_key = CATEGORY_TO_CONCEPT.get(category, "gasto_general")
+    if tx_type == "ingreso":
+        concept_key = "venta_contado"
+
+    concept = CONCEPT_TO_ACCOUNTS.get(concept_key, CONCEPT_TO_ACCOUNTS["gasto_general"])
+
+    # Generar preview de asiento contable
+    journal_lines = []
+    for line in concept["lines"]:
+        journal_lines.append({
+            "account_code": line["account_code"],
+            "description": line["description"],
+            "debe": float(amount) if line.get("debe") else 0.0,
+            "haber": float(amount) if line.get("haber") else 0.0,
+        })
+
+    # Generar fingerprint para deduplication
+    fingerprint = f"{date_str}|{supplier}|{amount}|{category}".lower().strip()
+
+    # Generar razonamiento para el usuario
+    reasoning = (
+        f"Categoria detectada: '{category}'. "
+        f"Mapeada al concepto contable: '{concept['description']}'. "
+        f"Cuenta DEBE: {concept['lines'][0]['account_code']} ({concept['lines'][0]['description']}), "
+        f"Cuenta HABER: {concept['lines'][1]['account_code']} ({concept['lines'][1]['description']})."
+    )
+
+    return {
+        "status": "ok",
+        "source": "data-merge",
+        "reasoning": reasoning,
+        "merged": {
+            "amount": float(amount),
+            "date": date_str,
+            "supplier": supplier,
+            "category": category,
+            "type": tx_type,
+            "description": description,
+            "itbms": float(itbms) if itbms else 0.0,
+            "concept_key": concept_key,
+            "fingerprint": fingerprint,
+        },
+        "journal_entry_preview": {
+            "concept_description": concept["description"],
+            "entry_date": date_str,
+            "lines": journal_lines,
+        },
+        "requires_confirmation": True,
+        "confirm_payload": {
+            "society_id": req.society_id,
+            "entry_date": date_str,
+            "concept": concept_key,
+            "description": description,
+            "lines": journal_lines,
+            "fingerprint": fingerprint,
+        },
+    }
+
+
+# ============================================
+# 6. CHECK DUPLICATE — Deduplication
+# ============================================
+
+class DeduplicationCheckRequest(BaseModel):
+    fingerprint: str
+    society_id: str = "demo-society-001"
+
+
+@router.post("/check-duplicate")
+async def check_duplicate(req: DeduplicationCheckRequest, user: AuthenticatedUser = Depends(get_current_user)):
+    """
+    Deduplication: Verifica si una transaccion ya fue registrada
+    usando un fingerprint unico (fecha|proveedor|monto|categoria).
+    Evita que el usuario registre el mismo recibo dos veces.
+    """
+    from app.database import get_supabase
+
+    try:
+        supabase = get_supabase()
+        # Buscar en journal_entries por fingerprint en metadata
+        result = supabase.table("journal_entries") \
+            .select("id, entry_date, description, created_at") \
+            .eq("society_id", req.society_id) \
+            .like("description", f"%{req.fingerprint[:30]}%") \
+            .limit(5) \
+            .execute()
+
+        if result.data and len(result.data) > 0:
+            return {
+                "status": "duplicate_found",
+                "message": f"Esta transaccion ya fue registrada el {result.data[0].get('entry_date', 'fecha desconocida')}. Quieres registrarla de nuevo?",
+                "existing_entries": result.data,
+                "is_duplicate": True,
+            }
+
+        return {
+            "status": "ok",
+            "message": "No se encontraron duplicados.",
+            "is_duplicate": False,
+        }
+
+    except Exception as e:
+        # En modo demo o si la tabla no existe, no bloquear
+        return {
+            "status": "ok",
+            "message": "Verificacion de duplicados no disponible (modo demo).",
+            "is_duplicate": False,
+        }

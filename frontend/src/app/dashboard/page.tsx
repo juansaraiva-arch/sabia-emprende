@@ -65,6 +65,7 @@ import ComparisonView from "@/components/charts/ComparisonView";
 import BudgetChart from "@/components/charts/BudgetChart";
 import BudgetEntryForm from "@/components/BudgetEntryForm";
 import ReportGenerator from "@/components/ReportGenerator";
+import MiAsistente from "@/components/MiAsistente";
 import { computeAlerts, computeComplianceAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
 import { playAlertSound, isSoundEnabled } from "@/lib/sounds";
 import { periodLabel, getPresetRange } from "@/lib/calculations";
@@ -151,7 +152,7 @@ export default function Dashboard() {
     // TODO: When connected to backend, call financialApi.createRecord(record, autoJournal)
     // to persist the record and optionally generate journal entries
     if (autoJournal) {
-      console.log("[SABIA] Auto-journal solicitado — se generaran asientos al conectar con backend");
+      console.log("[MiDF] Auto-journal solicitado — se generaran asientos al conectar con backend");
     }
   };
 
@@ -324,10 +325,10 @@ export default function Dashboard() {
             <SabiaLogo size={44} iconOnly className="hidden lg:block" />
             <div className="text-left">
               <h1 className="text-sm lg:text-base font-extrabold text-slate-800">
-                SABIA EMPRENDE
+                Mi Director Financiero PTY
               </h1>
               <p className="text-[10px] lg:text-xs text-slate-400">
-                Tu Aliado Estrategico
+                Tu Aliado Estratégico
               </p>
             </div>
           </button>
@@ -694,6 +695,16 @@ export default function Dashboard() {
           onStart={() => { handleWelcomeDismiss(); setActiveSection("datos"); }}
         />
       )}
+
+      {/* Mi Asistente — Chatbot IA Flotante */}
+      <MiAsistente
+        societyId={societyId}
+        onResult={(result) => {
+          if (result?.action === "journal_entry_created") {
+            // Refrescar datos si se creo un asiento
+          }
+        }}
+      />
     </main>
   );
 }

@@ -1,5 +1,5 @@
 /**
- * Motor de Alertas Centralizado — SABIA EMPRENDE
+ * Motor de Alertas Centralizado — Mi Director Financiero PTY
  * Genera alertas contextuales basadas en datos financieros,
  * legales y laborales del negocio.
  */

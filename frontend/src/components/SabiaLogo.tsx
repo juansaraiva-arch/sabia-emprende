@@ -9,9 +9,9 @@ interface SabiaLogoProps {
 }
 
 /**
- * SABIA EMPRENDE Logo Component
- * Brujula dorada con simbolo $ sobre fondo azul oscuro (#1B2838)
- * Colores: Dorado #C9A84C, Fondo #1B2838
+ * Mi Director Financiero PTY — Logo Component
+ * Brujula dorada con simbolo $ sobre fondo azul marino (#1A242F)
+ * Colores: Dorado #C5A059, Fondo #1A242F
  */
 export default function SabiaLogo({
   size = 40,
@@ -28,15 +28,15 @@ export default function SabiaLogo({
         xmlns="http://www.w3.org/2000/svg"
         className={className}
       >
-        {/* Circular dark background */}
-        <circle cx="50" cy="50" r="50" fill="#1B2838" />
+        {/* Circular dark navy background */}
+        <circle cx="50" cy="50" r="50" fill="#1A242F" />
 
         {/* Outer compass ring */}
         <circle
           cx="50"
           cy="50"
           r="32"
-          stroke="#C9A84C"
+          stroke="#C5A059"
           strokeWidth="1.5"
           fill="none"
         />
@@ -44,7 +44,7 @@ export default function SabiaLogo({
           cx="50"
           cy="50"
           r="28"
-          stroke="#C9A84C"
+          stroke="#C5A059"
           strokeWidth="0.5"
           fill="none"
           opacity="0.5"
@@ -52,37 +52,37 @@ export default function SabiaLogo({
 
         {/* Compass cardinal points (N, S, E, W) - large */}
         {/* North arrow */}
-        <polygon points="50,16 46,38 50,34 54,38" fill="#C9A84C" />
+        <polygon points="50,16 46,38 50,34 54,38" fill="#C5A059" />
         {/* South arrow */}
-        <polygon points="50,84 46,62 50,66 54,62" fill="#C9A84C" />
+        <polygon points="50,84 46,62 50,66 54,62" fill="#C5A059" />
         {/* East arrow */}
-        <polygon points="84,50 62,46 66,50 62,54" fill="#C9A84C" />
+        <polygon points="84,50 62,46 66,50 62,54" fill="#C5A059" />
         {/* West arrow */}
-        <polygon points="16,50 38,46 34,50 38,54" fill="#C9A84C" />
+        <polygon points="16,50 38,46 34,50 38,54" fill="#C5A059" />
 
         {/* Compass intercardinal points (NE, NW, SE, SW) - smaller */}
         {/* NE */}
         <polygon
           points="74,26 60,38 63,38 62,41"
-          fill="#C9A84C"
+          fill="#C5A059"
           opacity="0.8"
         />
         {/* NW */}
         <polygon
           points="26,26 40,38 37,38 38,41"
-          fill="#C9A84C"
+          fill="#C5A059"
           opacity="0.8"
         />
         {/* SE */}
         <polygon
           points="74,74 60,62 63,62 62,59"
-          fill="#C9A84C"
+          fill="#C5A059"
           opacity="0.8"
         />
         {/* SW */}
         <polygon
           points="26,74 40,62 37,62 38,59"
-          fill="#C9A84C"
+          fill="#C5A059"
           opacity="0.8"
         />
 
@@ -92,19 +92,19 @@ export default function SabiaLogo({
           y1="38"
           x2="70"
           y2="22"
-          stroke="#C9A84C"
+          stroke="#C5A059"
           strokeWidth="2.5"
           strokeLinecap="round"
         />
-        <polygon points="70,22 66,22 70,26" fill="#C9A84C" />
+        <polygon points="70,22 66,22 70,26" fill="#C5A059" />
 
         {/* Center circle with $ */}
-        <circle cx="50" cy="50" r="11" fill="#1B2838" stroke="#C9A84C" strokeWidth="2" />
+        <circle cx="50" cy="50" r="11" fill="#1A242F" stroke="#C5A059" strokeWidth="2" />
         <text
           x="50"
           y="55"
           textAnchor="middle"
-          fill="#C9A84C"
+          fill="#C5A059"
           fontSize="14"
           fontWeight="bold"
           fontFamily="serif"
@@ -123,24 +123,35 @@ export default function SabiaLogo({
         <h1
           className="font-extrabold tracking-wide"
           style={{
-            color: "#C9A84C",
-            fontSize: size * 0.35,
+            color: "#C5A059",
+            fontSize: size * 0.28,
             lineHeight: 1.1,
             fontFamily: "serif",
           }}
         >
-          SABIA EMPRENDE
+          MI DIRECTOR FINANCIERO
         </h1>
         <p
-          className="tracking-wider"
+          className="tracking-wider font-bold"
           style={{
-            color: "#C9A84C",
-            fontSize: size * 0.2,
-            opacity: 0.8,
+            color: "#C5A059",
+            fontSize: size * 0.18,
+            opacity: 0.9,
             fontFamily: "serif",
           }}
         >
-          Tu Aliado Estrategico
+          PTY
+        </p>
+        <p
+          className="tracking-wider"
+          style={{
+            color: "#C5A059",
+            fontSize: size * 0.13,
+            opacity: 0.7,
+            fontFamily: "serif",
+          }}
+        >
+          Tu Aliado Estratégico
         </p>
       </div>
     </div>

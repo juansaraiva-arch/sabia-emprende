@@ -97,7 +97,7 @@ import {
 
 type Section = "datos" | "negocio" | "legal";
 type DatosMode = "flash" | "contabilidad";
-type ContabilidadTab = "plan_cuentas" | "libro_diario" | "libro_mayor" | "balance_comprobacion" | "libro_inventarios" | "libro_actas" | "cierre_periodo";
+type ContabilidadTab = "plan_cuentas" | "libro_diario" | "libro_mayor" | "balance_comprobacion" | "libro_inventarios" | "cierre_periodo";
 type NegocioTab =
   | "cascada"
   | "mandibulas"
@@ -112,7 +112,7 @@ type NegocioTab =
   | "comparativo"
   | "presupuesto"
   | "reportes";
-type LegalTab = "boveda" | "vigilante" | "auditoria";
+type LegalTab = "boveda" | "vigilante" | "auditoria" | "libro_actas";
 
 // View: "hub" = main dashboard with 3 module cards, "module" = inside a module
 type DashboardView = "hub" | "module";
@@ -847,6 +847,7 @@ export default function Dashboard() {
     { key: "boveda", label: "Boveda KYC", icon: <Shield size={14} /> },
     { key: "vigilante", label: "Vigilante Legal", icon: <Scale size={14} /> },
     { key: "auditoria", label: "Auditoria", icon: <History size={14} /> },
+    { key: "libro_actas", label: "Libro de Actas", icon: <ClipboardList size={14} /> },
   ];
 
   // Mi Asistente open state (for hub org chart node)
@@ -978,7 +979,6 @@ export default function Dashboard() {
                     { key: "libro_mayor" as ContabilidadTab, label: "Libro Mayor", icon: <BookMarked size={14} /> },
                     { key: "balance_comprobacion" as ContabilidadTab, label: "Balance Comprobacion", icon: <CheckSquare size={14} /> },
                     { key: "libro_inventarios" as ContabilidadTab, label: "Inventarios y Balances", icon: <Package size={14} /> },
-                    { key: "libro_actas" as ContabilidadTab, label: "Libro de Actas", icon: <ClipboardList size={14} /> },
                     { key: "cierre_periodo" as ContabilidadTab, label: "Cierre y Reportes", icon: <Lock size={14} /> },
                   ]).map((tab) => (
                     <button
@@ -1001,7 +1001,6 @@ export default function Dashboard() {
                   {activeContabilidadTab === "libro_mayor" && <LibroMayor societyId={societyId} />}
                   {activeContabilidadTab === "balance_comprobacion" && <BalanceComprobacion societyId={societyId} />}
                   {activeContabilidadTab === "libro_inventarios" && <LibroInventarios societyId={societyId} />}
-                  {activeContabilidadTab === "libro_actas" && <LibroActas societyId={societyId} />}
                   {activeContabilidadTab === "cierre_periodo" && <PeriodClosingPanel societyId={societyId} />}
                 </div>
               </div>
@@ -1214,6 +1213,7 @@ export default function Dashboard() {
               {activeLegalTab === "boveda" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Boveda KYC — Debida Diligencia</h2><LegalVault onDocumentUploaded={handleDocumentUploaded} /></div>)}
               {activeLegalTab === "vigilante" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Vigilante Legal: Alertas de Cumplimiento</h2><WatchdogDashboard /></div>)}
               {activeLegalTab === "auditoria" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Historial de Cambios</h2><AuditTimeline limit={30} /></div>)}
+              {activeLegalTab === "libro_actas" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Libro de Actas</h2><LibroActas societyId={societyId} /></div>)}
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6">
               <h3 className="text-sm font-bold text-slate-600 mb-3 flex items-center gap-2">

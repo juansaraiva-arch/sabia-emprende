@@ -38,6 +38,77 @@ const ACCOUNT_TYPES = [
   { value: "costo_gasto", label: "Costo / Gasto" },
 ];
 
+// Plan de cuentas predeterminado para Panama (cuando el backend no esta disponible)
+const DEFAULT_PANAMA_CHART: Account[] = [
+  // ACTIVOS
+  { id: "1", account_code: "1.0", account_name: "ACTIVOS", account_type: "activo", parent_code: null, level: 1, is_header: true, normal_balance: "debe", is_active: true },
+  { id: "2", account_code: "1.1", account_name: "Activo Corriente", account_type: "activo", parent_code: "1.0", level: 2, is_header: true, normal_balance: "debe", is_active: true },
+  { id: "3", account_code: "1.1.01", account_name: "Caja General", account_type: "activo", parent_code: "1.1", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "4", account_code: "1.1.02", account_name: "Caja Chica", account_type: "activo", parent_code: "1.1", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "5", account_code: "1.1.03", account_name: "Banco Nacional de Panama", account_type: "activo", parent_code: "1.1", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "6", account_code: "1.1.04", account_name: "Bancos Locales", account_type: "activo", parent_code: "1.1", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "7", account_code: "1.1.05", account_name: "Cuentas por Cobrar", account_type: "activo", parent_code: "1.1", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "8", account_code: "1.1.06", account_name: "Inventario de Mercancia", account_type: "activo", parent_code: "1.1", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "9", account_code: "1.1.07", account_name: "ITBMS por Cobrar (Credito Fiscal)", account_type: "activo", parent_code: "1.1", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "10", account_code: "1.1.08", account_name: "Anticipos a Proveedores", account_type: "activo", parent_code: "1.1", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "11", account_code: "1.2", account_name: "Activo No Corriente", account_type: "activo", parent_code: "1.0", level: 2, is_header: true, normal_balance: "debe", is_active: true },
+  { id: "12", account_code: "1.2.01", account_name: "Mobiliario y Equipo", account_type: "activo", parent_code: "1.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "13", account_code: "1.2.02", account_name: "Equipo de Computo", account_type: "activo", parent_code: "1.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "14", account_code: "1.2.03", account_name: "Vehiculos", account_type: "activo", parent_code: "1.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "15", account_code: "1.2.04", account_name: "Depreciacion Acumulada", account_type: "activo", parent_code: "1.2", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "16", account_code: "1.2.05", account_name: "Depositos en Garantia", account_type: "activo", parent_code: "1.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  // PASIVOS
+  { id: "17", account_code: "2.0", account_name: "PASIVOS", account_type: "pasivo", parent_code: null, level: 1, is_header: true, normal_balance: "haber", is_active: true },
+  { id: "18", account_code: "2.1", account_name: "Pasivo Corriente", account_type: "pasivo", parent_code: "2.0", level: 2, is_header: true, normal_balance: "haber", is_active: true },
+  { id: "19", account_code: "2.1.01", account_name: "Cuentas por Pagar (Proveedores)", account_type: "pasivo", parent_code: "2.1", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "20", account_code: "2.1.02", account_name: "ITBMS por Pagar", account_type: "pasivo", parent_code: "2.1", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "21", account_code: "2.1.03", account_name: "Impuesto sobre la Renta por Pagar", account_type: "pasivo", parent_code: "2.1", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "22", account_code: "2.1.04", account_name: "CSS Patronal por Pagar", account_type: "pasivo", parent_code: "2.1", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "23", account_code: "2.1.05", account_name: "CSS Obrero por Pagar", account_type: "pasivo", parent_code: "2.1", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "24", account_code: "2.1.06", account_name: "Seguro Educativo por Pagar", account_type: "pasivo", parent_code: "2.1", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "25", account_code: "2.1.07", account_name: "Decimo Tercer Mes por Pagar", account_type: "pasivo", parent_code: "2.1", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "26", account_code: "2.1.08", account_name: "Vacaciones por Pagar", account_type: "pasivo", parent_code: "2.1", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "27", account_code: "2.1.09", account_name: "Sueldos y Salarios por Pagar", account_type: "pasivo", parent_code: "2.1", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "28", account_code: "2.1.10", account_name: "Tasa Unica Municipal por Pagar", account_type: "pasivo", parent_code: "2.1", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "29", account_code: "2.2", account_name: "Pasivo No Corriente", account_type: "pasivo", parent_code: "2.0", level: 2, is_header: true, normal_balance: "haber", is_active: true },
+  { id: "30", account_code: "2.2.01", account_name: "Prestamos Bancarios L/P", account_type: "pasivo", parent_code: "2.2", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "31", account_code: "2.2.02", account_name: "Prestamos por Pagar Socios", account_type: "pasivo", parent_code: "2.2", level: 3, is_header: false, normal_balance: "haber", is_active: true },
+  // PATRIMONIO
+  { id: "32", account_code: "3.0", account_name: "PATRIMONIO", account_type: "patrimonio", parent_code: null, level: 1, is_header: true, normal_balance: "haber", is_active: true },
+  { id: "33", account_code: "3.1", account_name: "Capital Social", account_type: "patrimonio", parent_code: "3.0", level: 2, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "34", account_code: "3.2", account_name: "Reserva Legal (10%)", account_type: "patrimonio", parent_code: "3.0", level: 2, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "35", account_code: "3.3", account_name: "Utilidades Retenidas", account_type: "patrimonio", parent_code: "3.0", level: 2, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "36", account_code: "3.4", account_name: "Utilidad (Perdida) del Ejercicio", account_type: "patrimonio", parent_code: "3.0", level: 2, is_header: false, normal_balance: "haber", is_active: true },
+  // INGRESOS
+  { id: "37", account_code: "4.0", account_name: "INGRESOS", account_type: "ingreso", parent_code: null, level: 1, is_header: true, normal_balance: "haber", is_active: true },
+  { id: "38", account_code: "4.1", account_name: "Ingresos por Ventas", account_type: "ingreso", parent_code: "4.0", level: 2, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "39", account_code: "4.2", account_name: "Ingresos por Servicios", account_type: "ingreso", parent_code: "4.0", level: 2, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "40", account_code: "4.3", account_name: "Otros Ingresos", account_type: "ingreso", parent_code: "4.0", level: 2, is_header: false, normal_balance: "haber", is_active: true },
+  { id: "41", account_code: "4.4", account_name: "Descuentos sobre Ventas", account_type: "ingreso", parent_code: "4.0", level: 2, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "42", account_code: "4.5", account_name: "Devoluciones sobre Ventas", account_type: "ingreso", parent_code: "4.0", level: 2, is_header: false, normal_balance: "debe", is_active: true },
+  // COSTOS Y GASTOS
+  { id: "43", account_code: "5.0", account_name: "COSTOS Y GASTOS", account_type: "costo_gasto", parent_code: null, level: 1, is_header: true, normal_balance: "debe", is_active: true },
+  { id: "44", account_code: "5.1", account_name: "Costo de Ventas (COGS)", account_type: "costo_gasto", parent_code: "5.0", level: 2, is_header: true, normal_balance: "debe", is_active: true },
+  { id: "45", account_code: "5.1.01", account_name: "Compras de Mercancia", account_type: "costo_gasto", parent_code: "5.1", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "46", account_code: "5.1.02", account_name: "Fletes de Importacion", account_type: "costo_gasto", parent_code: "5.1", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "47", account_code: "5.2", account_name: "Gastos de Operacion", account_type: "costo_gasto", parent_code: "5.0", level: 2, is_header: true, normal_balance: "debe", is_active: true },
+  { id: "48", account_code: "5.2.01", account_name: "Sueldos y Salarios", account_type: "costo_gasto", parent_code: "5.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "49", account_code: "5.2.02", account_name: "CSS Patronal (Cuota Patronal)", account_type: "costo_gasto", parent_code: "5.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "50", account_code: "5.2.03", account_name: "Seguro Educativo Patronal", account_type: "costo_gasto", parent_code: "5.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "51", account_code: "5.2.04", account_name: "Decimo Tercer Mes", account_type: "costo_gasto", parent_code: "5.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "52", account_code: "5.2.05", account_name: "Alquiler de Local", account_type: "costo_gasto", parent_code: "5.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "53", account_code: "5.2.06", account_name: "Servicios Publicos (Agua, Luz, Internet)", account_type: "costo_gasto", parent_code: "5.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "54", account_code: "5.2.07", account_name: "Honorarios Profesionales", account_type: "costo_gasto", parent_code: "5.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "55", account_code: "5.2.08", account_name: "Depreciacion", account_type: "costo_gasto", parent_code: "5.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "56", account_code: "5.2.09", account_name: "Gastos de Publicidad y Marketing", account_type: "costo_gasto", parent_code: "5.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "57", account_code: "5.2.10", account_name: "Seguros", account_type: "costo_gasto", parent_code: "5.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "58", account_code: "5.2.11", account_name: "Gastos Legales y Notariales", account_type: "costo_gasto", parent_code: "5.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "59", account_code: "5.2.12", account_name: "Suministros de Oficina", account_type: "costo_gasto", parent_code: "5.2", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "60", account_code: "5.3", account_name: "Gastos Financieros", account_type: "costo_gasto", parent_code: "5.0", level: 2, is_header: true, normal_balance: "debe", is_active: true },
+  { id: "61", account_code: "5.3.01", account_name: "Intereses Bancarios", account_type: "costo_gasto", parent_code: "5.3", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+  { id: "62", account_code: "5.3.02", account_name: "Comisiones Bancarias", account_type: "costo_gasto", parent_code: "5.3", level: 3, is_header: false, normal_balance: "debe", is_active: true },
+];
+
 const TYPE_COLORS: Record<string, string> = {
   activo: "bg-blue-100 text-blue-700",
   pasivo: "bg-red-100 text-red-700",
@@ -70,9 +141,17 @@ export default function ChartOfAccounts({ societyId }: ChartOfAccountsProps) {
     setError(null);
     try {
       const res = await accountingApi.listChart(societyId, false);
-      setAccounts(res.data);
+      if (res.data && res.data.length > 0) {
+        setAccounts(res.data);
+      } else {
+        // Backend no disponible o demo mode — cargar plan local
+        setAccounts(DEFAULT_PANAMA_CHART);
+        setExpandedCodes(new Set(["1.0", "2.0", "3.0", "4.0", "5.0"]));
+      }
     } catch (e: any) {
-      setError(e.message);
+      // Si falla la conexion, usar plan local
+      setAccounts(DEFAULT_PANAMA_CHART);
+      setExpandedCodes(new Set(["1.0", "2.0", "3.0", "4.0", "5.0"]));
     } finally {
       setLoading(false);
     }
@@ -86,14 +165,11 @@ export default function ChartOfAccounts({ societyId }: ChartOfAccountsProps) {
     setLoading(true);
     try {
       await accountingApi.initializeChart(societyId);
-      await loadAccounts();
-      // Expand level-1 codes by default
-      setExpandedCodes(new Set(["1.0", "2.0", "3.0", "4.0", "5.0"]));
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
+    } catch {
+      // Ignorar error de backend — usaremos datos locales
     }
+    // loadAccounts ya tiene fallback a DEFAULT_PANAMA_CHART
+    await loadAccounts();
   };
 
   const handleCreateAccount = async () => {

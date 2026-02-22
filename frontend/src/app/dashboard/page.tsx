@@ -282,15 +282,15 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
           {/* Vertical line from Director down to horizontal T */}
           <div className="absolute left-1/2 top-0 w-[2px] h-[50px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
 
-          {/* Horizontal branch line to Mi Asistente (right) — from center to left edge of Asistente box */}
-          <div className="absolute top-[25px] h-[2px]" style={{ left: "50%", width: "140px", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          {/* Horizontal branch line to Mi Asistente (right) — stops before the box */}
+          <div className="absolute top-[25px] h-[2px]" style={{ left: "50%", width: "120px", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
 
-          {/* Mi Asistente node (right lateral) — positioned so line reaches its left border */}
+          {/* Mi Asistente node (right lateral) — gap of 8px after line end */}
           <button
             onClick={onOpenAsistente}
             className="absolute top-[4px] flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 transition-all hover:scale-105 group"
             style={{
-              left: "calc(50% + 140px)",
+              left: "calc(50% + 128px)",
               backgroundColor: "rgba(197, 160, 89, 0.08)",
               borderColor: "rgba(197, 160, 89, 0.3)",
             }}

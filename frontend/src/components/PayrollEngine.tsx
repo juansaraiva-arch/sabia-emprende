@@ -161,7 +161,10 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
     try {
       setLoading(true);
       const res = await payrollApi.listEmployees(societyId, false);
-      setEmployees(res.data || []);
+      if (res.data && res.data.length > 0) {
+        setEmployees(res.data);
+      }
+      // Si data es vacio, mantener estado local (demo mode)
     } catch {
       // Fallback: keep current local state
     } finally {
@@ -313,6 +316,29 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
 
   // ---- HANDLERS ----
 
+  const addLocalEmployee = () => {
+    setEmployees((prev) => [
+      ...prev,
+      {
+        id: generateId(),
+        society_id: societyId,
+        employee_name: "",
+        contract_type: "payroll",
+        gross_salary: 0,
+        years_worked: 0,
+        vacation_days_accrued: 0,
+        vacation_days_taken: 0,
+        xiii_mes_accumulated: 0,
+        employer_cost: 0,
+        employee_net: 0,
+        total_deductions: 0,
+        carga_patronal_pct: 0,
+        breakdown: {},
+        is_active: true,
+      },
+    ]);
+  };
+
   const addEmployee = async () => {
     setSaving(true);
     try {
@@ -323,31 +349,16 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
         gross_salary: 0,
         years_worked: 0,
       });
-      if (res.data) {
+      // Verificar que el backend realmente creo el empleado
+      if (res.data && !Array.isArray(res.data) && res.data.id) {
         await loadEmployees();
+      } else {
+        // Demo mode: API retorna exito pero sin datos reales
+        addLocalEmployee();
       }
     } catch {
-      // Fallback to local-only
-      setEmployees((prev) => [
-        ...prev,
-        {
-          id: generateId(),
-          society_id: societyId,
-          employee_name: "",
-          contract_type: "payroll",
-          gross_salary: 0,
-          years_worked: 0,
-          vacation_days_accrued: 0,
-          vacation_days_taken: 0,
-          xiii_mes_accumulated: 0,
-          employer_cost: 0,
-          employee_net: 0,
-          total_deductions: 0,
-          carga_patronal_pct: 0,
-          breakdown: {},
-          is_active: true,
-        },
-      ]);
+      // Backend no disponible — fallback local
+      addLocalEmployee();
     } finally {
       setSaving(false);
     }

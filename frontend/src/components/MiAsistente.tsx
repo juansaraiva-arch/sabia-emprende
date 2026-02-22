@@ -21,6 +21,12 @@ import { nlpApi, accountingApi } from "@/lib/api";
 interface MiAsistenteProps {
   societyId: string;
   onResult?: (result: any) => void;
+  /** Force the chat panel open (controlled from parent) */
+  forceOpen?: boolean;
+  /** Called when user closes the chat (for parent to sync state) */
+  onClose?: () => void;
+  /** Hide the floating button (when org chart node replaces it) */
+  hideButton?: boolean;
 }
 
 interface ChatMessage {
@@ -60,8 +66,18 @@ const QUICK_ACTIONS = [
   { label: "Salud financiera", text: "Como esta la salud de mi negocio?" },
 ];
 
-export default function MiAsistente({ societyId, onResult }: MiAsistenteProps) {
+export default function MiAsistente({ societyId, onResult, forceOpen, onClose, hideButton }: MiAsistenteProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Sync forceOpen from parent
+  useEffect(() => {
+    if (forceOpen) setIsOpen(true);
+  }, [forceOpen]);
+
+  const handleClose = () => {
+    setIsOpen(false);
+    onClose?.();
+  };
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -198,8 +214,8 @@ export default function MiAsistente({ societyId, onResult }: MiAsistenteProps) {
 
   return (
     <>
-      {/* Floating Button */}
-      {!isOpen && (
+      {/* Floating Button (hidden when hideButton=true, e.g. in Hub org chart) */}
+      {!isOpen && !hideButton && (
         <button
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3.5 rounded-full font-bold text-sm shadow-xl hover:scale-105 active:scale-95 transition-all"
@@ -240,7 +256,7 @@ export default function MiAsistente({ societyId, onResult }: MiAsistenteProps) {
               </div>
             </div>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={handleClose}
               className="p-2 rounded-lg hover:bg-white/10 transition-colors"
               aria-label="Cerrar asistente"
             >

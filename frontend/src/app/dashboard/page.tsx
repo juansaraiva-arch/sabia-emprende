@@ -29,6 +29,10 @@ import {
   Home,
   ArrowLeft,
   PenLine,
+  Bot,
+  Upload,
+  Pencil,
+  ImageIcon,
 } from "lucide-react";
 import type { FinancialRecord } from "@/lib/calculations";
 import SabiaLogo from "@/components/SabiaLogo";
@@ -112,124 +116,277 @@ type LegalTab = "boveda" | "vigilante" | "auditoria";
 type DashboardView = "hub" | "module";
 
 // ============================================
-// HUB VIEW COMPONENT (Mockup Design)
+// HUB VIEW — Organigrama Empresarial (Dark Theme)
 // ============================================
 
-function HubView({ onSelectModule }: { onSelectModule: (section: Section) => void }) {
-  return (
-    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: "#F0F2F5" }}>
-      {/* Subtle geometric pattern overlay */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage: `
-            linear-gradient(30deg, #1A242F 12%, transparent 12.5%, transparent 87%, #1A242F 87.5%, #1A242F),
-            linear-gradient(150deg, #1A242F 12%, transparent 12.5%, transparent 87%, #1A242F 87.5%, #1A242F),
-            linear-gradient(30deg, #1A242F 12%, transparent 12.5%, transparent 87%, #1A242F 87.5%, #1A242F),
-            linear-gradient(150deg, #1A242F 12%, transparent 12.5%, transparent 87%, #1A242F 87.5%, #1A242F),
-            linear-gradient(60deg, #C5A059 25%, transparent 25.5%, transparent 75%, #C5A059 75%, #C5A059),
-            linear-gradient(60deg, #C5A059 25%, transparent 25.5%, transparent 75%, #C5A059 75%, #C5A059)
-          `,
-          backgroundSize: "80px 140px",
-          backgroundPosition: "0 0, 0 0, 40px 70px, 40px 70px, 0 0, 40px 70px",
-        }}
-      />
+function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section: Section) => void; onOpenAsistente: () => void }) {
+  // Company info (localStorage temporal, luego Supabase)
+  const [companyName, setCompanyName] = React.useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("midf_company_name") || "";
+    return "";
+  });
+  const [companyLogo, setCompanyLogo] = React.useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("midf_company_logo") || "";
+    return "";
+  });
+  const [editingCompany, setEditingCompany] = React.useState(false);
+  const [tempName, setTempName] = React.useState(companyName);
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
 
-      {/* Top header bar — User company info */}
-      <header className="relative z-10 w-full border-b" style={{ backgroundColor: "#1A242F", borderColor: "rgba(197, 160, 89, 0.2)" }}>
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(197, 160, 89, 0.15)", border: "1px solid rgba(197, 160, 89, 0.3)" }}>
-            <Building2 size={20} style={{ color: "#C5A059" }} />
-          </div>
-          <div>
-            <p className="text-xs font-medium" style={{ color: "rgba(197, 160, 89, 0.6)" }}>EMPRESA</p>
-            <p className="text-sm font-bold" style={{ color: "#C5A059" }}>Nombre de su Empresa</p>
-          </div>
-        </div>
-      </header>
+  const handleSaveCompany = () => {
+    localStorage.setItem("midf_company_name", tempName);
+    setCompanyName(tempName);
+    setEditingCompany(false);
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      localStorage.setItem("midf_company_logo", dataUrl);
+      setCompanyLogo(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const GOLD = "#C5A059";
+  const NAVY = "#1A242F";
+
+  return (
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-[#1A242F] via-[#1A242F] to-[#0F171E]">
+      {/* Decorative gold accent lines */}
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#C5A059] to-transparent opacity-40" />
+      <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#C5A059] to-transparent opacity-40" />
 
       {/* Main content */}
-      <div className="relative z-10 flex flex-col items-center px-4 pt-10 pb-20 lg:pt-16 lg:pb-24">
-        {/* Logo and branding centered */}
-        <div className="flex flex-col items-center mb-12 lg:mb-16">
-          <div className="mb-4">
-            <SabiaLogo size={100} iconOnly />
+      <div className="relative z-10 flex flex-col items-center px-4 pt-8 pb-20 lg:pt-12 lg:pb-24 max-w-5xl mx-auto">
+
+        {/* ===== NIVEL 0: EMPRESA DEL USUARIO (Nodo editable) ===== */}
+        <div
+          className="relative rounded-2xl border-2 p-5 lg:p-6 w-full max-w-sm text-center cursor-pointer transition-all hover:border-opacity-60"
+          style={{
+            backgroundColor: "rgba(197, 160, 89, 0.08)",
+            borderColor: "rgba(197, 160, 89, 0.3)",
+          }}
+          onClick={() => !editingCompany && setEditingCompany(true)}
+        >
+          {/* Logo area */}
+          <div className="flex justify-center mb-3">
+            {companyLogo ? (
+              <div className="relative group">
+                <img
+                  src={companyLogo}
+                  alt="Logo empresa"
+                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-xl object-contain border-2"
+                  style={{ borderColor: "rgba(197, 160, 89, 0.3)", backgroundColor: "rgba(255,255,255,0.05)" }}
+                />
+                <button
+                  onClick={(e) => { e.stopPropagation(); logoInputRef.current?.click(); }}
+                  className="absolute -bottom-1 -right-1 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ backgroundColor: GOLD }}
+                >
+                  <Pencil size={10} style={{ color: NAVY }} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); logoInputRef.current?.click(); }}
+                className="w-16 h-16 lg:w-20 lg:h-20 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all hover:border-opacity-60"
+                style={{ borderColor: "rgba(197, 160, 89, 0.4)" }}
+              >
+                <Upload size={18} style={{ color: GOLD, opacity: 0.6 }} />
+                <span className="text-[9px] font-medium" style={{ color: GOLD, opacity: 0.5 }}>Logo</span>
+              </button>
+            )}
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleLogoUpload}
+            />
           </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight font-heading text-center"
-            style={{ color: "#1A242F" }}>
+
+          {/* Company name */}
+          {editingCompany ? (
+            <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="text"
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                placeholder="Nombre de su Empresa"
+                autoFocus
+                className="w-full text-center text-sm font-bold bg-transparent border-b-2 py-1 outline-none placeholder-opacity-40"
+                style={{ color: GOLD, borderColor: "rgba(197, 160, 89, 0.4)", caretColor: GOLD }}
+                onKeyDown={(e) => e.key === "Enter" && handleSaveCompany()}
+              />
+              <button
+                onClick={handleSaveCompany}
+                className="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
+                style={{ backgroundColor: GOLD, color: NAVY }}
+              >
+                Guardar
+              </button>
+            </div>
+          ) : (
+            <div>
+              <p className="text-[10px] font-medium tracking-widest uppercase" style={{ color: "rgba(197, 160, 89, 0.5)" }}>
+                MI EMPRESA
+              </p>
+              <p className="text-sm lg:text-base font-bold mt-0.5" style={{ color: GOLD }}>
+                {companyName || "Nombre de su Empresa"}
+              </p>
+              {!companyName && (
+                <p className="text-[10px] mt-1" style={{ color: "rgba(197, 160, 89, 0.4)" }}>
+                  Toca para editar
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Linea vertical: Empresa → Director */}
+        <div className="w-[2px] h-6 lg:h-10" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+
+        {/* ===== NIVEL 1: MI DIRECTOR FINANCIERO PTY ===== */}
+        <div
+          className="relative rounded-2xl border-2 p-6 lg:p-8 w-full max-w-md text-center"
+          style={{
+            backgroundColor: "rgba(197, 160, 89, 0.06)",
+            borderColor: "rgba(197, 160, 89, 0.25)",
+          }}
+        >
+          <div className="flex justify-center mb-3">
+            <SabiaLogo size={80} iconOnly />
+          </div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight font-heading"
+            style={{ color: GOLD }}>
             Mi Director Financiero
           </h1>
-          <p className="text-xl sm:text-2xl font-bold tracking-widest mt-1"
-            style={{ color: "#C5A059" }}>
+          <p className="text-lg sm:text-xl font-bold tracking-widest mt-1"
+            style={{ color: GOLD, opacity: 0.85 }}>
             PTY
           </p>
-          <p className="text-sm mt-2 font-semibold tracking-wide"
-            style={{ color: "#C5A059", opacity: 0.7 }}>
+          <p className="text-xs sm:text-sm mt-2 font-semibold tracking-wide"
+            style={{ color: GOLD, opacity: 0.6 }}>
             Tu Aliado Estrat&eacute;gico
           </p>
         </div>
 
-        {/* Connection lines (decorative) — Desktop only */}
-        <div className="hidden lg:block relative w-full max-w-4xl h-16 mb-4">
-          {/* Center vertical line */}
-          <div className="absolute left-1/2 top-0 w-[2px] h-8 -translate-x-1/2" style={{ backgroundColor: "#3B82F6" }} />
-          {/* Horizontal line */}
-          <div className="absolute left-[16.66%] top-8 right-[16.66%] h-[2px]" style={{ backgroundColor: "#3B82F6" }} />
-          {/* Left vertical */}
-          <div className="absolute left-[16.66%] top-8 w-[2px] h-8" style={{ backgroundColor: "#3B82F6" }} />
-          {/* Center vertical (continue) */}
-          <div className="absolute left-1/2 top-8 w-[2px] h-8 -translate-x-1/2" style={{ backgroundColor: "#3B82F6" }} />
-          {/* Right vertical */}
-          <div className="absolute right-[16.66%] top-8 w-[2px] h-8" style={{ backgroundColor: "#3B82F6" }} />
+        {/* ===== ZONA DE CONEXION: Director → Asistente (lateral) + 3 verticales ===== */}
+
+        {/* Desktop layout */}
+        <div className="hidden lg:block relative w-full" style={{ height: "120px" }}>
+          {/* Vertical line from Director down to horizontal T */}
+          <div className="absolute left-1/2 top-0 w-[2px] h-[50px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+
+          {/* Horizontal branch line to Mi Asistente (right) — at y=25px */}
+          <div className="absolute left-1/2 top-[25px] h-[2px]" style={{ width: "200px", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+
+          {/* Mi Asistente node (right lateral) */}
+          <button
+            onClick={onOpenAsistente}
+            className="absolute top-[4px] flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 transition-all hover:scale-105 group"
+            style={{
+              left: "calc(50% + 200px)",
+              backgroundColor: "rgba(197, 160, 89, 0.08)",
+              borderColor: "rgba(197, 160, 89, 0.3)",
+            }}
+          >
+            <div className="p-2 rounded-lg" style={{ backgroundColor: "rgba(197, 160, 89, 0.15)" }}>
+              <Bot size={22} style={{ color: GOLD }} />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-bold" style={{ color: GOLD }}>Mi Asistente</p>
+              <p className="text-[10px]" style={{ color: "rgba(197, 160, 89, 0.5)" }}>IA Chatbot</p>
+            </div>
+          </button>
+
+          {/* Horizontal T-bar spanning 3 columns — at y=50px */}
+          <div className="absolute top-[50px] h-[2px]" style={{ left: "16.66%", right: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+
+          {/* 3 vertical drops from T-bar to cards */}
+          <div className="absolute top-[50px] w-[2px] h-[70px]" style={{ left: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          <div className="absolute left-1/2 top-[50px] w-[2px] h-[70px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          <div className="absolute top-[50px] w-[2px] h-[70px]" style={{ right: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
         </div>
 
-        {/* Three module cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 w-full max-w-5xl">
+        {/* Mobile layout — simplified lines */}
+        <div className="lg:hidden flex flex-col items-center">
+          <div className="w-[2px] h-4" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+
+          {/* Mi Asistente node (mobile — centered) */}
+          <button
+            onClick={onOpenAsistente}
+            className="flex items-center gap-3 px-5 py-3 rounded-xl border-2 transition-all hover:scale-105 mb-4"
+            style={{
+              backgroundColor: "rgba(197, 160, 89, 0.08)",
+              borderColor: "rgba(197, 160, 89, 0.3)",
+            }}
+          >
+            <div className="p-2 rounded-lg" style={{ backgroundColor: "rgba(197, 160, 89, 0.15)" }}>
+              <Bot size={22} style={{ color: GOLD }} />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-bold" style={{ color: GOLD }}>Mi Asistente</p>
+              <p className="text-[10px]" style={{ color: "rgba(197, 160, 89, 0.5)" }}>IA Chatbot</p>
+            </div>
+          </button>
+
+          <div className="w-[2px] h-4" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+        </div>
+
+        {/* ===== NIVEL 2: TRES VERTICALES (Tarjetas de Modulo) ===== */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 w-full">
           {/* Mi Contador */}
           <button
             onClick={() => onSelectModule("datos")}
-            className="group relative bg-white rounded-2xl border-2 shadow-lg hover:shadow-xl transition-all hover:-translate-y-2 p-6 lg:p-8 text-left overflow-hidden"
-            style={{ borderColor: "rgba(197, 160, 89, 0.2)" }}
+            className="group relative rounded-2xl border-2 p-5 lg:p-6 text-left overflow-hidden transition-all hover:-translate-y-1 hover:border-opacity-60"
+            style={{
+              backgroundColor: "rgba(197, 160, 89, 0.05)",
+              borderColor: "rgba(197, 160, 89, 0.15)",
+            }}
           >
-            {/* Gold accent top border */}
-            <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: "#C5A059" }} />
+            <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GOLD }} />
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 rounded-xl" style={{ backgroundColor: "rgba(16, 185, 129, 0.1)" }}>
-                <BookOpen size={28} className="text-emerald-600" />
+              <div className="p-2.5 rounded-xl" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
+                <BookOpen size={24} style={{ color: GOLD }} />
               </div>
-              <h3 className="text-lg lg:text-xl font-bold text-slate-800">Mi Contador</h3>
+              <h3 className="text-base lg:text-lg font-bold" style={{ color: GOLD }}>Mi Contador</h3>
             </div>
 
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <CheckSquare size={14} className="text-emerald-500" />
+            <div className="space-y-2.5 mb-4">
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <CheckSquare size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Impuestos al d&iacute;a</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <BookOpen size={14} className="text-blue-500" />
-                <span>Libro Diario & Mayor</span>
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <BookOpen size={13} style={{ color: GOLD, opacity: 0.6 }} />
+                <span>Libro Diario &amp; Mayor</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <PenLine size={14} className="text-violet-500" />
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <PenLine size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Registro por voz y foto</span>
               </div>
             </div>
 
-            {/* Preview mini chart */}
-            <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-100">
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-                <span>Estado Contable</span>
-                <span className="text-emerald-600 font-bold">Al d&iacute;a</span>
+            <div className="mt-3 p-2.5 rounded-lg border" style={{ backgroundColor: "rgba(197, 160, 89, 0.03)", borderColor: "rgba(197, 160, 89, 0.1)" }}>
+              <div className="flex items-center justify-between text-xs mb-2">
+                <span className="text-slate-500">Estado Contable</span>
+                <span className="font-bold" style={{ color: GOLD }}>Al d&iacute;a</span>
               </div>
-              <div className="flex gap-1 h-6">
+              <div className="flex gap-1 h-5">
                 {[40, 55, 45, 65, 50, 70, 60].map((h, i) => (
-                  <div key={i} className="flex-1 rounded-sm transition-all group-hover:opacity-90"
-                    style={{ height: `${h}%`, backgroundColor: i < 5 ? "#10B981" : "#C5A059", marginTop: `${100 - h}%` }} />
+                  <div key={i} className="flex-1 rounded-sm"
+                    style={{ height: `${h}%`, backgroundColor: GOLD, opacity: i < 5 ? 0.5 : 0.8, marginTop: `${100 - h}%` }} />
                 ))}
               </div>
             </div>
 
-            <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-emerald-600 group-hover:gap-2 transition-all">
+            <div className="mt-4 flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: GOLD }}>
               <span>Abrir</span>
               <ArrowLeft size={14} className="rotate-180" />
             </div>
@@ -238,64 +395,48 @@ function HubView({ onSelectModule }: { onSelectModule: (section: Section) => voi
           {/* Mis Finanzas */}
           <button
             onClick={() => onSelectModule("negocio")}
-            className="group relative bg-white rounded-2xl border-2 shadow-lg hover:shadow-xl transition-all hover:-translate-y-2 p-6 lg:p-8 text-left overflow-hidden"
-            style={{ borderColor: "rgba(197, 160, 89, 0.2)" }}
+            className="group relative rounded-2xl border-2 p-5 lg:p-6 text-left overflow-hidden transition-all hover:-translate-y-1 hover:border-opacity-60"
+            style={{
+              backgroundColor: "rgba(197, 160, 89, 0.05)",
+              borderColor: "rgba(197, 160, 89, 0.15)",
+            }}
           >
-            <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: "#C5A059" }} />
+            <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GOLD }} />
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 rounded-xl" style={{ backgroundColor: "rgba(59, 130, 246, 0.1)" }}>
-                <BarChart3 size={28} className="text-blue-600" />
+              <div className="p-2.5 rounded-xl" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
+                <BarChart3 size={24} style={{ color: GOLD }} />
               </div>
-              <h3 className="text-lg lg:text-xl font-bold text-slate-800">Mis Finanzas</h3>
+              <h3 className="text-base lg:text-lg font-bold" style={{ color: GOLD }}>Mis Finanzas</h3>
             </div>
 
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <TrendingUp size={14} className="text-blue-500" />
+            <div className="space-y-2.5 mb-4">
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <TrendingUp size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Cascada de Rentabilidad</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <BarChart3 size={14} className="text-amber-500" />
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <BarChart3 size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Punto de Equilibrio</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Gem size={14} className="text-violet-500" />
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <Gem size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Valoraci&oacute;n de Empresa</span>
               </div>
             </div>
 
-            {/* Preview cash flow mini chart */}
-            <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-100">
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-                <span>Cash Flow</span>
-                <span className="text-blue-600 font-bold">+12%</span>
+            <div className="mt-3 p-2.5 rounded-lg border" style={{ backgroundColor: "rgba(197, 160, 89, 0.03)", borderColor: "rgba(197, 160, 89, 0.1)" }}>
+              <div className="flex items-center justify-between text-xs mb-2">
+                <span className="text-slate-500">Cash Flow</span>
+                <span className="font-bold" style={{ color: GOLD }}>+12%</span>
               </div>
-              <svg viewBox="0 0 120 40" className="w-full h-8">
-                <polyline
-                  points="0,35 20,28 40,30 60,20 80,22 100,12 120,8"
-                  fill="none"
-                  stroke="#3B82F6"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <polyline
-                  points="0,35 20,28 40,30 60,20 80,22 100,12 120,8"
-                  fill="url(#blueGrad)"
-                  stroke="none"
-                  opacity="0.15"
-                />
-                <defs>
-                  <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3B82F6" />
-                    <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
+              <svg viewBox="0 0 120 40" className="w-full h-7">
+                <polyline points="0,35 20,28 40,30 60,20 80,22 100,12 120,8" fill="none" stroke={GOLD} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <polyline points="0,35 20,28 40,30 60,20 80,22 100,12 120,8 120,40 0,40" fill={GOLD} stroke="none" opacity="0.1" />
               </svg>
             </div>
 
-            <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-blue-600 group-hover:gap-2 transition-all">
+            <div className="mt-4 flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: GOLD }}>
               <span>Abrir</span>
               <ArrowLeft size={14} className="rotate-180" />
             </div>
@@ -304,57 +445,61 @@ function HubView({ onSelectModule }: { onSelectModule: (section: Section) => voi
           {/* Mi Empresa (Doc. Legales) */}
           <button
             onClick={() => onSelectModule("legal")}
-            className="group relative bg-white rounded-2xl border-2 shadow-lg hover:shadow-xl transition-all hover:-translate-y-2 p-6 lg:p-8 text-left overflow-hidden"
-            style={{ borderColor: "rgba(197, 160, 89, 0.2)" }}
+            className="group relative rounded-2xl border-2 p-5 lg:p-6 text-left overflow-hidden transition-all hover:-translate-y-1 hover:border-opacity-60"
+            style={{
+              backgroundColor: "rgba(197, 160, 89, 0.05)",
+              borderColor: "rgba(197, 160, 89, 0.15)",
+            }}
           >
-            <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: "#C5A059" }} />
+            <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GOLD }} />
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 rounded-xl" style={{ backgroundColor: "rgba(139, 92, 246, 0.1)" }}>
-                <Shield size={28} className="text-violet-600" />
+              <div className="p-2.5 rounded-xl" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
+                <Shield size={24} style={{ color: GOLD }} />
               </div>
-              <h3 className="text-lg lg:text-xl font-bold text-slate-800">Mi Empresa</h3>
+              <div>
+                <h3 className="text-base lg:text-lg font-bold" style={{ color: GOLD }}>Mi Empresa</h3>
+                <p className="text-[10px] text-slate-500">Doc. Legales</p>
+              </div>
             </div>
-            <p className="text-xs text-slate-400 -mt-3 mb-4">Doc. Legales</p>
 
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Shield size={14} className="text-violet-500" />
+            <div className="space-y-2.5 mb-4">
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <Shield size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>B&oacute;veda KYC</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Scale size={14} className="text-amber-500" />
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <Scale size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Vigilante Legal</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <FileText size={14} className="text-blue-500" />
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <FileText size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Traductor Legal</span>
               </div>
             </div>
 
-            {/* Preview document list */}
-            <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-2">
+            <div className="mt-3 p-2.5 rounded-lg border space-y-1.5" style={{ backgroundColor: "rgba(197, 160, 89, 0.03)", borderColor: "rgba(197, 160, 89, 0.1)" }}>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400">Documentos</span>
-                <span className="text-violet-600 font-bold">3 pendientes</span>
+                <span className="text-slate-500">Documentos</span>
+                <span className="font-bold" style={{ color: GOLD }}>3 pendientes</span>
               </div>
               {["Acta Constitutiva", "Aviso Operaciones", "Registro DGI"].map((doc, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs text-slate-500">
-                  <FileText size={10} className="text-slate-300" />
+                <div key={i} className="flex items-center gap-2 text-[11px] text-slate-500">
+                  <FileText size={9} style={{ color: GOLD, opacity: 0.4 }} />
                   <span>{doc}</span>
                 </div>
               ))}
             </div>
 
-            <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-violet-600 group-hover:gap-2 transition-all">
+            <div className="mt-4 flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: GOLD }}>
               <span>Abrir</span>
               <ArrowLeft size={14} className="rotate-180" />
             </div>
           </button>
         </div>
 
-        {/* Footer tagline */}
-        <p className="mt-12 text-xs text-slate-400 text-center">
+        {/* Footer */}
+        <p className="mt-10 text-xs text-center" style={{ color: "rgba(197, 160, 89, 0.35)" }}>
           Mi Director Financiero PTY v1.0 &mdash; Plataforma de Alta Direcci&oacute;n para PYMEs paname&ntilde;as
         </p>
       </div>
@@ -565,14 +710,20 @@ export default function Dashboard() {
     { key: "auditoria", label: "Auditoria", icon: <History size={14} /> },
   ];
 
+  // Mi Asistente open state (for hub org chart node)
+  const [asistenteOpen, setAsistenteOpen] = React.useState(false);
+
   // ===== HUB VIEW =====
   if (dashboardView === "hub") {
     return (
       <>
-        <HubView onSelectModule={handleSelectModule} />
-        {/* Mi Asistente always available */}
+        <HubView onSelectModule={handleSelectModule} onOpenAsistente={() => setAsistenteOpen(true)} />
+        {/* Mi Asistente — opens via org chart node click */}
         <MiAsistente
           societyId={societyId}
+          forceOpen={asistenteOpen}
+          onClose={() => setAsistenteOpen(false)}
+          hideButton
           onResult={(result) => {
             if (result?.action === "journal_entry_created") {
               // Refrescar datos si se creo un asiento

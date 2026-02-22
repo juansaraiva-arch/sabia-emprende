@@ -55,7 +55,7 @@ import ValoracionTab from "@/components/ValoracionTab";
 import LegalSimplifierButton from "@/components/LegalSimplifierButton";
 import SmartTooltip from "@/components/SmartTooltip";
 import AlertsSidebar, { AlertBellButton } from "@/components/AlertsSidebar";
-import WelcomePopup from "@/components/WelcomePopup";
+import SetupWizard from "@/components/SetupWizard";
 import BalanceGeneralCard from "@/components/BalanceGeneralCard";
 import ChartOfAccounts from "@/components/accounting/ChartOfAccounts";
 import LibroDiario from "@/components/accounting/LibroDiario";
@@ -717,18 +717,13 @@ export default function Dashboard() {
     setActiveNegocioTab("mandibulas");
   };
 
-  // Welcome popup (primera vez)
-  const [showWelcome, setShowWelcome] = useState(() => {
+  // Setup wizard (primera vez — onboarding)
+  const [setupComplete, setSetupComplete] = useState(() => {
     if (typeof window !== "undefined") {
-      return !localStorage.getItem("sabia_welcomed");
+      return localStorage.getItem("midf_setup_complete") === "true";
     }
-    return false;
+    return true; // SSR: assume complete to avoid flash
   });
-
-  const handleWelcomeDismiss = () => {
-    localStorage.setItem("sabia_welcomed", "true");
-    setShowWelcome(false);
-  };
 
   const handleLogoClick = () => {
     setDashboardView("hub");
@@ -852,6 +847,11 @@ export default function Dashboard() {
 
   // Mi Asistente open state (for hub org chart node)
   const [asistenteOpen, setAsistenteOpen] = React.useState(false);
+
+  // ===== SETUP WIZARD (primera vez) =====
+  if (!setupComplete) {
+    return <SetupWizard onComplete={() => setSetupComplete(true)} />;
+  }
 
   // ===== HUB VIEW =====
   if (dashboardView === "hub") {
@@ -1235,14 +1235,6 @@ export default function Dashboard() {
         isOpen={alertsSidebarOpen}
         onClose={() => setAlertsSidebarOpen(false)}
       />
-
-      {/* Welcome Popup (primera vez) */}
-      {showWelcome && (
-        <WelcomePopup
-          onDismiss={handleWelcomeDismiss}
-          onStart={() => { handleWelcomeDismiss(); setActiveSection("datos"); setDashboardView("module"); }}
-        />
-      )}
 
       {/* Mi Asistente — Chatbot IA Flotante */}
       <MiAsistente

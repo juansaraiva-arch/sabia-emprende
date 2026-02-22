@@ -230,3 +230,23 @@ export function hasRuc(): boolean {
   }
   return false;
 }
+
+// ─── Validacion de RUC (Registro Unico de Contribuyente) ───
+
+/**
+ * Regex para validar formato de RUC panameño.
+ * Cubre:
+ *   Persona natural (cedula): 8-765-4321, 2-123-4567
+ *   Persona juridica: 155622334, 1556-223-34567
+ *   Extranjeros: PE-123-456, E-8-12345, N-19-1234, PI-1-234
+ *   Sociedad de Emprendimiento: SE-0001-0001
+ *
+ * Solo validacion de formato — no verifica contra registros de la DGI.
+ */
+export const RUC_REGEX =
+  /^(?:(?:PE|E|N|PI|SE|[1-9]|1[0-3])-?\d{1,6}-?\d{1,6}|\d{5,15})$/i;
+
+export function isValidRuc(ruc: string): boolean {
+  if (!ruc || ruc.trim().length < 5) return false;
+  return RUC_REGEX.test(ruc.trim());
+}

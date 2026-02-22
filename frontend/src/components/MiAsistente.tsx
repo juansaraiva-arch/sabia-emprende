@@ -170,14 +170,18 @@ export default function MiAsistente({ societyId, onResult, forceOpen, onClose, h
     try {
       const result = await nlpApi.interpret(userText, societyId);
 
-      if (result?.data?.requires_confirmation && result?.data?.journal_entry_preview) {
-        // Mostrar preview de asiento contable con razonamiento
+      // Demo mode: API retorna { data: [], success: true }
+      if (Array.isArray(result?.data) && result.data.length === 0) {
+        addMessage(
+          "assistant",
+          `Recibi tu mensaje: "${userText}". El motor NLP no esta disponible en modo demo, pero puedes crear asientos manualmente en el Libro Diario o usar las herramientas de cada modulo.`
+        );
+      } else if (result?.data?.requires_confirmation && result?.data?.journal_entry_preview) {
         addMessage("assistant", result.description || "He preparado este asiento contable:", {
           journalPreview: result.data.journal_entry_preview,
           reasoning: result.data.reasoning || "",
         });
       } else {
-        // Respuesta directa
         const responseText =
           result?.description ||
           result?.data?.description ||

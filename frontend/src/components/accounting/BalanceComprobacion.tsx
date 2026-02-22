@@ -44,7 +44,12 @@ export default function BalanceComprobacion({ societyId }: BalanceComprobacionPr
         filterEnabled ? filterYear : undefined,
         filterEnabled ? filterMonth : undefined
       );
-      setTrialData(res.data);
+      // Demo mode: API retorna array vacio en vez de objeto
+      if (Array.isArray(res.data) && res.data.length === 0) {
+        setTrialData(null); // Mostrara "No hay movimientos"
+      } else {
+        setTrialData(res.data);
+      }
     } catch (e: any) {
       setError(e.message);
       setTrialData(null);

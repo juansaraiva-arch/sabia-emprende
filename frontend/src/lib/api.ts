@@ -100,7 +100,15 @@ async function apiFetchBlob(
     }
   }
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  } catch {
+    if (IS_DEMO_MODE) {
+      throw new Error("Generacion de reportes no disponible en modo demo. Conecta el backend para descargar PDFs y CSVs.");
+    }
+    throw new Error("No se pudo conectar con el servidor.");
+  }
 
   if (res.status === 401 && !IS_DEMO_MODE) {
     if (typeof window !== "undefined") {
@@ -110,6 +118,9 @@ async function apiFetchBlob(
   }
 
   if (!res.ok) {
+    if (IS_DEMO_MODE) {
+      throw new Error("Generacion de reportes no disponible en modo demo. Conecta el backend para descargar PDFs y CSVs.");
+    }
     const error = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(error.detail || "Error en la API");
   }

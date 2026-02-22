@@ -68,12 +68,19 @@ export default function NaturalLanguageInput({
     setPendingPayload(null);
     try {
       const result = await nlpApi.interpret(input, societyId);
-      setLastResult(result);
 
-      // Si requiere confirmacion (asiento contable), guardar payload
-      if (result.data?.requires_confirmation && result.data?.confirm_payload) {
+      // Demo mode: API retorna { data: [], success: true }
+      if (Array.isArray(result.data) && result.data.length === 0) {
+        setLastResult({
+          understood: true,
+          description: `Recibido: "${input}". El motor NLP no esta disponible en modo demo. Puedes crear asientos manualmente desde el Libro Diario.`,
+        });
+        onResult?.({ understood: true, description: input });
+      } else if (result.data?.requires_confirmation && result.data?.confirm_payload) {
+        setLastResult(result);
         setPendingPayload(result.data.confirm_payload);
       } else {
+        setLastResult(result);
         onResult?.(result);
       }
     } catch (err) {

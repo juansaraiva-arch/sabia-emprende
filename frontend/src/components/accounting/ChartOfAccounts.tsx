@@ -14,7 +14,7 @@ import {
 import { accountingApi } from "@/lib/api";
 import SmartTooltip from "@/components/SmartTooltip";
 
-interface Account {
+export interface Account {
   id: string;
   account_code: string;
   account_name: string;
@@ -39,7 +39,7 @@ const ACCOUNT_TYPES = [
 ];
 
 // Plan de cuentas predeterminado para Panama (cuando el backend no esta disponible)
-const DEFAULT_PANAMA_CHART: Account[] = [
+export const DEFAULT_PANAMA_CHART: Account[] = [
   // ACTIVOS
   { id: "1", account_code: "1.0", account_name: "ACTIVOS", account_type: "activo", parent_code: null, level: 1, is_header: true, normal_balance: "debe", is_active: true },
   { id: "2", account_code: "1.1", account_name: "Activo Corriente", account_type: "activo", parent_code: "1.0", level: 2, is_header: true, normal_balance: "debe", is_active: true },

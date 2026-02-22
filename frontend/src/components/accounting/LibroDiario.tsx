@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { accountingApi } from "@/lib/api";
+import { DEFAULT_PANAMA_CHART } from "@/components/accounting/ChartOfAccounts";
 import SmartTooltip from "@/components/SmartTooltip";
 
 interface LibroDiarioProps {
@@ -73,7 +74,10 @@ export default function LibroDiario({ societyId }: LibroDiarioProps) {
         filterMonth,
         100
       );
-      setEntries(res.data);
+      if (res.data && res.data.length > 0) {
+        setEntries(res.data);
+      }
+      // Si data vacio, mantener entradas locales (demo mode)
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -84,9 +88,16 @@ export default function LibroDiario({ societyId }: LibroDiarioProps) {
   const loadChart = useCallback(async () => {
     try {
       const res = await accountingApi.listChart(societyId, true);
-      setChartAccounts(res.data.filter((a: any) => !a.is_header));
+      const accts = Array.isArray(res.data) ? res.data.filter((a: any) => !a.is_header) : [];
+      if (accts.length > 0) {
+        setChartAccounts(accts);
+      } else {
+        // Demo mode: usar plan de cuentas local
+        setChartAccounts(DEFAULT_PANAMA_CHART.filter((a) => !a.is_header));
+      }
     } catch {
-      // Silently ignore — chart may not be initialized
+      // Error de conexion: usar plan local
+      setChartAccounts(DEFAULT_PANAMA_CHART.filter((a) => !a.is_header));
     }
   }, [societyId]);
 
@@ -124,24 +135,60 @@ export default function LibroDiario({ societyId }: LibroDiarioProps) {
     if (!isBalanced) return;
     setSubmitting(true);
     setError(null);
+    const lines = newLines
+      .filter((l) => l.account_code)
+      .map((l) => ({
+        account_code: l.account_code,
+        description: l.description,
+        debe: Number(l.debe) || 0,
+        haber: Number(l.haber) || 0,
+      }));
+    const body = {
+      society_id: societyId,
+      entry_date: newEntry.entry_date,
+      description: newEntry.description,
+      reference: newEntry.reference || null,
+      source: newEntry.source,
+      attachment_url: newEntry.attachment_url || null,
+      lines,
+    };
     try {
-      const body = {
-        society_id: societyId,
+      const res = await accountingApi.createJournalEntry(body);
+      if (res.data && !Array.isArray(res.data) && res.data.id) {
+        // Backend creo el asiento
+        await loadEntries();
+      } else {
+        // Demo mode: agregar localmente
+        const localEntry = {
+          id: Math.random().toString(36).substring(2, 9),
+          entry_number: entries.length + 1,
+          entry_date: newEntry.entry_date,
+          description: newEntry.description,
+          reference: newEntry.reference || null,
+          source: "manual",
+          total_debe: totalDebe,
+          total_haber: totalHaber,
+          journal_lines: lines,
+          created_at: new Date().toISOString(),
+        };
+        setEntries((prev) => [localEntry, ...prev]);
+      }
+    } catch {
+      // Backend no disponible: agregar localmente
+      const localEntry = {
+        id: Math.random().toString(36).substring(2, 9),
+        entry_number: entries.length + 1,
         entry_date: newEntry.entry_date,
         description: newEntry.description,
         reference: newEntry.reference || null,
-        source: newEntry.source,
-        attachment_url: newEntry.attachment_url || null,
-        lines: newLines
-          .filter((l) => l.account_code)
-          .map((l) => ({
-            account_code: l.account_code,
-            description: l.description,
-            debe: Number(l.debe) || 0,
-            haber: Number(l.haber) || 0,
-          })),
+        source: "manual",
+        total_debe: totalDebe,
+        total_haber: totalHaber,
+        journal_lines: lines,
+        created_at: new Date().toISOString(),
       };
-      await accountingApi.createJournalEntry(body);
+      setEntries((prev) => [localEntry, ...prev]);
+    } finally {
       setShowNewForm(false);
       setNewEntry({
         entry_date: now.toISOString().split("T")[0],
@@ -154,10 +201,6 @@ export default function LibroDiario({ societyId }: LibroDiarioProps) {
         { account_code: "", description: "", debe: 0, haber: 0 },
         { account_code: "", description: "", debe: 0, haber: 0 },
       ]);
-      await loadEntries();
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
       setSubmitting(false);
     }
   };

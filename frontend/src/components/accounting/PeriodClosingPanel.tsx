@@ -45,7 +45,10 @@ export default function PeriodClosingPanel({ societyId }: PeriodClosingPanelProp
     setLoading(true);
     try {
       const res = await accountingApi.listPeriods(societyId);
-      setPeriods(res.data);
+      if (res.data && res.data.length > 0) {
+        setPeriods(res.data);
+      }
+      // Si vacio (demo mode), mantener periodos locales
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -90,9 +93,23 @@ export default function PeriodClosingPanel({ societyId }: PeriodClosingPanelProp
     setError(null);
     try {
       await accountingApi.closePeriod(societyId, selectedYear, selectedMonth);
-      await loadPeriods();
-    } catch (e: any) {
-      setError(e.message);
+      // Intentar recargar del backend
+      const res = await accountingApi.listPeriods(societyId);
+      if (res.data && res.data.length > 0) {
+        setPeriods(res.data);
+      } else {
+        // Demo mode: agregar periodo cerrado localmente
+        setPeriods((prev) => [
+          ...prev.filter((p) => !(p.period_year === selectedYear && p.period_month === selectedMonth)),
+          { period_year: selectedYear, period_month: selectedMonth, status: "closed", closed_at: new Date().toISOString() },
+        ]);
+      }
+    } catch {
+      // Fallback local: marcar como cerrado
+      setPeriods((prev) => [
+        ...prev.filter((p) => !(p.period_year === selectedYear && p.period_month === selectedMonth)),
+        { period_year: selectedYear, period_month: selectedMonth, status: "closed", closed_at: new Date().toISOString() },
+      ]);
     } finally {
       setClosingPeriod(null);
     }
@@ -107,7 +124,19 @@ export default function PeriodClosingPanel({ societyId }: PeriodClosingPanelProp
     setError(null);
     try {
       await accountingApi.reopenPeriod(societyId, selectedYear, selectedMonth, adminCode);
-      await loadPeriods();
+      const res = await accountingApi.listPeriods(societyId);
+      if (res.data && res.data.length > 0) {
+        setPeriods(res.data);
+      } else {
+        // Demo mode: reabrir localmente
+        setPeriods((prev) =>
+          prev.map((p) =>
+            p.period_year === selectedYear && p.period_month === selectedMonth
+              ? { ...p, status: "open" }
+              : p
+          )
+        );
+      }
       setShowAdminModal(false);
     } catch (e: any) {
       throw e; // Let AdminPasswordModal handle the error display

@@ -141,8 +141,10 @@ export default function DataEntryWizard({
 
       try {
         const result = await nlpApi.interpret(text, "demo-society-001");
-        if (result?.data?.requires_confirmation && result?.data?.journal_entry_preview) {
-          // Fase 3 & 4: Mostrar preview del asiento contable con razonamiento
+        // Demo mode: API retorna { data: [], success: true }
+        if (Array.isArray(result?.data) && result.data.length === 0) {
+          showToast(`Dictado: "${text}" — Motor NLP no disponible en modo demo. Usa el Libro Diario para crear asientos.`);
+        } else if (result?.data?.requires_confirmation && result?.data?.journal_entry_preview) {
           setPendingMerge({
             merged: {
               amount: result.data.amount || 0,
@@ -161,9 +163,8 @@ export default function DataEntryWizard({
           });
           showToast("");
         } else {
-          // Resultado directo (consulta, no transaccion)
           showToast(result?.description || "Procesado correctamente");
-          if (result?.data) {
+          if (result?.data && !Array.isArray(result.data)) {
             onRecordSaved(result.data as FinancialRecord, true);
           }
         }
@@ -203,8 +204,10 @@ export default function DataEntryWizard({
         // Fase 1: OCR con GPT-4o Vision
         const scanResult = await aiApi.scanReceipt(file);
 
-        if (scanResult?.data) {
-          // Data Merging: combinar OCR con datos
+        // Demo mode: scanResult.data es [] vacio
+        if (Array.isArray(scanResult?.data) && scanResult.data.length === 0) {
+          showToast("OCR no disponible en modo demo. Crea el asiento manualmente desde el Libro Diario.");
+        } else if (scanResult?.data) {
           const mergeResult = await aiApi.mergeTransaction({
             receipt_data: scanResult.data,
             society_id: "demo-society-001",
@@ -288,7 +291,10 @@ export default function DataEntryWizard({
 
     try {
       const result = await nlpApi.interpret(text, "demo-society-001");
-      if (result?.data?.requires_confirmation && result?.data?.journal_entry_preview) {
+      // Demo mode: API retorna { data: [], success: true }
+      if (Array.isArray(result?.data) && result.data.length === 0) {
+        showToast(`"${text}" — Motor NLP no disponible en modo demo. Usa el Libro Diario.`);
+      } else if (result?.data?.requires_confirmation && result?.data?.journal_entry_preview) {
         setPendingMerge({
           merged: {
             amount: result.data.amount || 0,
@@ -310,7 +316,7 @@ export default function DataEntryWizard({
         showToast("");
       } else {
         showToast(result?.description || "Procesado correctamente");
-        if (result?.data) {
+        if (result?.data && !Array.isArray(result.data)) {
           onRecordSaved(result.data as FinancialRecord, true);
         }
       }

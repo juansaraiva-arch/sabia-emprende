@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Loader2, BookMarked, RefreshCw, ArrowUpDown } from "lucide-react";
 import { accountingApi } from "@/lib/api";
+import { DEFAULT_PANAMA_CHART } from "@/components/accounting/ChartOfAccounts";
 import SmartTooltip from "@/components/SmartTooltip";
 
 interface LibroMayorProps {
@@ -31,13 +32,28 @@ export default function LibroMayor({ societyId }: LibroMayorProps) {
     setLoadingAccounts(true);
     try {
       const res = await accountingApi.listChart(societyId, true);
-      const detailAccounts = res.data.filter((a: any) => !a.is_header);
-      setAccounts(detailAccounts);
-      if (detailAccounts.length > 0 && !selectedAccountCode) {
-        setSelectedAccountCode(detailAccounts[0].account_code);
+      const allAccounts = Array.isArray(res.data) ? res.data : [];
+      const detailAccounts = allAccounts.filter((a: any) => !a.is_header);
+      if (detailAccounts.length > 0) {
+        setAccounts(detailAccounts);
+        if (!selectedAccountCode) {
+          setSelectedAccountCode(detailAccounts[0].account_code);
+        }
+      } else {
+        // Demo mode: usar plan de cuentas local
+        const fallback = DEFAULT_PANAMA_CHART.filter((a) => !a.is_header);
+        setAccounts(fallback);
+        if (!selectedAccountCode && fallback.length > 0) {
+          setSelectedAccountCode(fallback[0].account_code);
+        }
       }
     } catch (e: any) {
-      setError(e.message);
+      // Error de conexion: usar plan local
+      const fallback = DEFAULT_PANAMA_CHART.filter((a) => !a.is_header);
+      setAccounts(fallback);
+      if (!selectedAccountCode && fallback.length > 0) {
+        setSelectedAccountCode(fallback[0].account_code);
+      }
     } finally {
       setLoadingAccounts(false);
     }
@@ -54,14 +70,28 @@ export default function LibroMayor({ societyId }: LibroMayorProps) {
         filterEnabled ? filterYear : undefined,
         filterEnabled ? filterMonth : undefined
       );
-      setLedgerData(res.data);
+      // Si data es un array vacio (demo mode), mostrar estructura vacia valida
+      if (Array.isArray(res.data) && res.data.length === 0) {
+        const acct = accounts.find((a) => a.account_code === selectedAccountCode);
+        setLedgerData({
+          account_code: selectedAccountCode,
+          account_name: acct?.account_name || selectedAccountCode,
+          movements: [],
+          saldo_inicial: 0,
+          saldo_final: 0,
+          total_debe: 0,
+          total_haber: 0,
+        });
+      } else {
+        setLedgerData(res.data);
+      }
     } catch (e: any) {
       setError(e.message);
       setLedgerData(null);
     } finally {
       setLoading(false);
     }
-  }, [societyId, selectedAccountCode, filterYear, filterMonth, filterEnabled]);
+  }, [societyId, selectedAccountCode, filterYear, filterMonth, filterEnabled, accounts]);
 
   useEffect(() => {
     loadAccounts();

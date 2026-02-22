@@ -16,6 +16,15 @@ const ACTION_ICONS: Record<string, React.ReactNode> = {
   simulation_run: <History size={14} className="text-slate-600" />,
 };
 
+// Logs de ejemplo para demo mode
+const DEMO_LOGS = [
+  { id: "d1", action_type: "financial_record_created", action_description: "Registro financiero creado — Diagnostico Flash", user_id: "demo-user-001", created_at: new Date(Date.now() - 3600000).toISOString() },
+  { id: "d2", action_type: "nlp_query_executed", action_description: "Consulta NLP procesada", nlp_raw_input: "Como esta mi negocio?", user_id: "demo-user-001", created_at: new Date(Date.now() - 7200000).toISOString() },
+  { id: "d3", action_type: "simulation_run", action_description: "Simulacion estrategica — Escenario de crecimiento", user_id: "demo-user-001", created_at: new Date(Date.now() - 86400000).toISOString() },
+  { id: "d4", action_type: "financial_record_updated", action_description: "Datos financieros actualizados — Enero 2026", user_id: "demo-user-001", created_at: new Date(Date.now() - 172800000).toISOString() },
+  { id: "d5", action_type: "assumption_changed", action_description: "Supuesto modificado: Tasa de crecimiento", field_changed: "growth_rate", previous_value: "3%", new_value: "5%", user_id: "demo-user-001", created_at: new Date(Date.now() - 259200000).toISOString() },
+];
+
 export default function AuditTimeline({ limit = 20 }: AuditTimelineProps) {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,8 +32,14 @@ export default function AuditTimeline({ limit = 20 }: AuditTimelineProps) {
   useEffect(() => {
     auditApi
       .getLogs(limit)
-      .then((res) => setLogs(res.data))
-      .catch(() => setLogs([]))
+      .then((res) => {
+        if (res.data && res.data.length > 0) {
+          setLogs(res.data);
+        } else {
+          setLogs(DEMO_LOGS.slice(0, limit));
+        }
+      })
+      .catch(() => setLogs(DEMO_LOGS.slice(0, limit)))
       .finally(() => setLoading(false));
   }, [limit]);
 

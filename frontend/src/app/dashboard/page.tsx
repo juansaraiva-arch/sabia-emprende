@@ -278,13 +278,13 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
         {/* ===== ZONA DE CONEXION: Director → Asistente (lateral) + 3 verticales ===== */}
 
         {/* Desktop layout */}
-        <div className="hidden lg:block relative w-full" style={{ height: "140px" }}>
-          {/* Vertical line from Director down to horizontal T — taller to give more space */}
-          <div className="absolute left-1/2 top-0 w-[2px] h-[70px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+        <div className="hidden lg:block relative w-full" style={{ height: "160px" }}>
+          {/* Vertical line from Director down to horizontal T */}
+          <div className="absolute left-1/2 top-0 w-[2px] h-[90px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
 
           {/* Mi Asistente: horizontal line + box — positioned at midpoint of vertical stem */}
           <div
-            className="absolute top-[15px] flex items-center"
+            className="absolute top-[20px] flex items-center"
             style={{ left: "50%", height: "50px" }}
           >
             {/* Horizontal line from center stem to box */}
@@ -308,13 +308,13 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
             </button>
           </div>
 
-          {/* Horizontal T-bar spanning 3 columns — at y=70px */}
-          <div className="absolute top-[70px] h-[2px]" style={{ left: "16.66%", right: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          {/* Horizontal T-bar spanning 3 columns — at y=90px */}
+          <div className="absolute top-[90px] h-[2px]" style={{ left: "16.66%", right: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
 
           {/* 3 vertical drops from T-bar to cards */}
-          <div className="absolute top-[70px] w-[2px] h-[70px]" style={{ left: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
-          <div className="absolute left-1/2 top-[70px] w-[2px] h-[70px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
-          <div className="absolute top-[70px] w-[2px] h-[70px]" style={{ right: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          <div className="absolute top-[90px] w-[2px] h-[70px]" style={{ left: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          <div className="absolute left-1/2 top-[90px] w-[2px] h-[70px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          <div className="absolute top-[90px] w-[2px] h-[70px]" style={{ right: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
         </div>
 
         {/* Mobile layout — simplified lines */}

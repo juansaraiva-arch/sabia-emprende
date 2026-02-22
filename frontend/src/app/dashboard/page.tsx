@@ -72,6 +72,8 @@ import BudgetChart from "@/components/charts/BudgetChart";
 import BudgetEntryForm from "@/components/BudgetEntryForm";
 import ReportGenerator from "@/components/ReportGenerator";
 import MiAsistente from "@/components/MiAsistente";
+import FormalizacionBanner from "@/components/FormalizacionBanner";
+import { DOC_CATEGORY_TO_STEP, updateStepStatus } from "@/lib/formalizacion";
 import { computeAlerts, computeComplianceAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
 import { playAlertSound, isSoundEnabled } from "@/lib/sounds";
 import { periodLabel, getPresetRange } from "@/lib/calculations";
@@ -245,6 +247,11 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
               )}
             </div>
           )}
+        </div>
+
+        {/* Banner de Formalizacion S.E. (si no tiene RUC) */}
+        <div className="my-3 w-full flex justify-center">
+          <FormalizacionBanner />
         </div>
 
         {/* Linea vertical: Empresa → Director */}
@@ -670,6 +677,14 @@ export default function Dashboard() {
 
   const handleBackToHub = () => {
     setDashboardView("hub");
+  };
+
+  // Auto-complete formalizacion tracker cuando se sube un documento relevante
+  const handleDocumentUploaded = (category: string) => {
+    const stepId = DOC_CATEGORY_TO_STEP[category];
+    if (stepId) {
+      updateStepStatus(stepId, "completado");
+    }
   };
 
   const handleNLPResult = (result: any) => {
@@ -1196,7 +1211,7 @@ export default function Dashboard() {
               ))}
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6 min-h-[400px]">
-              {activeLegalTab === "boveda" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Boveda KYC — Debida Diligencia</h2><LegalVault /></div>)}
+              {activeLegalTab === "boveda" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Boveda KYC — Debida Diligencia</h2><LegalVault onDocumentUploaded={handleDocumentUploaded} /></div>)}
               {activeLegalTab === "vigilante" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Vigilante Legal: Alertas de Cumplimiento</h2><WatchdogDashboard /></div>)}
               {activeLegalTab === "auditoria" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Historial de Cambios</h2><AuditTimeline limit={30} /></div>)}
             </div>

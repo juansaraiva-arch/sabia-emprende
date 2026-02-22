@@ -12,6 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import { nlpApi, accountingApi } from "@/lib/api";
+import { checkFormalizationStatus } from "@/lib/formalizacion";
 
 // ============================================
 // MI ASISTENTE — Chatbot IA Flotante
@@ -64,6 +65,16 @@ const QUICK_ACTIONS = [
   { label: "Ver mi EBITDA", text: "Como esta mi EBITDA este mes?" },
   { label: "Proximos pagos", text: "Que pagos tengo pendientes?" },
   { label: "Salud financiera", text: "Como esta la salud de mi negocio?" },
+  { label: "Mi formalizacion", text: "Como va mi formalizacion de Sociedad de Emprendimiento?" },
+];
+
+// Keywords que indican que el usuario pregunta sobre formalizacion
+const FORMALIZACION_KEYWORDS = [
+  "formalizacion", "formalización", "sociedad de emprendimiento",
+  "s.e.", "que me falta", "qué me falta", "pasos legales",
+  "ruta legal", "constituir empresa", "crear empresa",
+  "registro publico", "aviso de operacion", "ampyme",
+  "ruc", "inscripcion municipal", "estatutos",
 ];
 
 export default function MiAsistente({ societyId, onResult, forceOpen, onClose, hideButton }: MiAsistenteProps) {
@@ -125,6 +136,36 @@ export default function MiAsistente({ societyId, onResult, forceOpen, onClose, h
     addMessage("user", userText);
     setInput("");
     setLoading(true);
+
+    // Detectar queries sobre formalizacion S.E. (respuesta local, sin API)
+    const lowerText = userText.toLowerCase();
+    const isFormalizacionQuery = FORMALIZACION_KEYWORDS.some((kw) =>
+      lowerText.includes(kw)
+    );
+
+    if (isFormalizacionQuery) {
+      const status = checkFormalizationStatus();
+      let response = `Tu Ruta de Formalizacion S.E. va al ${status.percentComplete}% (${status.completed} de ${status.total} pasos completados).\n\n`;
+      if (status.pending.length > 0) {
+        response += `Pasos pendientes:\n${status.pending.map((p) => `• ${p}`).join("\n")}\n\n`;
+      }
+      if (status.inProgress.length > 0) {
+        response += `En proceso:\n${status.inProgress.map((p) => `• ${p}`).join("\n")}\n\n`;
+      }
+      if (status.completedSteps.length > 0) {
+        response += `Completados:\n${status.completedSteps.map((p) => `✓ ${p}`).join("\n")}\n\n`;
+      }
+      if (!status.started) {
+        response += "Aun no has iniciado tu ruta de formalizacion. Te recomiendo visitar la seccion de Formalizacion desde el banner en tu inicio.";
+      } else if (status.completed === status.total) {
+        response += "¡Felicitaciones! Has completado todos los pasos. Tu S.E. esta formalizada.";
+      } else {
+        response += "Puedes actualizar el estado de cada paso desde la seccion de Formalizacion.";
+      }
+      addMessage("assistant", response);
+      setLoading(false);
+      return;
+    }
 
     try {
       const result = await nlpApi.interpret(userText, societyId);

@@ -188,7 +188,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 // COMPONENTE PRINCIPAL
 // ============================================
 
-export default function LegalVault() {
+export default function LegalVault({ onDocumentUploaded }: { onDocumentUploaded?: (category: DocCategory) => void } = {}) {
   const [documents, setDocuments] = useState<UploadedDoc[]>([]);
   const [consentChecked, setConsentChecked] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -328,6 +328,8 @@ export default function LegalVault() {
               d.id === docId ? { ...d, status: "uploaded" as const } : d
             )
           );
+          // Notificar al parent del upload exitoso (para auto-complete del tracker)
+          onDocumentUploaded?.(selectedCategory);
         }
       } catch (err: any) {
         setDocuments((prev) =>

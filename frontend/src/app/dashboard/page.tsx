@@ -278,19 +278,21 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
         {/* ===== ZONA DE CONEXION: Director → Asistente (lateral) + 3 verticales ===== */}
 
         {/* Desktop layout */}
-        <div className="hidden lg:block w-full">
-          {/* Row: vertical stem + horizontal line + Mi Asistente box */}
-          <div className="relative flex items-start" style={{ height: "50px" }}>
-            {/* Left spacer — pushes the vertical stem to center */}
-            <div className="flex-1" />
-            {/* Center vertical stem (from Director down) */}
-            <div className="w-[2px] h-full shrink-0" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
-            {/* Horizontal line — grows to fill gap between stem and Asistente box */}
-            <div className="self-center h-[2px] shrink-0" style={{ width: "80px", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
-            {/* Mi Asistente node */}
+        <div className="hidden lg:block relative w-full" style={{ height: "120px" }}>
+          {/* Vertical line from Director down to horizontal T */}
+          <div className="absolute left-1/2 top-0 w-[2px] h-[50px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+
+          {/* Mi Asistente: horizontal line + box — uses flex row anchored at center */}
+          <div
+            className="absolute top-0 flex items-center"
+            style={{ left: "50%", height: "50px" }}
+          >
+            {/* Horizontal line from center stem to box */}
+            <div className="h-[2px] shrink-0" style={{ width: "100px", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+            {/* Mi Asistente node — sits right after the line, no overlap */}
             <button
               onClick={onOpenAsistente}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 transition-all hover:scale-105 group shrink-0 self-center"
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 transition-all hover:scale-105 group shrink-0"
               style={{
                 backgroundColor: "rgba(197, 160, 89, 0.08)",
                 borderColor: "rgba(197, 160, 89, 0.3)",
@@ -304,24 +306,15 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
                 <p className="text-[10px]" style={{ color: "rgba(197, 160, 89, 0.5)" }}>IA Chatbot</p>
               </div>
             </button>
-            {/* Right spacer — balance */}
-            <div className="flex-1" />
           </div>
 
-          {/* Vertical continuation from center stem to T-bar */}
-          <div className="flex justify-center">
-            <div className="w-[2px] h-[20px]" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
-          </div>
-
-          {/* Horizontal T-bar spanning 3 columns */}
-          <div className="relative" style={{ marginLeft: "16.66%", marginRight: "16.66%", height: "2px", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          {/* Horizontal T-bar spanning 3 columns — at y=50px */}
+          <div className="absolute top-[50px] h-[2px]" style={{ left: "16.66%", right: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
 
           {/* 3 vertical drops from T-bar to cards */}
-          <div className="relative flex justify-between" style={{ marginLeft: "16.66%", marginRight: "16.66%", height: "40px" }}>
-            <div className="w-[2px] h-full" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
-            <div className="w-[2px] h-full" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
-            <div className="w-[2px] h-full" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
-          </div>
+          <div className="absolute top-[50px] w-[2px] h-[70px]" style={{ left: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          <div className="absolute left-1/2 top-[50px] w-[2px] h-[70px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          <div className="absolute top-[50px] w-[2px] h-[70px]" style={{ right: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
         </div>
 
         {/* Mobile layout — simplified lines */}

@@ -278,13 +278,13 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
         {/* ===== ZONA DE CONEXION: Director → Asistente (lateral) + 3 verticales ===== */}
 
         {/* Desktop layout */}
-        <div className="hidden lg:block relative w-full" style={{ height: "120px" }}>
-          {/* Vertical line from Director down to horizontal T */}
-          <div className="absolute left-1/2 top-0 w-[2px] h-[50px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+        <div className="hidden lg:block relative w-full" style={{ height: "140px" }}>
+          {/* Vertical line from Director down to horizontal T — taller to give more space */}
+          <div className="absolute left-1/2 top-0 w-[2px] h-[70px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
 
-          {/* Mi Asistente: horizontal line + box — uses flex row anchored at center */}
+          {/* Mi Asistente: horizontal line + box — positioned at midpoint of vertical stem */}
           <div
-            className="absolute top-0 flex items-center"
+            className="absolute top-[15px] flex items-center"
             style={{ left: "50%", height: "50px" }}
           >
             {/* Horizontal line from center stem to box */}
@@ -308,23 +308,23 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
             </button>
           </div>
 
-          {/* Horizontal T-bar spanning 3 columns — at y=50px */}
-          <div className="absolute top-[50px] h-[2px]" style={{ left: "16.66%", right: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          {/* Horizontal T-bar spanning 3 columns — at y=70px */}
+          <div className="absolute top-[70px] h-[2px]" style={{ left: "16.66%", right: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
 
           {/* 3 vertical drops from T-bar to cards */}
-          <div className="absolute top-[50px] w-[2px] h-[70px]" style={{ left: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
-          <div className="absolute left-1/2 top-[50px] w-[2px] h-[70px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
-          <div className="absolute top-[50px] w-[2px] h-[70px]" style={{ right: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          <div className="absolute top-[70px] w-[2px] h-[70px]" style={{ left: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          <div className="absolute left-1/2 top-[70px] w-[2px] h-[70px] -translate-x-1/2" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          <div className="absolute top-[70px] w-[2px] h-[70px]" style={{ right: "16.66%", backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
         </div>
 
         {/* Mobile layout — simplified lines */}
         <div className="lg:hidden flex flex-col items-center">
-          <div className="w-[2px] h-4" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          <div className="w-[2px] h-5" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
 
           {/* Mi Asistente node (mobile — centered) */}
           <button
             onClick={onOpenAsistente}
-            className="flex items-center gap-3 px-5 py-3 rounded-xl border-2 transition-all hover:scale-105 mb-4"
+            className="flex items-center gap-3 px-5 py-3 rounded-xl border-2 transition-all hover:scale-105"
             style={{
               backgroundColor: "rgba(197, 160, 89, 0.08)",
               borderColor: "rgba(197, 160, 89, 0.3)",
@@ -339,11 +339,12 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
             </div>
           </button>
 
-          <div className="w-[2px] h-4" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+          <div className="w-[2px] h-5" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
         </div>
 
         {/* ===== NIVEL 2: TRES VERTICALES (Tarjetas de Modulo) ===== */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 w-full">
+        {/* Desktop: 3 columns grid / Mobile: horizontal scroll */}
+        <div className="hidden md:grid md:grid-cols-3 gap-5 lg:gap-6 w-full">
           {/* Mi Contador */}
           <button
             onClick={() => onSelectModule("datos")}
@@ -500,6 +501,125 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
               <ArrowLeft size={14} className="rotate-180" />
             </div>
           </button>
+        </div>
+
+        {/* Mobile: horizontal scroll cards */}
+        <div className="md:hidden w-full overflow-x-auto pb-2 -mx-4 px-4">
+          <div className="flex gap-4" style={{ minWidth: "max-content" }}>
+            {/* Mi Contador — mobile */}
+            <button
+              onClick={() => onSelectModule("datos")}
+              className="group relative rounded-2xl border-2 p-4 text-left overflow-hidden transition-all active:scale-[0.98] shrink-0"
+              style={{
+                width: "260px",
+                backgroundColor: "rgba(197, 160, 89, 0.05)",
+                borderColor: "rgba(197, 160, 89, 0.15)",
+              }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GOLD }} />
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="p-2 rounded-xl" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
+                  <BookOpen size={20} style={{ color: GOLD }} />
+                </div>
+                <h3 className="text-sm font-bold" style={{ color: GOLD }}>Mi Contador</h3>
+              </div>
+              <div className="space-y-1.5 mb-3">
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <CheckSquare size={11} style={{ color: GOLD, opacity: 0.6 }} />
+                  <span>Impuestos al d&iacute;a</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <BookOpen size={11} style={{ color: GOLD, opacity: 0.6 }} />
+                  <span>Libro Diario &amp; Mayor</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <PenLine size={11} style={{ color: GOLD, opacity: 0.6 }} />
+                  <span>Registro por voz y foto</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: GOLD }}>
+                <span>Abrir</span>
+                <ArrowLeft size={12} className="rotate-180" />
+              </div>
+            </button>
+
+            {/* Mis Finanzas — mobile */}
+            <button
+              onClick={() => onSelectModule("negocio")}
+              className="group relative rounded-2xl border-2 p-4 text-left overflow-hidden transition-all active:scale-[0.98] shrink-0"
+              style={{
+                width: "260px",
+                backgroundColor: "rgba(197, 160, 89, 0.05)",
+                borderColor: "rgba(197, 160, 89, 0.15)",
+              }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GOLD }} />
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="p-2 rounded-xl" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
+                  <BarChart3 size={20} style={{ color: GOLD }} />
+                </div>
+                <h3 className="text-sm font-bold" style={{ color: GOLD }}>Mis Finanzas</h3>
+              </div>
+              <div className="space-y-1.5 mb-3">
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <TrendingUp size={11} style={{ color: GOLD, opacity: 0.6 }} />
+                  <span>Cascada de Rentabilidad</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <BarChart3 size={11} style={{ color: GOLD, opacity: 0.6 }} />
+                  <span>Punto de Equilibrio</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <Gem size={11} style={{ color: GOLD, opacity: 0.6 }} />
+                  <span>Valoraci&oacute;n de Empresa</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: GOLD }}>
+                <span>Abrir</span>
+                <ArrowLeft size={12} className="rotate-180" />
+              </div>
+            </button>
+
+            {/* Mi Empresa — mobile */}
+            <button
+              onClick={() => onSelectModule("legal")}
+              className="group relative rounded-2xl border-2 p-4 text-left overflow-hidden transition-all active:scale-[0.98] shrink-0"
+              style={{
+                width: "260px",
+                backgroundColor: "rgba(197, 160, 89, 0.05)",
+                borderColor: "rgba(197, 160, 89, 0.15)",
+              }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GOLD }} />
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="p-2 rounded-xl" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
+                  <Shield size={20} style={{ color: GOLD }} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold" style={{ color: GOLD }}>Mi Empresa</h3>
+                  <p className="text-[9px] text-slate-500">Doc. Legales</p>
+                </div>
+              </div>
+              <div className="space-y-1.5 mb-3">
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <Shield size={11} style={{ color: GOLD, opacity: 0.6 }} />
+                  <span>B&oacute;veda KYC</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <Scale size={11} style={{ color: GOLD, opacity: 0.6 }} />
+                  <span>Vigilante Legal</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <FileText size={11} style={{ color: GOLD, opacity: 0.6 }} />
+                  <span>Traductor Legal</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: GOLD }}>
+                <span>Abrir</span>
+                <ArrowLeft size={12} className="rotate-180" />
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Footer */}

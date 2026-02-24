@@ -72,6 +72,7 @@ import BudgetChart from "@/components/charts/BudgetChart";
 import BudgetEntryForm from "@/components/BudgetEntryForm";
 import ReportGenerator from "@/components/ReportGenerator";
 import MiAsistente from "@/components/MiAsistente";
+import EspejoDGI from "@/components/EspejoDGI";
 import FormalizacionBanner from "@/components/FormalizacionBanner";
 import { DOC_CATEGORY_TO_STEP, updateStepStatus } from "@/lib/formalizacion";
 import { computeAlerts, computeComplianceAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
@@ -97,7 +98,7 @@ import {
 
 type Section = "datos" | "negocio" | "legal";
 type DatosMode = "flash" | "contabilidad";
-type ContabilidadTab = "plan_cuentas" | "libro_diario" | "libro_mayor" | "balance_comprobacion" | "libro_inventarios" | "cierre_periodo";
+type ContabilidadTab = "plan_cuentas" | "libro_diario" | "libro_mayor" | "balance_comprobacion" | "libro_inventarios" | "cierre_periodo" | "espejo_dgi";
 type NegocioTab =
   | "cascada"
   | "mandibulas"
@@ -980,6 +981,7 @@ export default function Dashboard() {
                     { key: "balance_comprobacion" as ContabilidadTab, label: "Balance Comprobacion", icon: <CheckSquare size={14} /> },
                     { key: "libro_inventarios" as ContabilidadTab, label: "Inventarios y Balances", icon: <Package size={14} /> },
                     { key: "cierre_periodo" as ContabilidadTab, label: "Cierre y Reportes", icon: <Lock size={14} /> },
+                    { key: "espejo_dgi" as ContabilidadTab, label: "Espejo DGI", icon: <Shield size={14} /> },
                   ]).map((tab) => (
                     <button
                       key={tab.key}
@@ -1002,6 +1004,7 @@ export default function Dashboard() {
                   {activeContabilidadTab === "balance_comprobacion" && <BalanceComprobacion societyId={societyId} />}
                   {activeContabilidadTab === "libro_inventarios" && <LibroInventarios societyId={societyId} />}
                   {activeContabilidadTab === "cierre_periodo" && <PeriodClosingPanel societyId={societyId} />}
+                  {activeContabilidadTab === "espejo_dgi" && <EspejoDGI societyId={societyId} />}
                 </div>
               </div>
             )}

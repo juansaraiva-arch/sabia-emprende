@@ -2,6 +2,7 @@
 Mi Director Financiero PTY - FastAPI Backend
 Motor financiero + Capa de Lenguaje Natural + Session Logging
 """
+import os
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager

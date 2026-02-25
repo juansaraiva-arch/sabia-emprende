@@ -26,6 +26,8 @@ import {
   FileBarChart,
   Package,
   ClipboardList,
+  Rocket,
+  Wallet,
   Home,
   ArrowLeft,
   PenLine,
@@ -33,6 +35,9 @@ import {
   Upload,
   Pencil,
   ImageIcon,
+  Percent,
+  Activity,
+  Check,
 } from "lucide-react";
 import type { FinancialRecord } from "@/lib/calculations";
 import SabiaLogo from "@/components/SabiaLogo";
@@ -73,8 +78,11 @@ import BudgetEntryForm from "@/components/BudgetEntryForm";
 import ReportGenerator from "@/components/ReportGenerator";
 import MiAsistente from "@/components/MiAsistente";
 import EspejoDGI from "@/components/EspejoDGI";
+import ModuleCardGrid from "@/components/ModuleCardGrid";
+import type { CardGridSection } from "@/components/ModuleCardGrid";
 import FormalizacionBanner from "@/components/FormalizacionBanner";
-import { DOC_CATEGORY_TO_STEP, updateStepStatus } from "@/lib/formalizacion";
+import FabricaEmpresa from "@/components/FabricaEmpresa";
+import { DOC_CATEGORY_TO_STEP, updateStepStatus, checkFormalizationStatus } from "@/lib/formalizacion";
 import { computeAlerts, computeComplianceAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
 import { playAlertSound, isSoundEnabled } from "@/lib/sounds";
 import { periodLabel, getPresetRange } from "@/lib/calculations";
@@ -113,10 +121,568 @@ type NegocioTab =
   | "comparativo"
   | "presupuesto"
   | "reportes";
-type LegalTab = "boveda" | "vigilante" | "auditoria" | "libro_actas";
+type LegalTab = "boveda" | "vigilante" | "auditoria" | "libro_actas" | "fabrica_empresa";
 
 // View: "hub" = main dashboard with 3 module cards, "module" = inside a module
 type DashboardView = "hub" | "module";
+
+// ============================================
+// RESUMEN EJECUTIVO (para HubView)
+// ============================================
+
+type ExecIconKey = "wallet" | "alert" | "trending" | "dollar" | "shield" | "arrowLeftRight" |
+  "clipboardList" | "percent" | "activity" | "fileBarChart" | "rocket" | "package";
+
+interface ExecSummarySlot {
+  id: string;
+  metricKey: string;
+  label: string;
+  value: string;
+  subtitle: string;
+  iconKey: ExecIconKey;
+  colorBg: string;
+  colorIcon: string;
+}
+
+interface MetricOption {
+  metricKey: string;
+  label: string;
+  iconKey: ExecIconKey;
+  colorBg: string;
+  colorIcon: string;
+  category: "finanzas" | "operativo" | "cumplimiento";
+  getValue: () => { value: string; subtitle: string };
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  finanzas: "Finanzas",
+  operativo: "Operativo",
+  cumplimiento: "Cumplimiento",
+};
+
+function _getAvailableMetrics(): MetricOption[] {
+  // Compliance alerts (always available, date-based)
+  const compliance = computeComplianceAlerts();
+  const urgentCount = compliance.filter((a) => a.priority === "red" || a.priority === "orange").length;
+  const dgiCount = compliance.filter((a) => a.category === "dgi" && (a.priority === "red" || a.priority === "orange" || a.priority === "yellow")).length;
+  // Formalization status
+  const fStatus = checkFormalizationStatus();
+
+  return [
+    {
+      metricKey: "efectivo",
+      label: "Efectivo Disponible",
+      iconKey: "wallet",
+      colorBg: "rgba(34, 197, 94, 0.12)",
+      colorIcon: "#22c55e",
+      category: "finanzas",
+      getValue: () => ({ value: "$5,420.00", subtitle: "Saldo en caja/banco" }),
+    },
+    {
+      metricKey: "alertas",
+      label: "Alertas Urgentes",
+      iconKey: "alert",
+      colorBg: "rgba(239, 68, 68, 0.12)",
+      colorIcon: "#ef4444",
+      category: "cumplimiento",
+      getValue: () => ({
+        value: `${urgentCount} Alerta${urgentCount !== 1 ? "s" : ""}`,
+        subtitle: `${dgiCount} Impuesto${dgiCount !== 1 ? "s" : ""} por vencer`,
+      }),
+    },
+    {
+      metricKey: "ventas",
+      label: "Ventas Este Mes",
+      iconKey: "trending",
+      colorBg: "rgba(234, 179, 8, 0.12)",
+      colorIcon: "#eab308",
+      category: "finanzas",
+      getValue: () => ({ value: "+15.9%", subtitle: "vs Mes Anterior" }),
+    },
+    {
+      metricKey: "margen_bruto",
+      label: "Margen Bruto",
+      iconKey: "percent",
+      colorBg: "rgba(34, 197, 94, 0.12)",
+      colorIcon: "#22c55e",
+      category: "finanzas",
+      getValue: () => ({ value: "40.0%", subtitle: "(Ventas - Costos) / Ventas" }),
+    },
+    {
+      metricKey: "ebitda",
+      label: "EBITDA",
+      iconKey: "dollar",
+      colorBg: "rgba(59, 130, 246, 0.12)",
+      colorIcon: "#3b82f6",
+      category: "finanzas",
+      getValue: () => ({ value: "$5,000", subtitle: "Ganancia operativa mensual" }),
+    },
+    {
+      metricKey: "cuentas_cobrar",
+      label: "Cuentas por Cobrar",
+      iconKey: "arrowLeftRight",
+      colorBg: "rgba(249, 115, 22, 0.12)",
+      colorIcon: "#f97316",
+      category: "operativo",
+      getValue: () => ({ value: "$8,000", subtitle: "Dinero que te deben" }),
+    },
+    {
+      metricKey: "deuda_bancaria",
+      label: "Deuda Bancaria",
+      iconKey: "shield",
+      colorBg: "rgba(239, 68, 68, 0.12)",
+      colorIcon: "#ef4444",
+      category: "finanzas",
+      getValue: () => ({ value: "$10,000", subtitle: "Prestamos pendientes" }),
+    },
+    {
+      metricKey: "gastos_operativos",
+      label: "Gastos Operativos",
+      iconKey: "clipboardList",
+      colorBg: "rgba(244, 63, 94, 0.12)",
+      colorIcon: "#f43f5e",
+      category: "operativo",
+      getValue: () => ({ value: "$15,000", subtitle: "Renta + Nomina + Otros" }),
+    },
+    {
+      metricKey: "prueba_acida",
+      label: "Prueba Acida",
+      iconKey: "activity",
+      colorBg: "rgba(6, 182, 212, 0.12)",
+      colorIcon: "#06b6d4",
+      category: "operativo",
+      getValue: () => ({ value: "1.43x", subtitle: "Liquidez inmediata" }),
+    },
+    {
+      metricKey: "impuestos_vencer",
+      label: "Impuestos por Vencer",
+      iconKey: "fileBarChart",
+      colorBg: "rgba(234, 179, 8, 0.12)",
+      colorIcon: "#eab308",
+      category: "cumplimiento",
+      getValue: () => ({
+        value: `${dgiCount}`,
+        subtitle: `Obligacion${dgiCount !== 1 ? "es" : ""} tributaria${dgiCount !== 1 ? "s" : ""} proxima${dgiCount !== 1 ? "s" : ""}`,
+      }),
+    },
+    {
+      metricKey: "formalizacion",
+      label: "Formalizacion S.E.",
+      iconKey: "rocket",
+      colorBg: "rgba(168, 85, 247, 0.12)",
+      colorIcon: "#a855f7",
+      category: "cumplimiento",
+      getValue: () => ({
+        value: `${fStatus.percentComplete}%`,
+        subtitle: `${fStatus.completed}/${fStatus.total} pasos completados`,
+      }),
+    },
+    {
+      metricKey: "dinero_atrapado",
+      label: "Dinero Atrapado",
+      iconKey: "package",
+      colorBg: "rgba(249, 115, 22, 0.12)",
+      colorIcon: "#f97316",
+      category: "operativo",
+      getValue: () => ({ value: "$14,000", subtitle: "CxC + Inventario inmovilizado" }),
+    },
+  ];
+}
+
+const DEFAULT_EXEC_SLOTS: ExecSummarySlot[] = [
+  {
+    id: "slot_1",
+    metricKey: "efectivo",
+    label: "Efectivo Disponible",
+    value: "$5,420.00",
+    subtitle: "Saldo en caja/banco",
+    iconKey: "wallet",
+    colorBg: "rgba(34, 197, 94, 0.12)",
+    colorIcon: "#22c55e",
+  },
+  {
+    id: "slot_2",
+    metricKey: "alertas",
+    label: "Alertas Urgentes",
+    value: "",
+    subtitle: "",
+    iconKey: "alert",
+    colorBg: "rgba(239, 68, 68, 0.12)",
+    colorIcon: "#ef4444",
+  },
+  {
+    id: "slot_3",
+    metricKey: "ventas",
+    label: "Ventas Este Mes",
+    value: "+15.9%",
+    subtitle: "vs Mes Anterior",
+    iconKey: "trending",
+    colorBg: "rgba(234, 179, 8, 0.12)",
+    colorIcon: "#eab308",
+  },
+];
+
+const EXEC_ICON_MAP: Record<string, React.ReactNode> = {
+  wallet: <Wallet size={20} />,
+  alert: <AlertTriangle size={20} />,
+  trending: <TrendingUp size={20} />,
+  dollar: <DollarSign size={20} />,
+  shield: <Shield size={20} />,
+  arrowLeftRight: <ArrowLeftRight size={20} />,
+  clipboardList: <ClipboardList size={20} />,
+  percent: <Percent size={20} />,
+  activity: <Activity size={20} />,
+  fileBarChart: <FileBarChart size={20} />,
+  rocket: <Rocket size={20} />,
+  package: <Package size={20} />,
+};
+
+const EXEC_ICON_MAP_SM: Record<string, React.ReactNode> = {
+  wallet: <Wallet size={14} />,
+  alert: <AlertTriangle size={14} />,
+  trending: <TrendingUp size={14} />,
+  dollar: <DollarSign size={14} />,
+  shield: <Shield size={14} />,
+  arrowLeftRight: <ArrowLeftRight size={14} />,
+  clipboardList: <ClipboardList size={14} />,
+  percent: <Percent size={14} />,
+  activity: <Activity size={14} />,
+  fileBarChart: <FileBarChart size={14} />,
+  rocket: <Rocket size={14} />,
+  package: <Package size={14} />,
+};
+
+function ExecutiveSummaryWidget() {
+  const GOLD = "#C5A059";
+  const NAVY = "#1A242F";
+
+  // Available metrics catalog (recomputed each render for dynamic values)
+  const availableMetrics = React.useMemo(() => _getAvailableMetrics(), []);
+
+  // Helper: build slot from metricKey
+  const buildSlotFromMetric = React.useCallback((slotId: string, metricKey: string): ExecSummarySlot => {
+    const m = availableMetrics.find((x) => x.metricKey === metricKey);
+    if (!m) {
+      const def = DEFAULT_EXEC_SLOTS.find((d) => d.id === slotId) || DEFAULT_EXEC_SLOTS[0];
+      return { ...def };
+    }
+    const vals = m.getValue();
+    return {
+      id: slotId,
+      metricKey: m.metricKey,
+      label: m.label,
+      value: vals.value,
+      subtitle: vals.subtitle,
+      iconKey: m.iconKey,
+      colorBg: m.colorBg,
+      colorIcon: m.colorIcon,
+    };
+  }, [availableMetrics]);
+
+  // Load saved metric keys from localStorage (or use defaults)
+  const [slots, setSlots] = React.useState<ExecSummarySlot[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("midf_exec_summary");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as ExecSummarySlot[];
+          // Migrate: if saved slots have metricKey, use it
+          if (parsed.length === 3 && parsed[0].metricKey) {
+            return parsed;
+          }
+        } catch { /* fallback to defaults */ }
+      }
+    }
+    return DEFAULT_EXEC_SLOTS;
+  });
+
+  const [editing, setEditing] = React.useState(false);
+  const [tempSlots, setTempSlots] = React.useState<ExecSummarySlot[]>(slots);
+  const [selectingSlot, setSelectingSlot] = React.useState<number | null>(null);
+
+  // Recompute dynamic values for display
+  const displaySlots = React.useMemo(() => {
+    return slots.map((slot) => {
+      const m = availableMetrics.find((x) => x.metricKey === slot.metricKey);
+      if (m) {
+        const vals = m.getValue();
+        return { ...slot, value: vals.value, subtitle: vals.subtitle, iconKey: m.iconKey, colorBg: m.colorBg, colorIcon: m.colorIcon, label: m.label };
+      }
+      return slot;
+    });
+  }, [slots, availableMetrics]);
+
+  const handleStartEdit = () => {
+    setTempSlots(displaySlots.map((s) => ({ ...s })));
+    setSelectingSlot(null);
+    setEditing(true);
+  };
+
+  const handleSave = () => {
+    setSlots(tempSlots);
+    localStorage.setItem("midf_exec_summary", JSON.stringify(tempSlots));
+    setEditing(false);
+    setSelectingSlot(null);
+  };
+
+  const handleCancel = () => {
+    setEditing(false);
+    setSelectingSlot(null);
+  };
+
+  const handleSelectMetric = (metric: MetricOption) => {
+    if (selectingSlot === null) return;
+    const vals = metric.getValue();
+    setTempSlots((prev) => {
+      const copy = [...prev];
+      copy[selectingSlot] = {
+        ...copy[selectingSlot],
+        metricKey: metric.metricKey,
+        label: metric.label,
+        value: vals.value,
+        subtitle: vals.subtitle,
+        iconKey: metric.iconKey,
+        colorBg: metric.colorBg,
+        colorIcon: metric.colorIcon,
+      };
+      return copy;
+    });
+    setSelectingSlot(null);
+  };
+
+  // Group metrics by category for the picker
+  const groupedMetrics = React.useMemo(() => {
+    const groups: Record<string, MetricOption[]> = {};
+    for (const m of availableMetrics) {
+      if (!groups[m.category]) groups[m.category] = [];
+      groups[m.category].push(m);
+    }
+    return groups;
+  }, [availableMetrics]);
+
+  return (
+    <div
+      className="my-3 w-full max-w-lg mx-auto rounded-2xl border-2 p-4 lg:p-5"
+      style={{
+        backgroundColor: "rgba(197, 160, 89, 0.06)",
+        borderColor: "rgba(197, 160, 89, 0.25)",
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs lg:text-sm font-bold tracking-wide" style={{ color: GOLD }}>
+          Tu Resumen Ejecutivo
+        </p>
+        {!editing ? (
+          <button
+            onClick={handleStartEdit}
+            className="p-1.5 rounded-lg transition-all hover:scale-110"
+            style={{ backgroundColor: "rgba(197, 160, 89, 0.15)" }}
+            title="Personalizar metricas"
+          >
+            <Pencil size={12} style={{ color: GOLD }} />
+          </button>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleCancel}
+              className="px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all"
+              style={{ color: "rgba(197, 160, 89, 0.5)", backgroundColor: "rgba(197, 160, 89, 0.08)" }}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all"
+              style={{ backgroundColor: GOLD, color: NAVY }}
+            >
+              Guardar
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* 3 Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        {(editing ? tempSlots : displaySlots).map((slot, i) => (
+          <div
+            key={slot.id}
+            className={`rounded-xl p-3 text-center transition-all relative ${editing ? "cursor-pointer ring-1 ring-transparent hover:ring-[#C5A059]/50" : ""}`}
+            style={{ backgroundColor: slot.colorBg }}
+            onClick={() => { if (editing) setSelectingSlot(selectingSlot === i ? null : i); }}
+          >
+            {/* Icon */}
+            <div
+              className="w-9 h-9 mx-auto rounded-full flex items-center justify-center mb-2"
+              style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+            >
+              <span style={{ color: slot.colorIcon }}>{EXEC_ICON_MAP[slot.iconKey]}</span>
+            </div>
+
+            {/* Value / Label / Subtitle */}
+            <p className="text-sm lg:text-base font-extrabold leading-tight" style={{ color: GOLD }}>
+              {slot.value}
+            </p>
+            <p className="text-[10px] font-bold mt-0.5" style={{ color: "rgba(197, 160, 89, 0.7)" }}>
+              {slot.label}
+            </p>
+            {slot.subtitle && (
+              <p className="text-[9px] mt-0.5 leading-snug" style={{ color: "rgba(197, 160, 89, 0.5)" }}>
+                {slot.subtitle}
+              </p>
+            )}
+
+            {/* Edit overlay hint */}
+            {editing && selectingSlot !== i && (
+              <div className="absolute inset-0 rounded-xl flex items-end justify-center pb-1.5 pointer-events-none">
+                <span className="text-[8px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "rgba(26, 36, 47, 0.85)", color: GOLD }}>
+                  Toca para cambiar
+                </span>
+              </div>
+            )}
+
+            {/* Active selection indicator */}
+            {editing && selectingSlot === i && (
+              <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: GOLD }}>
+                <Pencil size={10} style={{ color: NAVY }} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ===== METRIC PICKER PANEL ===== */}
+      {editing && selectingSlot !== null && (
+        <div
+          className="mt-3 rounded-xl border p-3 max-h-[280px] overflow-y-auto"
+          style={{
+            backgroundColor: "rgba(26, 36, 47, 0.95)",
+            borderColor: "rgba(197, 160, 89, 0.3)",
+          }}
+        >
+          <p className="text-[10px] font-bold mb-2 text-center" style={{ color: "rgba(197, 160, 89, 0.5)" }}>
+            Selecciona una metrica para Card {selectingSlot + 1}
+          </p>
+
+          {(["finanzas", "operativo", "cumplimiento"] as const).map((cat) => {
+            const items = groupedMetrics[cat];
+            if (!items || items.length === 0) return null;
+            return (
+              <div key={cat} className="mb-2">
+                <p className="text-[9px] font-bold uppercase tracking-widest mb-1.5 px-1" style={{ color: "rgba(197, 160, 89, 0.4)" }}>
+                  {CATEGORY_LABELS[cat]}
+                </p>
+                <div className="space-y-1">
+                  {items.map((metric) => {
+                    const isSelected = tempSlots[selectingSlot].metricKey === metric.metricKey;
+                    const isUsedElsewhere = !isSelected && tempSlots.some((s, idx) => idx !== selectingSlot && s.metricKey === metric.metricKey);
+                    const preview = metric.getValue();
+                    return (
+                      <button
+                        key={metric.metricKey}
+                        onClick={(e) => { e.stopPropagation(); if (!isUsedElsewhere) handleSelectMetric(metric); }}
+                        disabled={isUsedElsewhere}
+                        className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all text-left ${isUsedElsewhere ? "opacity-30 cursor-not-allowed" : "hover:scale-[1.02]"}`}
+                        style={{
+                          backgroundColor: isSelected ? "rgba(197, 160, 89, 0.15)" : "rgba(197, 160, 89, 0.04)",
+                          borderLeft: isSelected ? `3px solid ${GOLD}` : "3px solid transparent",
+                        }}
+                      >
+                        {/* Mini icon */}
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: metric.colorBg }}
+                        >
+                          <span style={{ color: metric.colorIcon }}>{EXEC_ICON_MAP_SM[metric.iconKey]}</span>
+                        </div>
+                        {/* Label + preview */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-bold truncate" style={{ color: GOLD }}>{metric.label}</p>
+                          <p className="text-[9px] truncate" style={{ color: "rgba(197, 160, 89, 0.5)" }}>{preview.value} — {preview.subtitle}</p>
+                        </div>
+                        {/* Check if selected */}
+                        {isSelected && (
+                          <Check size={14} style={{ color: GOLD }} className="shrink-0" />
+                        )}
+                        {/* Badge if used elsewhere */}
+                        {isUsedElsewhere && (
+                          <span className="text-[8px] shrink-0 px-1.5 py-0.5 rounded" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)", color: "rgba(197, 160, 89, 0.4)" }}>
+                            En uso
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// WIDGET COMPACTO DE PROGRESO S.E. (para HubView)
+// ============================================
+
+function FormalizacionProgressWidget({ onNavigate }: { onNavigate: () => void }) {
+  const [status, setStatus] = React.useState<{ percentComplete: number; completed: number; total: number; started: boolean } | null>(null);
+
+  React.useEffect(() => {
+    const s = checkFormalizationStatus();
+    setStatus(s);
+  }, []);
+
+  if (!status) return null;
+
+  const GOLD = "#C5A059";
+
+  return (
+    <button
+      onClick={onNavigate}
+      className="my-3 w-full max-w-md mx-auto block rounded-2xl border-2 p-4 lg:p-5 transition-all hover:scale-[1.02] hover:border-opacity-60"
+      style={{
+        backgroundColor: "rgba(197, 160, 89, 0.1)",
+        borderColor: "rgba(197, 160, 89, 0.35)",
+      }}
+    >
+      <div className="flex items-center gap-3 lg:gap-4">
+        <div
+          className="p-2.5 lg:p-3 rounded-xl shrink-0"
+          style={{ backgroundColor: "rgba(197, 160, 89, 0.2)" }}
+        >
+          <Rocket size={22} style={{ color: GOLD }} />
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+          <p className="text-xs lg:text-sm font-bold leading-tight" style={{ color: GOLD }}>
+            {status.percentComplete === 100
+              ? "Empresa Formalizada!"
+              : status.started
+                ? "Formalizacion en Progreso"
+                : "Formaliza tu Sociedad de Emprendimiento"}
+          </p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: "rgba(197, 160, 89, 0.2)" }}>
+              <div
+                className="h-1.5 rounded-full transition-all duration-700"
+                style={{
+                  width: `${status.percentComplete}%`,
+                  backgroundColor: status.percentComplete === 100 ? "#22c55e" : GOLD,
+                }}
+              />
+            </div>
+            <span className="text-[10px] font-bold shrink-0" style={{ color: GOLD }}>
+              {status.completed}/{status.total}
+            </span>
+          </div>
+        </div>
+        <ArrowLeft size={18} className="shrink-0 rotate-180" style={{ color: GOLD, opacity: 0.6 }} />
+      </div>
+    </button>
+  );
+}
 
 // ============================================
 // HUB VIEW — Organigrama Empresarial (Dark Theme)
@@ -132,13 +698,36 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
     if (typeof window !== "undefined") return localStorage.getItem("midf_company_logo") || "";
     return "";
   });
+  const [companyRubro, setCompanyRubro] = React.useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("midf_company_rubro") || "";
+    return "";
+  });
   const [editingCompany, setEditingCompany] = React.useState(false);
   const [tempName, setTempName] = React.useState(companyName);
+  const [tempRubro, setTempRubro] = React.useState(companyRubro);
   const logoInputRef = React.useRef<HTMLInputElement>(null);
+
+  const RUBROS_MAP: Record<string, string> = {
+    restaurante: "Restaurante / Alimentos",
+    comercio_minorista: "Comercio Minorista",
+    tecnologia: "Tecnologia / Software",
+    servicios_profesionales: "Servicios Profesionales",
+    construccion: "Construccion / Bienes Raices",
+    transporte: "Transporte / Logistica",
+    salud: "Salud / Clinica / Farmacia",
+    educacion: "Educacion / Academia",
+    turismo: "Turismo / Hoteleria",
+    manufactura: "Manufactura / Produccion",
+    agro: "Agropecuario / Agroindustria",
+    belleza: "Belleza / Estetica / Salon",
+    otro: "Otro",
+  };
 
   const handleSaveCompany = () => {
     localStorage.setItem("midf_company_name", tempName);
+    localStorage.setItem("midf_company_rubro", tempRubro);
     setCompanyName(tempName);
+    setCompanyRubro(tempRubro);
     setEditingCompany(false);
   };
 
@@ -173,7 +762,7 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
             backgroundColor: "rgba(197, 160, 89, 0.08)",
             borderColor: "rgba(197, 160, 89, 0.3)",
           }}
-          onClick={() => !editingCompany && setEditingCompany(true)}
+          onClick={() => { if (!editingCompany) { setTempName(companyName); setTempRubro(companyRubro); setEditingCompany(true); } }}
         >
           {/* Logo area */}
           <div className="flex justify-center mb-3">
@@ -212,9 +801,9 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
             />
           </div>
 
-          {/* Company name */}
+          {/* Company name + rubro */}
           {editingCompany ? (
-            <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
               <input
                 type="text"
                 value={tempName}
@@ -225,6 +814,22 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
                 style={{ color: GOLD, borderColor: "rgba(197, 160, 89, 0.4)", caretColor: GOLD }}
                 onKeyDown={(e) => e.key === "Enter" && handleSaveCompany()}
               />
+              {/* Rubro selector */}
+              <select
+                value={tempRubro}
+                onChange={(e) => setTempRubro(e.target.value)}
+                className="w-full text-center text-[11px] font-semibold bg-transparent border rounded-lg py-1.5 outline-none appearance-none cursor-pointer"
+                style={{
+                  color: tempRubro ? GOLD : "rgba(197, 160, 89, 0.4)",
+                  borderColor: "rgba(197, 160, 89, 0.3)",
+                  backgroundColor: "rgba(197, 160, 89, 0.05)",
+                }}
+              >
+                <option value="" style={{ backgroundColor: NAVY, color: "rgba(197, 160, 89, 0.5)" }}>Seleccionar rubro...</option>
+                {Object.entries(RUBROS_MAP).map(([key, label]) => (
+                  <option key={key} value={key} style={{ backgroundColor: NAVY, color: GOLD }}>{label}</option>
+                ))}
+              </select>
               <button
                 onClick={handleSaveCompany}
                 className="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
@@ -241,7 +846,15 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
               <p className="text-sm lg:text-base font-bold mt-0.5" style={{ color: GOLD }}>
                 {companyName || "Nombre de su Empresa"}
               </p>
-              {!companyName && (
+              {companyRubro && (
+                <span
+                  className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wide"
+                  style={{ backgroundColor: "rgba(197, 160, 89, 0.15)", color: "rgba(197, 160, 89, 0.7)" }}
+                >
+                  {RUBROS_MAP[companyRubro] || companyRubro}
+                </span>
+              )}
+              {!companyName && !companyRubro && (
                 <p className="text-[10px] mt-1" style={{ color: "rgba(197, 160, 89, 0.4)" }}>
                   Toca para editar
                 </p>
@@ -250,12 +863,21 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
           )}
         </div>
 
-        {/* Banner de Formalizacion S.E. (si no tiene RUC) */}
-        <div className="my-3 w-full flex justify-center">
-          <FormalizacionBanner />
-        </div>
+        {/* Linea vertical: Empresa → Resumen Ejecutivo */}
+        <div className="w-[2px] h-4 lg:h-6" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
 
-        {/* Linea vertical: Empresa → Director */}
+        {/* ===== RESUMEN EJECUTIVO (3 cards editables) ===== */}
+        <ExecutiveSummaryWidget />
+
+        {/* Linea vertical: Resumen → Formalizacion */}
+        <div className="w-[2px] h-4 lg:h-6" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
+
+        {/* Widget compacto de progreso de formalizacion S.E. */}
+        <FormalizacionProgressWidget onNavigate={() => {
+          onSelectModule("legal");
+        }} />
+
+        {/* Linea vertical: Formalizacion → Director */}
         <div className="w-[2px] h-6 lg:h-10" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
 
         {/* ===== NIVEL 1: MI DIRECTOR FINANCIERO PTY ===== */}
@@ -651,6 +1273,14 @@ export default function Dashboard() {
   const [activeNegocioTab, setActiveNegocioTab] = useState<NegocioTab>("cascada");
   const [activeLegalTab, setActiveLegalTab] = useState<LegalTab>("boveda");
 
+  // Grid toggle states (true = show grid, false = show content panel)
+  const [showFinanzasGrid, setShowFinanzasGrid] = useState(true);
+  const [showLegalGrid, setShowLegalGrid] = useState(true);
+  const [showContabilidadGrid, setShowContabilidadGrid] = useState(true);
+
+  // Smart Routing: show welcome popup on Fabrica de Empresa when user came from onboarding "NO"
+  const [showFabricaWelcome, setShowFabricaWelcome] = useState(false);
+
   const [currentRecord, setCurrentRecord] = useState<FinancialRecord | null>(null);
   const [bulkRecords, setBulkRecords] = useState<FinancialRecord[]>([]);
   const [hasBulkData, setHasBulkData] = useState(false);
@@ -674,6 +1304,10 @@ export default function Dashboard() {
   const handleSelectModule = (section: Section) => {
     setActiveSection(section);
     setDashboardView("module");
+    // Reset grids to show card grid on entry
+    setShowFinanzasGrid(true);
+    setShowLegalGrid(true);
+    setShowContabilidadGrid(true);
   };
 
   const handleBackToHub = () => {
@@ -846,12 +1480,82 @@ export default function Dashboard() {
     { key: "libro_actas", label: "Libro de Actas", icon: <ClipboardList size={14} /> },
   ];
 
+  // ====== CARD GRID SECTIONS ======
+
+  const finanzasGridSections: CardGridSection[] = [
+    {
+      title: "Diagnostico",
+      cards: [
+        { key: "cascada", label: "Cascada de Potencia de Rentabilidad", icon: <BarChart3 size={22} />, tooltip: "Grafico cascada de ingresos a utilidad neta", color: "bg-blue-600" },
+        { key: "mandibulas", label: "Mandibulas", icon: <Skull size={22} />, tooltip: "Ventas vs Costos: detecta zona de mordida", color: "bg-red-600" },
+        { key: "semaforo", label: "Semaforo de Eficiencia", icon: <AlertTriangle size={22} />, tooltip: "Ratios financieros con codigo de colores", color: "bg-amber-500" },
+        { key: "oxigeno", label: "Indicador de Liquidez", icon: <Wind size={22} />, tooltip: "Analisis de oxigeno financiero", color: "bg-cyan-600" },
+        { key: "equilibrio", label: "Punto de Equilibrio", icon: <Scale size={22} />, tooltip: "Ventas minimas para no perder", color: "bg-emerald-600" },
+        { key: "nomina", label: "Planilla (Costo Real)", icon: <DollarSign size={22} />, tooltip: "Costo total empleados con CSS y prestaciones", color: "bg-violet-600" },
+        { key: "valoracion", label: "Valor del Negocio", icon: <Gem size={22} />, tooltip: "Valoracion por multiplos y DCF", color: "bg-pink-600" },
+        { key: "comparativo", label: "Comparativo", icon: <ArrowLeftRight size={22} />, tooltip: "Compara dos periodos lado a lado", color: "bg-indigo-600" },
+        { key: "reportes", label: "Reporte", icon: <FileBarChart size={22} />, tooltip: "Genera reportes PDF ejecutivos", color: "bg-slate-700" },
+      ],
+    },
+    {
+      title: "Herramientas Estrategicas",
+      cards: [
+        { key: "simulador", label: "\u00bfQue Xopa Si! Simulador", icon: <SlidersHorizontal size={22} />, tooltip: "Simula escenarios de negocio", color: "bg-orange-500" },
+        { key: "lab", label: "Laboratorio de Precios", icon: <FlaskConical size={22} />, tooltip: "Optimiza tu estrategia de precios", color: "bg-fuchsia-600" },
+        { key: "tendencias", label: "Analisis de Tendencia", icon: <TrendingUp size={22} />, tooltip: "Tendencias multi-periodo con forecast", color: "bg-teal-600" },
+        { key: "presupuesto", label: "Presupuesto Maestro", icon: <Target size={22} />, tooltip: "Presupuesto vs Real con tracking", color: "bg-yellow-500" },
+      ],
+    },
+  ];
+
+  const legalGridSections: CardGridSection[] = [
+    {
+      title: "Mi Empresa — Documentos Legales",
+      cards: [
+        { key: "fabrica_empresa", label: "Fabrica de Empresa (Ruta S.E.)", icon: <Rocket size={22} />, tooltip: "Ruta paso a paso para formalizar tu Sociedad de Emprendimiento", color: "bg-emerald-600" },
+        { key: "boveda", label: "Boveda KYC", icon: <Shield size={22} />, tooltip: "Debida diligencia y documentos", color: "bg-violet-600" },
+        { key: "vigilante", label: "Vigilante Legal", icon: <Scale size={22} />, tooltip: "Alertas de cumplimiento DGI + MUPA", color: "bg-red-600" },
+        { key: "auditoria", label: "Auditoria y DGI", icon: <History size={22} />, tooltip: "Historial, calendario fiscal y checklist", color: "bg-blue-600" },
+        { key: "libro_actas", label: "Libro de Actas", icon: <ClipboardList size={22} />, tooltip: "Registro de actas societarias", color: "bg-amber-500" },
+      ],
+    },
+  ];
+
+  const contabilidadGridSections: CardGridSection[] = [
+    {
+      title: "Contabilidad Formal",
+      cards: [
+        { key: "plan_cuentas", label: "Plan de Cuentas", icon: <FolderTree size={22} />, tooltip: "Catalogo de cuentas contables", color: "bg-blue-600" },
+        { key: "libro_diario", label: "Libro Diario", icon: <BookOpen size={22} />, tooltip: "Asientos contables cronologicos", color: "bg-emerald-600" },
+        { key: "libro_mayor", label: "Libro Mayor", icon: <BookMarked size={22} />, tooltip: "Movimientos por cuenta", color: "bg-violet-600" },
+        { key: "balance_comprobacion", label: "Balance Comprobacion", icon: <CheckSquare size={22} />, tooltip: "Verificacion de saldos", color: "bg-amber-500" },
+        { key: "libro_inventarios", label: "Inventarios y Balances", icon: <Package size={22} />, tooltip: "Control de inventario y balances", color: "bg-cyan-600" },
+        { key: "cierre_periodo", label: "Cierre y Reportes", icon: <Lock size={22} />, tooltip: "Cierre mensual y reportes finales", color: "bg-red-600" },
+        { key: "espejo_dgi", label: "Espejo DGI", icon: <Shield size={22} />, tooltip: "Vista espejo para la DGI", color: "bg-indigo-600" },
+      ],
+    },
+  ];
+
   // Mi Asistente open state (for hub org chart node)
   const [asistenteOpen, setAsistenteOpen] = React.useState(false);
 
   // ===== SETUP WIZARD (primera vez) =====
   if (!setupComplete) {
-    return <SetupWizard onComplete={() => setSetupComplete(true)} />;
+    return (
+      <SetupWizard
+        onComplete={(routeTo) => {
+          setSetupComplete(true);
+          if (routeTo === "fabrica_empresa") {
+            // Smart Routing: NO tiene empresa → Mi Empresa → Fábrica de Empresa con welcome popup
+            setActiveSection("legal");
+            setActiveLegalTab("fabrica_empresa");
+            setShowLegalGrid(false);
+            setShowFabricaWelcome(true);
+            setDashboardView("module");
+          }
+        }}
+      />
+    );
   }
 
   // ===== HUB VIEW =====
@@ -896,7 +1600,7 @@ export default function Dashboard() {
               <SabiaLogo size={44} iconOnly className="hidden lg:block" />
               <div className="text-left">
                 <h1 className="text-sm lg:text-base font-extrabold text-slate-800">
-                  Mi Director Financiero PTY
+                  Mi Director Financier@ PTY
                 </h1>
                 <p className="text-[10px] lg:text-xs text-slate-400">
                   Tu Aliado Estrat&eacute;gico
@@ -973,30 +1677,23 @@ export default function Dashboard() {
 
             {datosMode === "contabilidad" && (
               <div className="space-y-4">
-                <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
-                  {([
-                    { key: "plan_cuentas" as ContabilidadTab, label: "Plan de Cuentas", icon: <FolderTree size={14} /> },
-                    { key: "libro_diario" as ContabilidadTab, label: "Libro Diario", icon: <BookOpen size={14} /> },
-                    { key: "libro_mayor" as ContabilidadTab, label: "Libro Mayor", icon: <BookMarked size={14} /> },
-                    { key: "balance_comprobacion" as ContabilidadTab, label: "Balance Comprobacion", icon: <CheckSquare size={14} /> },
-                    { key: "libro_inventarios" as ContabilidadTab, label: "Inventarios y Balances", icon: <Package size={14} /> },
-                    { key: "cierre_periodo" as ContabilidadTab, label: "Cierre y Reportes", icon: <Lock size={14} /> },
-                    { key: "espejo_dgi" as ContabilidadTab, label: "Espejo DGI", icon: <Shield size={14} /> },
-                  ]).map((tab) => (
-                    <button
-                      key={tab.key}
-                      onClick={() => setActiveContabilidadTab(tab.key)}
-                      className={`flex items-center gap-1.5 px-3 lg:px-4 py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
-                        activeContabilidadTab === tab.key
-                          ? "bg-blue-600 text-white shadow-sm"
-                          : "text-slate-500 hover:bg-slate-50"
-                      }`}
-                    >
-                      {tab.icon}
-                      <span className="hidden sm:inline">{tab.label}</span>
-                    </button>
-                  ))}
-                </div>
+                {showContabilidadGrid ? (
+                  <ModuleCardGrid
+                    sections={contabilidadGridSections}
+                    onSelect={(key) => {
+                      setActiveContabilidadTab(key as ContabilidadTab);
+                      setShowContabilidadGrid(false);
+                    }}
+                  />
+                ) : (
+                <>
+                <button
+                  onClick={() => setShowContabilidadGrid(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-500 hover:text-blue-600 bg-white hover:bg-blue-50 border border-slate-200 rounded-full transition-colors"
+                >
+                  <ArrowLeft size={14} />
+                  Volver al Centro de Mando
+                </button>
                 <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6 min-h-[400px]">
                   {activeContabilidadTab === "plan_cuentas" && <ChartOfAccounts societyId={societyId} />}
                   {activeContabilidadTab === "libro_diario" && <LibroDiario societyId={societyId} />}
@@ -1006,6 +1703,8 @@ export default function Dashboard() {
                   {activeContabilidadTab === "cierre_periodo" && <PeriodClosingPanel societyId={societyId} />}
                   {activeContabilidadTab === "espejo_dgi" && <EspejoDGI societyId={societyId} />}
                 </div>
+                </>
+                )}
               </div>
             )}
           </div>
@@ -1041,17 +1740,24 @@ export default function Dashboard() {
               </div>
             )}
 
-            <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
-              {negocioTabs.map((tab) => (
-                <button key={tab.key} onClick={() => setActiveNegocioTab(tab.key)}
-                  className={`flex items-center gap-1.5 px-3 lg:px-4 py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
-                    activeNegocioTab === tab.key ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"
-                  }`}>
-                  {tab.icon}
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              ))}
-            </div>
+            {/* ====== GRID DE CARDS O CONTENT PANEL ====== */}
+            {showFinanzasGrid ? (
+              <ModuleCardGrid
+                sections={finanzasGridSections}
+                onSelect={(key) => {
+                  setActiveNegocioTab(key as NegocioTab);
+                  setShowFinanzasGrid(false);
+                }}
+              />
+            ) : (
+            <>
+            <button
+              onClick={() => setShowFinanzasGrid(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-500 hover:text-blue-600 bg-white hover:bg-blue-50 border border-slate-200 rounded-full transition-colors mb-3"
+            >
+              <ArrowLeft size={14} />
+              Volver al Centro de Mando
+            </button>
 
             <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6 min-h-[400px]">
               {activeNegocioTab === "cascada" && (
@@ -1195,27 +1901,36 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+            </>
+            )}
           </div>
         )}
 
         {/* SECCION 3: MI EMPRESA - DOC LEGALES */}
         {activeSection === "legal" && (
           <div className="space-y-4">
-            <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
-              {legalTabs.map((tab) => (
-                <button key={tab.key} onClick={() => setActiveLegalTab(tab.key)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
-                    activeLegalTab === tab.key ? "bg-violet-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"
-                  }`}>
-                  {tab.icon}
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            {showLegalGrid ? (
+              <ModuleCardGrid
+                sections={legalGridSections}
+                onSelect={(key) => {
+                  setActiveLegalTab(key as LegalTab);
+                  setShowLegalGrid(false);
+                }}
+              />
+            ) : (
+            <>
+            <button
+              onClick={() => setShowLegalGrid(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-500 hover:text-violet-600 bg-white hover:bg-violet-50 border border-slate-200 rounded-full transition-colors"
+            >
+              <ArrowLeft size={14} />
+              Volver al Centro de Mando
+            </button>
             <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6 min-h-[400px]">
+              {activeLegalTab === "fabrica_empresa" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Fabrica de Empresa — Ruta S.E.</h2><FabricaEmpresa onDocumentUploaded={handleDocumentUploaded} showWelcome={showFabricaWelcome} /></div>)}
               {activeLegalTab === "boveda" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Boveda KYC — Debida Diligencia</h2><LegalVault onDocumentUploaded={handleDocumentUploaded} /></div>)}
               {activeLegalTab === "vigilante" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Vigilante Legal: Alertas de Cumplimiento</h2><WatchdogDashboard /></div>)}
-              {activeLegalTab === "auditoria" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Historial de Cambios</h2><AuditTimeline limit={30} /></div>)}
+              {activeLegalTab === "auditoria" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Auditoria y Cumplimiento DGI</h2><AuditTimeline limit={30} /></div>)}
               {activeLegalTab === "libro_actas" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Libro de Actas</h2><LibroActas societyId={societyId} /></div>)}
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6">
@@ -1226,6 +1941,8 @@ export default function Dashboard() {
               <p className="text-xs text-slate-400 mb-3">Pega cualquier clausula legal y te la explicamos en espanol sencillo.</p>
               <LegalSimplifierButton />
             </div>
+            </>
+            )}
           </div>
         )}
       </div>

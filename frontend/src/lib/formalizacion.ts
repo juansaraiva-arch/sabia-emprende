@@ -2,6 +2,7 @@
 // FORMALIZACION S.E. — Ruta Legal Panama
 // Tipos, datos y helpers para el tracker de
 // Sociedad de Emprendimiento
+// Orden basado en Ley 186 de 2020
 // ============================================
 
 export type StepStatus = "pendiente" | "en_proceso" | "completado";
@@ -15,6 +16,8 @@ export interface FormalizacionStep {
   description: string;
   benefit: string;
   instruction: string;
+  requirements: string[];
+  costEstimate: string;
   status: StepStatus;
   completedAt?: string;
 }
@@ -26,81 +29,111 @@ export interface FormalizacionState {
 }
 
 // ============================================
-// 6 PASOS DE FORMALIZACION
+// 6 PASOS DE FORMALIZACION (Ley 186 de 2020)
 // ============================================
 
 export const FORMALIZACION_STEPS_DATA: Omit<FormalizacionStep, "status" | "completedAt">[] = [
   {
-    id: "estatutos_se",
+    id: "registro_ampyme",
     order: 1,
-    title: "Estatutos S.E.",
-    entity: "Registro Publico",
+    title: "Registro Empresarial AMPYME (Ventanilla Unica)",
+    entity: "AMPYME",
+    url: "https://ampyme.gob.pa/",
+    description:
+      "Registro inicial para habilitar la exoneracion de impuestos. Es el primer paso obligatorio antes de constituir la sociedad.",
+    benefit: "Exoneracion ISR por 2 anos (ahorro de $300/ano en Tasa Unica)",
+    instruction:
+      "Acude a la Ventanilla Unica de AMPYME con los documentos requeridos para iniciar el registro empresarial.",
+    requirements: [
+      "2 a 5 socios (personas naturales)",
+      "Copia de cedula de cada socio",
+      "Recibo de servicios publicos (domicilio)",
+      "Capital social declarado minimo de $500",
+    ],
+    costEstimate: "$0",
+  },
+  {
+    id: "estatutos_se",
+    order: 2,
+    title: "Redaccion de Estatutos S.E.",
+    entity: "AMPYME / Registro Publico",
     url: "https://www.rp.gob.pa/",
     description:
-      "Redaccion y firma de los Estatutos de la Sociedad de Emprendimiento. Debe definir las reglas de juego de tu empresa: socios, capital y actividades.",
+      "Aprobacion del estatuto tipo (modelo estandar) de AMPYME. Define las reglas de juego: socios, capital y actividades de tu empresa.",
     benefit: "Define la estructura legal de tu negocio",
     instruction:
-      "El asistente puede generar un borrador automatico usando los modelos estandar de la ley panamena para Sociedades de Emprendimiento.",
+      "Utiliza el modelo estandar de estatutos de AMPYME o contrata asesoria legal externa para redactar estatutos personalizados.",
+    requirements: [
+      "Definicion de objeto comercial",
+      "Distribucion de acciones entre socios",
+      "Registro AMPYME completado (Paso 1)",
+    ],
+    costEstimate: "$0 (autogestionado) / $200-$400 (con abogado)",
   },
   {
     id: "inscripcion_rp",
-    order: 2,
+    order: 3,
     title: "Inscripcion en Registro Publico",
     entity: "Registro Publico",
     url: "https://www.rp.gob.pa/",
     description:
-      "Registro oficial de la existencia de tu sociedad para obtener tu ficha y tomo. Es un proceso 100% digital y simplificado para este tipo de sociedades.",
+      "Elevacion a Escritura Publica digital para obtener Personeria Juridica (ficha y tomo). Es un proceso 100% digital y simplificado para Sociedades de Emprendimiento.",
     benefit: "Obtener ficha, tomo y asiento (existencia legal)",
     instruction:
-      "Presenta los Estatutos firmados ante el Registro Publico de Panama. El proceso es digital.",
-  },
-  {
-    id: "aviso_operacion",
-    order: 3,
-    title: "Aviso de Operacion",
-    entity: "MICI - Panama Emprende",
-    url: "https://www.panamaemprende.gob.pa/",
-    description:
-      "Obtencion del permiso legal para empezar a vender y operar comercialmente. Necesitaras el RUC de la sociedad obtenido en el paso anterior.",
-    benefit: "Permiso comercial para operar",
-    instruction:
-      "Tramita el Aviso de Operacion en el Portal Panama Emprende del MICI.",
+      "Presenta los Estatutos aprobados ante el Registro Publico de Panama. El proceso es digital.",
+    requirements: [
+      "Estatutos aprobados en el paso anterior",
+    ],
+    costEstimate: "$50-$100 (gastos administrativos y registrales)",
   },
   {
     id: "ruc_nit",
     order: 4,
-    title: "RUC y NIT en la DGI",
+    title: "RUC y NIT en la DGI (e-Tax 2.0)",
     entity: "DGI - e-Tax 2.0",
     url: "https://dgi.mef.gob.pa/",
     description:
-      "Inscripcion en el sistema e-Tax 2.0 para cumplir con tus obligaciones tributarias ante la Direccion General de Ingresos. Debes crear tu numero de identificacion tributaria (NIT).",
-    benefit: "Cumplimiento tributario e identidad fiscal",
+      "Creacion de la identidad tributaria. Inscripcion en el sistema e-Tax 2.0 para cumplir con tus obligaciones ante la Direccion General de Ingresos.",
+    benefit: "Identidad fiscal + Tasa Unica exonerada por 2 anos",
     instruction:
-      "Registrate en e-Tax 2.0 y actualiza los datos de la sociedad para obtener el RUC y NIT.",
+      "Registrate en e-Tax 2.0 con la ficha del Registro Publico para obtener el RUC y NIT.",
+    requirements: [
+      "Ficha del Registro Publico (Paso 3)",
+    ],
+    costEstimate: "$0 (Tasa Unica exonerada por 2 anos: ahorro de $300/ano)",
+  },
+  {
+    id: "aviso_operacion",
+    order: 5,
+    title: "Aviso de Operacion (MICI)",
+    entity: "MICI - Panama Emprende",
+    url: "https://www.panamaemprende.gob.pa/",
+    description:
+      "Permiso comercial definitivo para facturar. Es el documento que te autoriza a operar comercialmente en Panama.",
+    benefit: "Permiso comercial para operar y facturar",
+    instruction:
+      "Tramita el Aviso de Operacion en el Portal Panama Emprende del MICI con tu RUC.",
+    requirements: [
+      "RUC obtenido en el paso 4",
+    ],
+    costEstimate: "$15-$55 (varia segun actividad declarada)",
   },
   {
     id: "inscripcion_municipal",
-    order: 5,
-    title: "Inscripcion Municipal",
+    order: 6,
+    title: "Inscripcion Municipal (MUPA)",
     entity: "Municipio de Panama (MUPA)",
     url: "https://mupa.gob.pa/",
     description:
-      "Registro en la alcaldia correspondiente para el pago de impuestos municipales mensuales. Obligatorio para evitar multas por operar sin registro local.",
+      "Registro local para pago de tributos municipales. Obligatorio para evitar multas por operar sin registro local. Incluye inspeccion fisica del local si aplica.",
     benefit: "Registro local obligatorio para evitar multas",
     instruction:
-      "Acude a la Tesoreria Municipal de Panama (MUPA) para registrar tu empresa.",
-  },
-  {
-    id: "registro_ampyme",
-    order: 6,
-    title: "Registro Empresarial AMPYME",
-    entity: "AMPYME",
-    url: "https://ampyme.gob.pa/",
-    description:
-      "Tramite final para certificar tu negocio como micro o pequena empresa. Acceso a la exoneracion del Impuesto sobre la Renta (ISR) por tus primeros dos anos de operacion.",
-    benefit: "Exoneracion ISR por 2 anos",
-    instruction:
-      "Registra tu empresa en AMPYME para obtener la certificacion MIPYME y el beneficio fiscal.",
+      "Acude a la Tesoreria Municipal de Panama (MUPA) para registrar tu empresa y obtener el permiso de operacion municipal.",
+    requirements: [
+      "Aviso de Operacion (Paso 5)",
+      "Inspeccion fisica del local (si aplica)",
+    ],
+    costEstimate: "$10-$20 (timbres y tramites, independiente del impuesto mensual)",
   },
 ];
 
@@ -109,9 +142,12 @@ export const FORMALIZACION_STEPS_DATA: Omit<FormalizacionStep, "status" | "compl
 // ============================================
 
 export const DOC_CATEGORY_TO_STEP: Record<string, string> = {
+  certificacion_ampyme: "registro_ampyme",
   pacto_social: "estatutos_se",
-  aviso_operacion: "aviso_operacion",
+  registro_mercantil: "inscripcion_rp",
   ruc: "ruc_nit",
+  aviso_operacion: "aviso_operacion",
+  declaracion_mupa: "inscripcion_municipal",
 };
 
 // ============================================

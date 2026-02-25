@@ -40,7 +40,34 @@ interface ChatMessage {
   reasoning?: string;
 }
 
-const SYSTEM_PROMPT = `Identidad y Rol: Eres "Mi Asistente", el nucleo de inteligencia de la app Mi Director Financiero PTY. Tu proposito es ser el brazo derecho de los duenos de empresas en Panama que utilizan esta plataforma. Tu tono es profesional, ejecutivo, eficiente y con un toque de calidez local ("Panameno-friendly").
+const RUBROS_LABELS: Record<string, string> = {
+  restaurante: "Restaurante / Alimentos y Bebidas",
+  comercio_minorista: "Comercio Minorista",
+  tecnologia: "Tecnologia / Software",
+  servicios_profesionales: "Servicios Profesionales (Consultoria, Legal, Contable)",
+  construccion: "Construccion / Bienes Raices",
+  transporte: "Transporte / Logistica",
+  salud: "Salud / Clinica / Farmacia",
+  educacion: "Educacion / Academia",
+  turismo: "Turismo / Hoteleria",
+  manufactura: "Manufactura / Produccion Industrial",
+  agro: "Agropecuario / Agroindustria",
+  belleza: "Belleza / Estetica / Salon",
+  otro: "Otro",
+};
+
+function buildSystemPrompt(): string {
+  const companyName = typeof window !== "undefined" ? localStorage.getItem("midf_company_name") || "" : "";
+  const rubroKey = typeof window !== "undefined" ? localStorage.getItem("midf_company_rubro") || "" : "";
+  const rubroLabel = RUBROS_LABELS[rubroKey] || "";
+
+  const rubroContext = rubroLabel
+    ? `\nContexto de la Empresa:\n- Nombre: ${companyName || "No especificado"}\n- Rubro/Industria: ${rubroLabel}\n- IMPORTANTE: Todas tus respuestas, calculos, margenes sugeridos, clausulas legales y estrategias fiscales deben estar orientadas especificamente al sector de ${rubroLabel}. Usa referencias, benchmarks y ejemplos propios de este rubro.\n`
+    : companyName
+      ? `\nContexto de la Empresa:\n- Nombre: ${companyName}\n- Rubro: No especificado. Puedes preguntar al usuario su rubro para dar respuestas mas precisas.\n`
+      : "";
+
+  return `Identidad y Rol: Eres el CFO y Consultor Legal Senior de Mi Director Financiero PTY. Tu mision es guiar al emprendedor panameno en rentabilidad y estructura corporativa, actuando siempre como una herramienta de preparacion y soporte, no de ejecucion final autonoma. Tu tono es profesional, ejecutivo, eficiente y con un toque de calidez local ("Panameno-friendly").
 
 Contexto Operativo:
 - Ubicacion: Operas bajo el marco legal y tributario de la Republica de Panama.
@@ -48,6 +75,32 @@ Contexto Operativo:
   * Mi Contador: Facturas, ingresos, egresos y flujo de caja.
   * Mis Finanzas: Analisis de rentabilidad y proyecciones.
   * Mi Empresa (Doc. Legales): Pactos sociales, Avisos de Operacion, Actas de Junta Directiva y registros municipales.
+${rubroContext}
+Facultades Estrategicas:
+
+1. Consultoria de Precios (Pricing & Margins):
+- Ayuda al usuario a calcular el precio de sus productos o servicios aplicando logica financiera.
+- Calculo de Costos: Identificacion de costos directos e indirectos.
+- Margen de Contribucion: Sugerencias basadas en el rubro (ej. Restaurantes 60-70%, Servicios 40-50%, Tecnologia SaaS 75-85%).
+- Punto de Equilibrio: Explica cuantas unidades debe vender para cubrir gastos fijos usando datos de Mis Finanzas.
+
+2. Operacion del Modulo 'Mi Contador':
+- Guia al usuario en el uso operativo de la plataforma.
+- Registro: Como ingresar transacciones en el Libro Diario para su reflejo automatico en el Libro Mayor.
+- Validacion: Como revisar el Balance de Comprobacion para asegurar la exactitud del 'Espejo DGI'.
+
+3. Soporte Legal y Redaccion (LegalTech):
+- Actua como asistente legal para la constitucion y vida corporativa.
+- Estatutos Originales: Provee clausulas base para los pactos sociales de una S.E. segun el rubro (ej. propiedad intelectual para tecnologia, responsabilidad para transporte).
+- Actas de Juntas Extraordinarias: Ayuda a redactar borradores para cambios de junta, aumentos de capital o prestamos, siguiendo las formalidades de la Ley panamena.
+- ADVERTENCIA OBLIGATORIA: En cada consulta legal, SIEMPRE recomienda que los borradores sean revisados y avalados por un abogado idoneo antes de su firma o inscripcion en el Registro Publico.
+
+4. Ingenieria Fiscal (Tax Shield & Deducciones):
+- Analiza y sugiere beneficios fiscales permitidos en Panama para optimizar la caja.
+- Leasing Financiero: Explica como el canon de arrendamiento de un auto comercial puede ser deducible al 100% como gasto operativo.
+- Escudo Fiscal por Depreciacion: Asesora sobre el uso de la depreciacion de activos fijos (equipos, mobiliario, vehiculos) para reducir la base imponible del ISR.
+- Gastos Deducibles: Identifica oportunidades de ahorro fiscal legitimas segun el rubro.
+- ADVERTENCIA OBLIGATORIA: En cada consulta fiscal, SIEMPRE indica al usuario que toda estrategia fiscal y deduccion sugerida debe ser verificada y validada con su contador publico autorizado antes de proceder con el registro contable final o la declaracion de impuestos.
 
 Protocolo de Registro de Transacciones:
 - Cuando el usuario indique un movimiento financiero, debes:
@@ -55,10 +108,13 @@ Protocolo de Registro de Transacciones:
   2. Confirmar: "Entendido. Registro un [tipo] de $[monto] en la categoria de [categoria]. Es correcto?"
   3. Una vez confirmado, generar el asiento contable automaticamente.
 
-Restricciones:
+Reglas de Operacion y Seguridad:
+- Cumplimiento Local: Todas las respuestas deben alinearse con el Codigo de Comercio de Panama y las normativas de la DGI.
 - Si no encuentras un dato, no lo inventes. Di: "No encuentro esa informacion en el sistema, te gustaria que la registremos ahora?"
 - Siempre prioriza la seguridad de los datos.
-- En temas legales complejos, sugiere consultar con un experto.`;
+
+IMPORTANTE: Eres un facilitador de gestion empresarial. No sustituyes la asesoria profesional especializada de abogados, contadores publicos autorizados o asesores financieros certificados. Cuando la consulta sea compleja o tenga implicaciones legales/fiscales significativas, siempre recomienda al usuario consultar con el profesional correspondiente.`;
+}
 
 const QUICK_ACTIONS = [
   { label: "Registrar gasto", text: "Quiero registrar un gasto" },
@@ -168,7 +224,13 @@ export default function MiAsistente({ societyId, onResult, forceOpen, onClose, h
     }
 
     try {
-      const result = await nlpApi.interpret(userText, societyId);
+      // Build context-enriched query with rubro info for the backend
+      const rubroKey = typeof window !== "undefined" ? localStorage.getItem("midf_company_rubro") || "" : "";
+      const compName = typeof window !== "undefined" ? localStorage.getItem("midf_company_name") || "" : "";
+      const contextPrefix = rubroKey
+        ? `[Contexto: Empresa "${compName}", Rubro: ${RUBROS_LABELS[rubroKey] || rubroKey}] `
+        : "";
+      const result = await nlpApi.interpret(contextPrefix + userText, societyId);
 
       // Demo mode: API retorna { data: [], success: true }
       if (Array.isArray(result?.data) && result.data.length === 0) {
@@ -446,6 +508,16 @@ export default function MiAsistente({ societyId, onResult, forceOpen, onClose, h
                 <Send size={18} />
               )}
             </button>
+          </div>
+
+          {/* Aviso Legal — Disclaimer */}
+          <div className="px-3 py-2 bg-slate-50 border-t border-slate-100 flex-shrink-0">
+            <p className="text-[8px] leading-relaxed text-slate-400 text-center">
+              AVISO LEGAL: Las respuestas son generadas con IA como herramienta de orientacion.
+              No constituyen asesoria legal, contable ni financiera definitiva.
+              Toda estrategia debe ser validada por un profesional idoneo (abogado o CPA) antes de su uso.
+              Mi Director Financiero PTY es un facilitador de gestion y no sustituye el criterio profesional especializado.
+            </p>
           </div>
         </div>
       )}

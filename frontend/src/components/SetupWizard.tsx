@@ -15,8 +15,24 @@ import SabiaLogo from "@/components/SabiaLogo";
 const GOLD = "#C5A059";
 const NAVY = "#1A242F";
 
+const RUBROS = [
+  { key: "restaurante", label: "Restaurante / Alimentos" },
+  { key: "comercio_minorista", label: "Comercio Minorista" },
+  { key: "tecnologia", label: "Tecnologia / Software" },
+  { key: "servicios_profesionales", label: "Servicios Profesionales" },
+  { key: "construccion", label: "Construccion / Bienes Raices" },
+  { key: "transporte", label: "Transporte / Logistica" },
+  { key: "salud", label: "Salud / Clinica / Farmacia" },
+  { key: "educacion", label: "Educacion / Academia" },
+  { key: "turismo", label: "Turismo / Hoteleria" },
+  { key: "manufactura", label: "Manufactura / Produccion" },
+  { key: "agro", label: "Agropecuario / Agroindustria" },
+  { key: "belleza", label: "Belleza / Estetica / Salon" },
+  { key: "otro", label: "Otro" },
+];
+
 interface SetupWizardProps {
-  onComplete: () => void;
+  onComplete: (routeTo?: "fabrica_empresa") => void;
 }
 
 export default function SetupWizard({ onComplete }: SetupWizardProps) {
@@ -32,6 +48,11 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [companyLogo, setCompanyLogo] = useState(() => {
     if (typeof window !== "undefined")
       return localStorage.getItem("midf_company_logo") || "";
+    return "";
+  });
+  const [companyRubro, setCompanyRubro] = useState(() => {
+    if (typeof window !== "undefined")
+      return localStorage.getItem("midf_company_rubro") || "";
     return "";
   });
   const [isDragging, setIsDragging] = useState(false);
@@ -91,6 +112,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     if (companyLogo) {
       localStorage.setItem("midf_company_logo", companyLogo);
     }
+    if (companyRubro) {
+      localStorage.setItem("midf_company_rubro", companyRubro);
+    }
     if (isFormalized === true) {
       localStorage.setItem("midf_has_ruc", "true");
     }
@@ -98,7 +122,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     localStorage.setItem("sabia_welcomed", "true");
     localStorage.setItem("midf_setup_complete", "true");
 
-    setTimeout(() => onComplete(), 1200);
+    setTimeout(() => onComplete(isFormalized === false ? "fabrica_empresa" : undefined), 1200);
   };
 
   const handleSkip = () => {
@@ -275,6 +299,35 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             (e.target.style.borderColor = "rgba(197, 160, 89, 0.25)")
           }
         />
+      </div>
+
+      {/* Rubro / Industria */}
+      <div className="space-y-2">
+        <label
+          className="text-xs font-bold uppercase tracking-wider"
+          style={{ color: "rgba(197, 160, 89, 0.7)" }}
+        >
+          Rubro o Industria
+        </label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-[180px] overflow-y-auto pr-1">
+          {RUBROS.map((r) => (
+            <button
+              key={r.key}
+              onClick={() => setCompanyRubro(companyRubro === r.key ? "" : r.key)}
+              className="px-2.5 py-2 rounded-lg text-[11px] font-semibold text-left transition-all"
+              style={{
+                backgroundColor: companyRubro === r.key ? "rgba(197, 160, 89, 0.2)" : "rgba(197, 160, 89, 0.05)",
+                border: `1.5px solid ${companyRubro === r.key ? GOLD : "rgba(197, 160, 89, 0.15)"}`,
+                color: companyRubro === r.key ? GOLD : "rgba(197, 160, 89, 0.6)",
+              }}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-[10px]" style={{ color: "rgba(197, 160, 89, 0.35)" }}>
+          Opcional — ayuda a personalizar tu experiencia
+        </p>
       </div>
 
       {/* Actions */}
@@ -580,6 +633,11 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 >
                   {companyLogo ? "Logo configurado" : "Sin logo (puedes agregarlo despues)"}
                 </p>
+                {companyRubro && (
+                  <p className="text-[10px] mt-0.5 font-medium" style={{ color: "rgba(197, 160, 89, 0.4)" }}>
+                    {RUBROS.find((r) => r.key === companyRubro)?.label || companyRubro}
+                  </p>
+                )}
               </div>
             </div>
 

@@ -33,6 +33,8 @@ type DocCategory =
   | "pacto_social"
   | "aviso_operacion"
   | "registro_mercantil"
+  | "certificacion_ampyme"
+  | "declaracion_mupa"
   | "paz_salvo"
   | "otro";
 
@@ -54,6 +56,8 @@ const CATEGORY_LABELS: Record<DocCategory, string> = {
   pacto_social: "Pacto Social",
   aviso_operacion: "Aviso de Operacion",
   registro_mercantil: "Registro Mercantil",
+  certificacion_ampyme: "Certificacion AMPYME",
+  declaracion_mupa: "Declaracion Jurada MUPA",
   paz_salvo: "Paz y Salvo",
   otro: "Otro Documento",
 };

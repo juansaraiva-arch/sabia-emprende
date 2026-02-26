@@ -22,6 +22,11 @@ import {
   initFormalizacionState,
   updateStepStatus,
   checkFormalizationStatus,
+  STEP_TO_DOC_CATEGORY,
+  getStepDocuments,
+  saveStepDocument,
+  getSyncEventsForStep,
+  pushDocSyncEvent,
 } from "@/lib/formalizacion";
 import type { FormalizacionStep, StepStatus } from "@/lib/formalizacion";
 
@@ -53,13 +58,16 @@ const STEP_COLORS: Record<string, string> = {
 
 interface FabricaEmpresaProps {
   onDocumentUploaded?: (category: string) => void;
+  onFileUpload?: (file: File, category: string) => Promise<void>;
   showWelcome?: boolean;
 }
 
-export default function FabricaEmpresa({ onDocumentUploaded, showWelcome = false }: FabricaEmpresaProps) {
+export default function FabricaEmpresa({ onDocumentUploaded, onFileUpload, showWelcome = false }: FabricaEmpresaProps) {
   const [steps, setSteps] = useState<FormalizacionStep[]>([]);
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
   const [showWelcomePopup, setShowWelcomePopup] = useState(showWelcome);
+  const [stepDocs, setStepDocs] = useState<Record<string, { fileName: string; syncedToBoveda: boolean }>>({});
+  const [syncedSteps, setSyncedSteps] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let state = getFormalizacionState();
@@ -67,6 +75,10 @@ export default function FabricaEmpresa({ onDocumentUploaded, showWelcome = false
       state = initFormalizacionState();
     }
     setSteps(state.steps);
+    // Load attached documents & sync events
+    setStepDocs(getStepDocuments());
+    const allSyncEvents = state.steps.map((s) => s.id).filter((id) => getSyncEventsForStep(id).length > 0);
+    setSyncedSteps(new Set(allSyncEvents));
   }, []);
 
   const handleStatusChange = (stepId: string, newStatus: StepStatus) => {
@@ -331,6 +343,30 @@ export default function FabricaEmpresa({ onDocumentUploaded, showWelcome = false
                       </button>
                     )}
                   </div>
+
+                  {/* Upload de documento de respaldo */}
+                  {(isInProgress || isCompleted) && (
+                    <StepDocumentUpload
+                      stepId={step.id}
+                      existingDoc={stepDocs[step.id]}
+                      isSynced={syncedSteps.has(step.id)}
+                      onFileAttached={(fileName) => {
+                        const category = STEP_TO_DOC_CATEGORY[step.id] || "otro";
+                        saveStepDocument(step.id, fileName, false);
+                        setStepDocs((prev) => ({ ...prev, [step.id]: { fileName, syncedToBoveda: false } }));
+                        pushDocSyncEvent({ fileName, category, stepId: step.id, source: "fabrica" });
+                        setSyncedSteps((prev) => new Set([...prev, step.id]));
+                      }}
+                      onFileUpload={onFileUpload ? async (file) => {
+                        const category = STEP_TO_DOC_CATEGORY[step.id] || "otro";
+                        await onFileUpload(file, category);
+                        saveStepDocument(step.id, file.name, true);
+                        setStepDocs((prev) => ({ ...prev, [step.id]: { fileName: file.name, syncedToBoveda: true } }));
+                        pushDocSyncEvent({ fileName: file.name, category, stepId: step.id, source: "fabrica" });
+                        setSyncedSteps((prev) => new Set([...prev, step.id]));
+                      } : undefined}
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -344,6 +380,125 @@ export default function FabricaEmpresa({ onDocumentUploaded, showWelcome = false
         y pueden variar segun la jurisdiccion y asesoria contratada. Esta herramienta es informativa
         y no constituye asesoria legal.
       </p>
+    </div>
+  );
+}
+
+// ============================================
+// SUB-COMPONENTE: Upload por Paso
+// ============================================
+
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+function StepDocumentUpload({
+  stepId,
+  existingDoc,
+  isSynced,
+  onFileAttached,
+  onFileUpload,
+}: {
+  stepId: string;
+  existingDoc?: { fileName: string; syncedToBoveda: boolean };
+  isSynced: boolean;
+  onFileAttached: (fileName: string) => void;
+  onFileUpload?: (file: File) => Promise<void>;
+}) {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setError("Solo JPG, PNG, WebP o PDF");
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setError("Archivo excede 10 MB");
+      return;
+    }
+
+    setError(null);
+    setUploading(true);
+
+    try {
+      if (onFileUpload) {
+        await onFileUpload(file);
+      } else {
+        // No backend upload, just save reference locally
+        onFileAttached(file.name);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Error al subir archivo");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  if (existingDoc) {
+    return (
+      <div className="mt-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 size={14} className="text-emerald-600 flex-shrink-0" />
+          <span className="text-xs font-bold text-emerald-700">Documento adjunto</span>
+        </div>
+        <p className="text-[10px] text-emerald-600 truncate pl-6">
+          {existingDoc.fileName}
+        </p>
+        {(existingDoc.syncedToBoveda || isSynced) && (
+          <div className="flex items-center gap-1.5 pl-6">
+            <ShieldCheck size={12} className="text-violet-500" />
+            <span className="text-[10px] font-medium text-violet-600">En Boveda KYC</span>
+          </div>
+        )}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="ml-6 text-[10px] text-slate-400 hover:text-slate-600 underline"
+        >
+          Cambiar archivo
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".jpg,.jpeg,.png,.webp,.pdf"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".jpg,.jpeg,.png,.webp,.pdf"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+        className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-500 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-300 rounded-xl transition-colors disabled:opacity-50"
+      >
+        <Upload size={14} />
+        {uploading ? "Subiendo..." : "Adjuntar documento de respaldo"}
+      </button>
+      {error && (
+        <p className="text-[10px] text-red-500 pl-1">{error}</p>
+      )}
+      {isSynced && !existingDoc && (
+        <div className="flex items-center gap-1.5 pl-1">
+          <ShieldCheck size={12} className="text-violet-500" />
+          <span className="text-[10px] font-medium text-violet-600">Documento en Boveda KYC</span>
+        </div>
+      )}
     </div>
   );
 }

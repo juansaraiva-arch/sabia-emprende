@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
   Upload,
   Shield,
@@ -17,10 +17,13 @@ import {
   Scale,
   Receipt,
   BadgeCheck,
+  Rocket,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import LegalSimplifierButton from "@/components/LegalSimplifierButton";
 import SmartTooltip from "@/components/SmartTooltip";
+import { getSyncEventsFromSource } from "@/lib/formalizacion";
+import type { DocSyncEvent } from "@/lib/formalizacion";
 
 // ============================================
 // TIPOS
@@ -203,6 +206,18 @@ export default function LegalVault({ onDocumentUploaded }: { onDocumentUploaded?
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showChecklist, setShowChecklist] = useState(true);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  const [fabricaSyncEvents, setFabricaSyncEvents] = useState<DocSyncEvent[]>([]);
+
+  // Load sync events from Fabrica de Empresa
+  useEffect(() => {
+    const events = getSyncEventsFromSource("fabrica");
+    setFabricaSyncEvents(events);
+    // Polling for new sync events
+    const interval = setInterval(() => {
+      setFabricaSyncEvents(getSyncEventsFromSource("fabrica"));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const toggleCheckItem = (id: string) => {
     setCheckedItems((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -383,6 +398,32 @@ export default function LegalVault({ onDocumentUploaded }: { onDocumentUploaded?
           </p>
         </div>
       </div>
+
+      {/* ====== SYNC DESDE FABRICA DE EMPRESA ====== */}
+      {fabricaSyncEvents.length > 0 && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 space-y-2">
+          <div className="flex items-center gap-2 mb-1">
+            <Rocket size={16} className="text-emerald-600" />
+            <h4 className="text-xs font-bold text-emerald-700">
+              Documentos sincronizados desde Fabrica de Empresa
+            </h4>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600">
+              {fabricaSyncEvents.length}
+            </span>
+          </div>
+          {fabricaSyncEvents.map((evt) => (
+            <div key={evt.id} className="flex items-center gap-2 pl-6">
+              <CheckCircle2 size={12} className="text-emerald-500 flex-shrink-0" />
+              <span className="text-[11px] text-emerald-700 font-medium">
+                {CATEGORY_LABELS[evt.category as DocCategory] || evt.category}
+              </span>
+              <span className="text-[10px] text-emerald-500">
+                — {evt.fileName}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ====== CHECKLIST DE CONSTITUCION ====== */}
       <div className="rounded-2xl border border-slate-200 overflow-hidden">

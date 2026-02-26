@@ -286,3 +286,84 @@ export function isValidRuc(ruc: string): boolean {
   if (!ruc || ruc.trim().length < 5) return false;
   return RUC_REGEX.test(ruc.trim());
 }
+
+// ============================================
+// MAPEO INVERSO: Paso → Categoria de documento
+// ============================================
+
+export const STEP_TO_DOC_CATEGORY: Record<string, string> = {
+  registro_ampyme: "certificacion_ampyme",
+  estatutos_se: "pacto_social",
+  inscripcion_rp: "registro_mercantil",
+  ruc_nit: "ruc",
+  aviso_operacion: "aviso_operacion",
+  inscripcion_municipal: "declaracion_mupa",
+};
+
+// ============================================
+// SISTEMA DE SYNC BIDIRECCIONAL
+// ============================================
+
+export interface DocSyncEvent {
+  id: string;
+  fileName: string;
+  category: string;
+  stepId: string;
+  source: "fabrica" | "boveda";
+  timestamp: string;
+}
+
+const SYNC_EVENTS_KEY = "midf_doc_sync_events";
+const STEP_DOCUMENTS_KEY = "midf_step_documents";
+
+export function getDocSyncEvents(): DocSyncEvent[] {
+  if (typeof window === "undefined") return [];
+  const raw = localStorage.getItem(SYNC_EVENTS_KEY);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function pushDocSyncEvent(event: Omit<DocSyncEvent, "id" | "timestamp">): DocSyncEvent {
+  const fullEvent: DocSyncEvent = {
+    ...event,
+    id: Math.random().toString(36).substring(2, 15),
+    timestamp: new Date().toISOString(),
+  };
+  const events = getDocSyncEvents();
+  events.push(fullEvent);
+  if (typeof window !== "undefined") {
+    localStorage.setItem(SYNC_EVENTS_KEY, JSON.stringify(events));
+  }
+  return fullEvent;
+}
+
+export function getStepDocuments(): Record<string, { fileName: string; syncedToBoveda: boolean }> {
+  if (typeof window === "undefined") return {};
+  const raw = localStorage.getItem(STEP_DOCUMENTS_KEY);
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+export function saveStepDocument(stepId: string, fileName: string, syncedToBoveda: boolean): void {
+  const docs = getStepDocuments();
+  docs[stepId] = { fileName, syncedToBoveda };
+  if (typeof window !== "undefined") {
+    localStorage.setItem(STEP_DOCUMENTS_KEY, JSON.stringify(docs));
+  }
+}
+
+export function getSyncEventsForStep(stepId: string): DocSyncEvent[] {
+  return getDocSyncEvents().filter((e) => e.stepId === stepId);
+}
+
+export function getSyncEventsFromSource(source: "fabrica" | "boveda"): DocSyncEvent[] {
+  return getDocSyncEvents().filter((e) => e.source === source);
+}

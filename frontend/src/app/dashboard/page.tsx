@@ -80,9 +80,8 @@ import MiAsistente from "@/components/MiAsistente";
 import EspejoDGI from "@/components/EspejoDGI";
 import ModuleCardGrid from "@/components/ModuleCardGrid";
 import type { CardGridSection } from "@/components/ModuleCardGrid";
-import FormalizacionBanner from "@/components/FormalizacionBanner";
 import FabricaEmpresa from "@/components/FabricaEmpresa";
-import { DOC_CATEGORY_TO_STEP, updateStepStatus, checkFormalizationStatus } from "@/lib/formalizacion";
+import { DOC_CATEGORY_TO_STEP, updateStepStatus, checkFormalizationStatus, pushDocSyncEvent } from "@/lib/formalizacion";
 import { computeAlerts, computeComplianceAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
 import { playAlertSound, isSoundEnabled } from "@/lib/sounds";
 import { periodLabel, getPresetRange } from "@/lib/calculations";
@@ -631,8 +630,16 @@ function FormalizacionProgressWidget({ onNavigate }: { onNavigate: () => void })
   const [status, setStatus] = React.useState<{ percentComplete: number; completed: number; total: number; started: boolean } | null>(null);
 
   React.useEffect(() => {
-    const s = checkFormalizationStatus();
-    setStatus(s);
+    const update = () => setStatus(checkFormalizationStatus());
+    update();
+    // Polling cada 2s para reactivity en misma pestaña (localStorage no dispara storage event)
+    const interval = setInterval(update, 2000);
+    const handler = () => update();
+    window.addEventListener("storage", handler);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", handler);
+    };
   }, []);
 
   if (!status) return null;
@@ -660,7 +667,7 @@ function FormalizacionProgressWidget({ onNavigate }: { onNavigate: () => void })
             {status.percentComplete === 100
               ? "Empresa Formalizada!"
               : status.started
-                ? "Formalizacion en Progreso"
+                ? `Formalizacion S.E.: ${status.percentComplete}% Completado`
                 : "Formaliza tu Sociedad de Emprendimiento"}
           </p>
           <div className="flex items-center gap-2 mt-1.5">
@@ -677,8 +684,10 @@ function FormalizacionProgressWidget({ onNavigate }: { onNavigate: () => void })
               {status.completed}/{status.total}
             </span>
           </div>
+          <p className="text-[10px] font-medium mt-1" style={{ color: GOLD, opacity: 0.7 }}>
+            {status.percentComplete < 100 ? "Continuar →" : "Ver detalle →"}
+          </p>
         </div>
-        <ArrowLeft size={18} className="shrink-0 rotate-180" style={{ color: GOLD, opacity: 0.6 }} />
       </div>
     </button>
   );
@@ -688,7 +697,7 @@ function FormalizacionProgressWidget({ onNavigate }: { onNavigate: () => void })
 // HUB VIEW — Organigrama Empresarial (Dark Theme)
 // ============================================
 
-function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section: Section) => void; onOpenAsistente: () => void }) {
+function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onSelectModule: (section: Section) => void; onOpenAsistente: () => void; onNavigateToFabrica: () => void }) {
   // Company info (localStorage temporal, luego Supabase)
   const [companyName, setCompanyName] = React.useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("midf_company_name") || "";
@@ -873,9 +882,7 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
         <div className="w-[2px] h-4 lg:h-6" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
 
         {/* Widget compacto de progreso de formalizacion S.E. */}
-        <FormalizacionProgressWidget onNavigate={() => {
-          onSelectModule("legal");
-        }} />
+        <FormalizacionProgressWidget onNavigate={onNavigateToFabrica} />
 
         {/* Linea vertical: Formalizacion → Director */}
         <div className="w-[2px] h-6 lg:h-10" style={{ backgroundColor: "rgba(197, 160, 89, 0.4)" }} />
@@ -1314,12 +1321,36 @@ export default function Dashboard() {
     setDashboardView("hub");
   };
 
+  const handleNavigateToFabrica = () => {
+    setActiveSection("legal");
+    setActiveLegalTab("fabrica_empresa");
+    setShowLegalGrid(false);
+    setDashboardView("module");
+  };
+
   // Auto-complete formalizacion tracker cuando se sube un documento relevante
   const handleDocumentUploaded = (category: string) => {
     const stepId = DOC_CATEGORY_TO_STEP[category];
     if (stepId) {
       updateStepStatus(stepId, "completado");
+      pushDocSyncEvent({ fileName: "uploaded-from-boveda", category, stepId, source: "boveda" });
     }
+  };
+
+  // Upload file from FabricaEmpresa paso → Supabase Storage (misma logica que LegalVault)
+  const handleFabricaFileUpload = async (file: File, category: string) => {
+    const { createClient } = await import("@/lib/supabase/client");
+    const supabase = createClient();
+    const docId = Math.random().toString(36).substring(2, 15);
+    const timestamp = Date.now();
+    const ext = file.name.split(".").pop() || "bin";
+    const storagePath = `kyc/${category}/${timestamp}_${docId}.${ext}`;
+    const { error } = await supabase.storage
+      .from("kyc_documents")
+      .upload(storagePath, file, { contentType: file.type, upsert: false });
+    if (error) throw new Error(error.message);
+    // Also auto-complete the formalizacion step
+    handleDocumentUploaded(category);
   };
 
   const handleNLPResult = (result: any) => {
@@ -1510,10 +1541,15 @@ export default function Dashboard() {
 
   const legalGridSections: CardGridSection[] = [
     {
-      title: "Mi Empresa — Documentos Legales",
+      title: "Ruta de Formalizacion",
       cards: [
         { key: "fabrica_empresa", label: "Fabrica de Empresa (Ruta S.E.)", icon: <Rocket size={22} />, tooltip: "Ruta paso a paso para formalizar tu Sociedad de Emprendimiento", color: "bg-emerald-600" },
-        { key: "boveda", label: "Boveda KYC", icon: <Shield size={22} />, tooltip: "Debida diligencia y documentos", color: "bg-violet-600" },
+        { key: "boveda", label: "Boveda KYC (Debida Diligencia)", icon: <Shield size={22} />, tooltip: "Almacenamiento permanente de documentos legales", color: "bg-violet-600" },
+      ],
+    },
+    {
+      title: "Herramientas Legales",
+      cards: [
         { key: "vigilante", label: "Vigilante Legal", icon: <Scale size={22} />, tooltip: "Alertas de cumplimiento DGI + MUPA", color: "bg-red-600" },
         { key: "auditoria", label: "Auditoria y DGI", icon: <History size={22} />, tooltip: "Historial, calendario fiscal y checklist", color: "bg-blue-600" },
         { key: "libro_actas", label: "Libro de Actas", icon: <ClipboardList size={22} />, tooltip: "Registro de actas societarias", color: "bg-amber-500" },
@@ -1562,7 +1598,7 @@ export default function Dashboard() {
   if (dashboardView === "hub") {
     return (
       <>
-        <HubView onSelectModule={handleSelectModule} onOpenAsistente={() => setAsistenteOpen(true)} />
+        <HubView onSelectModule={handleSelectModule} onOpenAsistente={() => setAsistenteOpen(true)} onNavigateToFabrica={handleNavigateToFabrica} />
         {/* Mi Asistente — opens via org chart node click */}
         <MiAsistente
           societyId={societyId}
@@ -1926,8 +1962,57 @@ export default function Dashboard() {
               <ArrowLeft size={14} />
               Volver al Centro de Mando
             </button>
+
+            {/* Tab bar: 2 principales + 3 secundarias */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Tabs principales */}
+              <button
+                onClick={() => setActiveLegalTab("fabrica_empresa")}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeLegalTab === "fabrica_empresa"
+                    ? "bg-emerald-100 text-emerald-700 ring-2 ring-emerald-300"
+                    : "bg-white text-slate-500 hover:bg-emerald-50 border border-slate-200"
+                }`}
+              >
+                <Rocket size={14} />
+                Fabrica de Empresa
+              </button>
+              <button
+                onClick={() => setActiveLegalTab("boveda")}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  activeLegalTab === "boveda"
+                    ? "bg-violet-100 text-violet-700 ring-2 ring-violet-300"
+                    : "bg-white text-slate-500 hover:bg-violet-50 border border-slate-200"
+                }`}
+              >
+                <Shield size={14} />
+                Boveda KYC
+              </button>
+              {/* Separador */}
+              <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block" />
+              {/* Tabs secundarias */}
+              {([
+                { key: "vigilante" as LegalTab, label: "Vigilante", icon: <Scale size={12} /> },
+                { key: "auditoria" as LegalTab, label: "Auditoria", icon: <History size={12} /> },
+                { key: "libro_actas" as LegalTab, label: "Actas", icon: <ClipboardList size={12} /> },
+              ]).map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setActiveLegalTab(t.key)}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                    activeLegalTab === t.key
+                      ? "bg-slate-200 text-slate-700"
+                      : "text-slate-400 hover:bg-slate-100"
+                  }`}
+                >
+                  {t.icon}
+                  <span>{t.label}</span>
+                </button>
+              ))}
+            </div>
+
             <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6 min-h-[400px]">
-              {activeLegalTab === "fabrica_empresa" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Fabrica de Empresa — Ruta S.E.</h2><FabricaEmpresa onDocumentUploaded={handleDocumentUploaded} showWelcome={showFabricaWelcome} /></div>)}
+              {activeLegalTab === "fabrica_empresa" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Fabrica de Empresa — Ruta S.E.</h2><FabricaEmpresa onDocumentUploaded={handleDocumentUploaded} onFileUpload={handleFabricaFileUpload} showWelcome={showFabricaWelcome} /></div>)}
               {activeLegalTab === "boveda" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Boveda KYC — Debida Diligencia</h2><LegalVault onDocumentUploaded={handleDocumentUploaded} /></div>)}
               {activeLegalTab === "vigilante" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Vigilante Legal: Alertas de Cumplimiento</h2><WatchdogDashboard /></div>)}
               {activeLegalTab === "auditoria" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Auditoria y Cumplimiento DGI</h2><AuditTimeline limit={30} /></div>)}

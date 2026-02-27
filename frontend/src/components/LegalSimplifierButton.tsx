@@ -9,6 +9,7 @@ import {
   ShieldAlert,
   Lightbulb,
 } from "lucide-react";
+import { aiApi } from "@/lib/api";
 
 // ============================================
 // TIPOS
@@ -43,21 +44,7 @@ export default function LegalSimplifierButton() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/ai/simplify-legal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: inputText,
-          context: "contrato de sociedad anonima en Panama",
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: res.statusText }));
-        throw new Error(err.detail || `Error ${res.status}`);
-      }
-
-      const data = await res.json();
+      const data = await aiApi.simplifyLegal(inputText);
       if (data.data) {
         setResult(data.data);
       } else {

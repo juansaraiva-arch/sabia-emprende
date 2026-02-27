@@ -493,6 +493,13 @@ export const aiApi = {
     return res.json();
   },
 
+  /** Simplificar texto legal con GPT-4o */
+  simplifyLegal: (text: string, context = "contrato de sociedad anonima en Panama") =>
+    apiFetch<{ data: { simple: string; riesgo: "bajo" | "medio" | "alto"; emoji: string; tip: string } }>("/ai/simplify-legal", {
+      method: "POST",
+      body: JSON.stringify({ text, context }),
+    }),
+
   /** Data Merging: fusionar datos de factura + voz en un solo registro */
   mergeTransaction: (body: {
     receipt_data?: any;

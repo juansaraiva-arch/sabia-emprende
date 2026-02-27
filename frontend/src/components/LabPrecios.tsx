@@ -82,6 +82,15 @@ export default function LabPrecios() {
   // Tooltips
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
+  // Guardar producto
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [savedProducts, setSavedProducts] = useState<Array<{ id: string; name: string; precio: number; costo: number; margen: number; fecha: string }>>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(localStorage.getItem("midf_saved_products") || "[]");
+    } catch { return []; }
+  });
+
   // ====== CALCULO ======
   const result: PricingResult = useMemo(() => {
     const resolved = resolveIngredientCosts(ingredientes, customUnits);
@@ -216,6 +225,28 @@ export default function LabPrecios() {
   const getUnitCategory = (unitId: string): UnitCategory => {
     const unit = findUnit(unitId, customUnits);
     return unit?.category || "weight";
+  };
+
+  // ====== GUARDAR PRODUCTO ======
+  const handleSaveProduct = () => {
+    if (!productName.trim()) return;
+    setSaveStatus("saving");
+    const product = {
+      id: Date.now().toString(),
+      name: productName.trim(),
+      precio: result.precio_final,
+      costo: result.costo_total_unitario,
+      margen: margenDeseado,
+      fecha: new Date().toISOString(),
+    };
+    const existing = savedProducts.filter((p) => p.name !== product.name);
+    const updated = [product, ...existing];
+    setSavedProducts(updated);
+    localStorage.setItem("midf_saved_products", JSON.stringify(updated));
+    setTimeout(() => {
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2500);
+    }, 400);
   };
 
   return (
@@ -697,6 +728,24 @@ export default function LabPrecios() {
                 ITBMS: ${result.itbms.toFixed(2)}
               </span>
             </div>
+            {/* Boton guardar */}
+            <button
+              onClick={handleSaveProduct}
+              disabled={!productName.trim() || saveStatus === "saving"}
+              className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+                saveStatus === "saved"
+                  ? "bg-white text-emerald-700 border-2 border-emerald-300"
+                  : !productName.trim()
+                  ? "bg-emerald-900/40 text-emerald-300/60 cursor-not-allowed"
+                  : "bg-white text-emerald-700 hover:bg-emerald-50 border-2 border-emerald-300 hover:border-emerald-400"
+              }`}
+            >
+              <Save size={16} />
+              {saveStatus === "saving" ? "Guardando..." : saveStatus === "saved" ? "Guardado en Base de Datos" : "Guardar Producto"}
+            </button>
+            {!productName.trim() && (
+              <p className="text-[10px] text-emerald-200/80 text-center mt-1">Escribe un nombre arriba para poder guardar</p>
+            )}
           </div>
 
           {/* --- Desglose de Costos --- */}

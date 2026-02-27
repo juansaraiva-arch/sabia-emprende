@@ -3,8 +3,8 @@ import React, { useState, useEffect } from "react";
 import {
   CheckCircle2,
   Circle,
-  ChevronDown,
-  ChevronUp,
+  Plus,
+  Minus,
   ExternalLink,
   Upload,
   DollarSign,
@@ -245,7 +245,7 @@ export default function FabricaEmpresa({ onDocumentUploaded, onFileUpload, showW
 
                 {/* Expand arrow */}
                 <div className="flex-shrink-0 text-slate-400">
-                  {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  {isExpanded ? <Minus size={18} /> : <Plus size={18} />}
                 </div>
               </button>
 

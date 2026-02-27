@@ -38,6 +38,7 @@ import {
   Percent,
   Activity,
   Check,
+  Landmark,
 } from "lucide-react";
 import type { FinancialRecord } from "@/lib/calculations";
 import SabiaLogo from "@/components/SabiaLogo";
@@ -81,6 +82,7 @@ import EspejoDGI from "@/components/EspejoDGI";
 import ModuleCardGrid from "@/components/ModuleCardGrid";
 import type { CardGridSection } from "@/components/ModuleCardGrid";
 import FabricaEmpresa from "@/components/FabricaEmpresa";
+import MupaPanel from "@/components/MupaPanel";
 import { DOC_CATEGORY_TO_STEP, updateStepStatus, checkFormalizationStatus, pushDocSyncEvent } from "@/lib/formalizacion";
 import { computeAlerts, computeComplianceAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
 import { playAlertSound, isSoundEnabled } from "@/lib/sounds";
@@ -120,7 +122,7 @@ type NegocioTab =
   | "comparativo"
   | "presupuesto"
   | "reportes";
-type LegalTab = "boveda" | "vigilante" | "auditoria" | "libro_actas" | "fabrica_empresa";
+type LegalTab = "boveda" | "vigilante" | "auditoria" | "libro_actas" | "fabrica_empresa" | "mupa";
 
 // View: "hub" = main dashboard with 3 module cards, "module" = inside a module
 type DashboardView = "hub" | "module";
@@ -1550,9 +1552,10 @@ export default function Dashboard() {
     {
       title: "Herramientas Legales",
       cards: [
-        { key: "vigilante", label: "Vigilante Legal", icon: <Scale size={22} />, tooltip: "Alertas de cumplimiento DGI + MUPA", color: "bg-red-600" },
-        { key: "auditoria", label: "Auditoria y DGI", icon: <History size={22} />, tooltip: "Historial, calendario fiscal y checklist", color: "bg-blue-600" },
-        { key: "libro_actas", label: "Libro de Actas", icon: <ClipboardList size={22} />, tooltip: "Registro de actas societarias", color: "bg-amber-500" },
+        { key: "mupa", label: "MUPA — Inteligencia Municipal", icon: <Landmark size={22} />, tooltip: "Semaforo, sanciones, recargos y obligaciones municipales", color: "bg-red-600" },
+        { key: "vigilante", label: "Vigilante Legal", icon: <Scale size={22} />, tooltip: "Panel centralizado de alertas de cumplimiento", color: "bg-amber-500" },
+        { key: "auditoria", label: "Auditoria y DGI", icon: <History size={22} />, tooltip: "Calendario fiscal, simulador de multas y checklist DGI", color: "bg-blue-600" },
+        { key: "libro_actas", label: "Libro de Actas", icon: <ClipboardList size={22} />, tooltip: "Registro de actas societarias", color: "bg-slate-600" },
       ],
     },
   ];
@@ -1990,19 +1993,20 @@ export default function Dashboard() {
               </button>
               {/* Separador */}
               <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block" />
-              {/* Tabs secundarias */}
+              {/* Tabs secundarias con colores vivos */}
               {([
-                { key: "vigilante" as LegalTab, label: "Vigilante", icon: <Scale size={12} /> },
-                { key: "auditoria" as LegalTab, label: "Auditoria", icon: <History size={12} /> },
-                { key: "libro_actas" as LegalTab, label: "Actas", icon: <ClipboardList size={12} /> },
+                { key: "mupa" as LegalTab, label: "MUPA", icon: <Landmark size={12} />, activeClass: "bg-red-100 text-red-700 ring-1 ring-red-300", hoverClass: "text-red-400 hover:bg-red-50" },
+                { key: "vigilante" as LegalTab, label: "Vigilante", icon: <Scale size={12} />, activeClass: "bg-amber-100 text-amber-700 ring-1 ring-amber-300", hoverClass: "text-amber-500 hover:bg-amber-50" },
+                { key: "auditoria" as LegalTab, label: "Auditoria", icon: <History size={12} />, activeClass: "bg-blue-100 text-blue-700 ring-1 ring-blue-300", hoverClass: "text-blue-400 hover:bg-blue-50" },
+                { key: "libro_actas" as LegalTab, label: "Actas", icon: <ClipboardList size={12} />, activeClass: "bg-slate-200 text-slate-700 ring-1 ring-slate-300", hoverClass: "text-slate-400 hover:bg-slate-100" },
               ]).map((t) => (
                 <button
                   key={t.key}
                   onClick={() => setActiveLegalTab(t.key)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
                     activeLegalTab === t.key
-                      ? "bg-slate-200 text-slate-700"
-                      : "text-slate-400 hover:bg-slate-100"
+                      ? t.activeClass
+                      : t.hoverClass
                   }`}
                 >
                   {t.icon}
@@ -2014,6 +2018,7 @@ export default function Dashboard() {
             <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6 min-h-[400px]">
               {activeLegalTab === "fabrica_empresa" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Fabrica de Empresa — Ruta S.E.</h2><FabricaEmpresa onDocumentUploaded={handleDocumentUploaded} onFileUpload={handleFabricaFileUpload} showWelcome={showFabricaWelcome} /></div>)}
               {activeLegalTab === "boveda" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Boveda KYC — Debida Diligencia</h2><LegalVault onDocumentUploaded={handleDocumentUploaded} /></div>)}
+              {activeLegalTab === "mupa" && (<div><h2 className="text-lg lg:text-xl font-bold text-red-800 mb-4">MUPA — Inteligencia Fiscal Municipal</h2><MupaPanel /></div>)}
               {activeLegalTab === "vigilante" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Vigilante Legal: Alertas de Cumplimiento</h2><WatchdogDashboard /></div>)}
               {activeLegalTab === "auditoria" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Auditoria y Cumplimiento DGI</h2><AuditTimeline limit={30} /></div>)}
               {activeLegalTab === "libro_actas" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Libro de Actas</h2><LibroActas societyId={societyId} /></div>)}

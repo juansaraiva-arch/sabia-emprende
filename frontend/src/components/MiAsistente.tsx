@@ -224,36 +224,34 @@ export default function MiAsistente({ societyId, onResult, forceOpen, onClose, h
     }
 
     try {
-      // Build context-enriched query with rubro info for the backend
-      const rubroKey = typeof window !== "undefined" ? localStorage.getItem("midf_company_rubro") || "" : "";
-      const compName = typeof window !== "undefined" ? localStorage.getItem("midf_company_name") || "" : "";
-      const contextPrefix = rubroKey
-        ? `[Contexto: Empresa "${compName}", Rubro: ${RUBROS_LABELS[rubroKey] || rubroKey}] `
-        : "";
-      const result = await nlpApi.interpret(contextPrefix + userText, societyId);
+      // Build conversation history for GPT-4o context
+      const chatHistory = messages
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .slice(-10) // Last 10 messages for context
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      const systemPrompt = buildSystemPrompt();
+      const result = await nlpApi.chat(userText, societyId, systemPrompt, chatHistory);
 
       // Demo mode: API retorna { data: [], success: true }
-      if (Array.isArray(result?.data) && result.data.length === 0) {
+      if (Array.isArray(result?.data) && result.data.length === 0 && !result?.reply) {
         addMessage(
           "assistant",
           `Recibi tu mensaje: "${userText}". El motor NLP no esta disponible en modo demo, pero puedes crear asientos manualmente en el Libro Diario o usar las herramientas de cada modulo.`
         );
       } else if (result?.data?.requires_confirmation && result?.data?.journal_entry_preview) {
-        addMessage("assistant", result.description || "He preparado este asiento contable:", {
+        // Regex captured a structured accounting action → show journal entry preview
+        addMessage("assistant", result.reply || "He preparado este asiento contable:", {
           journalPreview: result.data.journal_entry_preview,
           reasoning: result.data.reasoning || "",
         });
       } else {
-        const responseText =
-          result?.description ||
-          result?.data?.description ||
-          "Procesado correctamente.";
-        const suggestion = result?.suggestion || result?.data?.suggestion || "";
-        addMessage(
-          "assistant",
-          suggestion ? `${responseText}\n\n${suggestion}` : responseText
-        );
-        onResult?.(result);
+        // GPT-4o conversational response or regex result
+        const responseText = result?.reply || "Procesado correctamente.";
+        addMessage("assistant", responseText);
+        if (result?.data) {
+          onResult?.(result);
+        }
       }
     } catch (err: any) {
       const errorDetail = err?.message || "Error desconocido";

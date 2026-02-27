@@ -196,6 +196,28 @@ export const nlpApi = {
       method: "POST",
       body: JSON.stringify({ query, society_id: societyId }),
     }),
+
+  /** Chat conversacional con GPT-4o como motor inteligente */
+  chat: (
+    query: string,
+    societyId: string,
+    systemPrompt: string,
+    history: { role: string; content: string }[] = []
+  ) =>
+    apiFetch<{
+      reply: string;
+      action?: string;
+      data?: any;
+      source: string;
+    }>("/nlp/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        query,
+        society_id: societyId,
+        system_prompt: systemPrompt,
+        history,
+      }),
+    }),
 };
 
 // --- Nómina ---

@@ -2,11 +2,12 @@
 Router: Capa de Lenguaje Natural
 El usuario escribe en español plano y el sistema interpreta la acción financiera.
 Fase 5: Para intents contables, genera asientos de doble partida.
+Fase 6: Chat conversacional con GPT-4o como motor NLP inteligente.
 """
 from datetime import date
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from app.database import get_supabase
-from app.models import NLPQuery, NLPResponse
+from app.models import NLPQuery, NLPResponse, NLPChatQuery, NLPChatResponse
 from app.auth import AuthenticatedUser, get_current_user
 from app.engines.nlp_engine import interpret_query
 from app.engines.financial_engine import (
@@ -17,6 +18,7 @@ from app.engines.financial_engine import (
 )
 from app.engines.account_mapping import CONCEPT_TO_ACCOUNTS
 from app.engines.accounting_engine import validate_journal_entry, aggregate_to_financial_record
+from app.routers.ai_agents import get_openai, safe_json_parse
 
 router = APIRouter()
 
@@ -356,4 +358,283 @@ async def interpret_natural_language(body: NLPQuery, user: AuthenticatedUser = D
         understood=True,
         action=action,
         description=interpretation["description"],
+    )
+
+
+# ============================================
+# CHAT CONVERSACIONAL — GPT-4o como motor NLP
+# ============================================
+
+# System prompt base cuando el frontend no envía uno
+DEFAULT_SYSTEM_PROMPT = (
+    "Eres el CFO y Consultor Legal Senior de Mi Director Financiero PTY. "
+    "Tu mision es guiar al emprendedor panameno en rentabilidad y estructura corporativa. "
+    "Tu tono es profesional, ejecutivo, eficiente y con un toque de calidez local. "
+    "Operas bajo el marco legal y tributario de la Republica de Panama. "
+    "Responde siempre en español. Se conciso pero completo."
+)
+
+
+def _build_financial_context(society_id: str) -> str:
+    """
+    Extrae datos financieros reales del usuario para inyectar como contexto en GPT-4o.
+    Esto permite que GPT-4o responda con datos reales del negocio.
+    """
+    try:
+        db = get_supabase()
+        records = (
+            db.table("financial_records")
+            .select("*")
+            .eq("society_id", society_id)
+            .order("period_year", desc=True)
+            .order("period_month", desc=True)
+            .limit(3)
+            .execute()
+        )
+        if not records.data:
+            return "\n[No hay datos financieros registrados aun para esta sociedad.]"
+
+        context_parts = ["\n--- DATOS FINANCIEROS DEL USUARIO (ultimos periodos) ---"]
+        for r in records.data:
+            cascada = calcular_cascada(r)
+            period = f"{r.get('period_year', '?')}-{r.get('period_month', '?'):02d}"
+            context_parts.append(
+                f"Periodo {period}: "
+                f"Ingresos=${cascada.get('revenue', 0):,.0f}, "
+                f"Costos=${cascada.get('cogs', 0):,.0f}, "
+                f"Utilidad Bruta=${cascada.get('gross_profit', 0):,.0f}, "
+                f"OPEX=${cascada.get('total_opex', 0):,.0f}, "
+                f"EBITDA=${cascada.get('ebitda', 0):,.0f}, "
+                f"Utilidad Neta=${cascada.get('net_income', 0):,.0f}"
+            )
+
+        # Agregar diagnostico del ultimo periodo
+        diagnosis = diagnostico_juez_digital(records.data[0])
+        context_parts.append(
+            f"\nDiagnostico actual: {diagnosis.get('verdict', 'N/A')} — {diagnosis.get('detail', '')}"
+        )
+
+        # Punto de equilibrio
+        try:
+            be = calcular_punto_equilibrio(records.data[0])
+            context_parts.append(
+                f"Punto de equilibrio: ${be.get('breakeven_monthly', 0):,.0f}/mes — Zona: {be.get('zone', 'N/A')}"
+            )
+        except Exception:
+            pass
+
+        context_parts.append("--- FIN DE DATOS FINANCIEROS ---\n")
+        return "\n".join(context_parts)
+
+    except Exception:
+        return "\n[No se pudieron obtener datos financieros.]"
+
+
+@router.post("/chat", response_model=NLPChatResponse)
+async def chat_with_assistant(body: NLPChatQuery, user: AuthenticatedUser = Depends(get_current_user)):
+    """
+    Chat conversacional con GPT-4o.
+
+    Flujo:
+    1. Intenta primero interpretar con regex (acciones financieras estructuradas)
+    2. Si regex entiende → ejecuta la accion y retorna el resultado (como antes)
+    3. Si regex NO entiende → envía a GPT-4o con contexto financiero real
+
+    El frontend envia el system prompt completo + historial de conversacion.
+    """
+    db = get_supabase()
+
+    # Strip context prefix if frontend added [Contexto: ...]
+    raw_query = body.query.strip()
+
+    # --- Paso 1: Intentar regex como fast-path para acciones financieras ---
+    regex_result = interpret_query(raw_query)
+
+    if regex_result["understood"]:
+        # El regex capturo una intencion estructurada — ejecutar la accion
+        action = regex_result["action"]
+        data = regex_result["extracted_data"]
+
+        # Acciones contables → preview de asiento
+        if action in ACCOUNTING_ACTIONS:
+            entry_preview = _build_journal_entry_from_nlp(
+                action, data, body.society_id, regex_result["description"], user.id
+            )
+            if entry_preview:
+                lines_for_validation = [
+                    {"debe": l["debe"], "haber": l["haber"]}
+                    for l in entry_preview["lines"]
+                ]
+                validation = validate_journal_entry(lines_for_validation)
+
+                if validation["valid"]:
+                    return NLPChatResponse(
+                        reply=regex_result["description"],
+                        action=action,
+                        source="regex",
+                        data={
+                            "requires_confirmation": True,
+                            "reasoning": entry_preview.get("reasoning", ""),
+                            "journal_entry_preview": {
+                                "entry_date": entry_preview["entry_date"],
+                                "description": entry_preview["description"],
+                                "reference": entry_preview["reference"],
+                                "source": entry_preview["source"],
+                                "concept_description": entry_preview["concept_description"],
+                                "total_debe": validation["total_debe"],
+                                "total_haber": validation["total_haber"],
+                                "lines": entry_preview["lines"],
+                            },
+                            "confirm_payload": {
+                                "society_id": body.society_id,
+                                "entry_date": entry_preview["entry_date"],
+                                "description": entry_preview["description"],
+                                "reference": entry_preview["reference"],
+                                "source": "nlp",
+                                "attachment_url": None,
+                                "lines": entry_preview["lines"],
+                            },
+                        },
+                    )
+
+        # Queries de diagnostico/breakeven/simulacion → ejecutar y retornar
+        if action in ("query_profit", "query_diagnosis"):
+            records = (
+                db.table("financial_records")
+                .select("*")
+                .eq("society_id", body.society_id)
+                .order("period_year", desc=True)
+                .order("period_month", desc=True)
+                .limit(1)
+                .execute()
+            )
+            if records.data:
+                diagnosis = diagnostico_juez_digital(records.data[0])
+                return NLPChatResponse(
+                    reply=f"Diagnostico: {diagnosis['verdict']} — {diagnosis['detail']}",
+                    action=action,
+                    source="regex",
+                    data=diagnosis,
+                )
+            else:
+                return NLPChatResponse(
+                    reply="No hay datos financieros registrados aun. Primero registra tus ventas y costos.",
+                    action=action,
+                    source="regex",
+                )
+
+        if action == "query_breakeven":
+            records = (
+                db.table("financial_records")
+                .select("*")
+                .eq("society_id", body.society_id)
+                .order("period_year", desc=True)
+                .order("period_month", desc=True)
+                .limit(1)
+                .execute()
+            )
+            if records.data:
+                be = calcular_punto_equilibrio(records.data[0])
+                return NLPChatResponse(
+                    reply=f"Punto de equilibrio: ${be['breakeven_monthly']:,.0f}/mes. Estas en zona de {be['zone']}.",
+                    action=action,
+                    source="regex",
+                    data=be,
+                )
+
+        if action == "simulate_price":
+            pct = data.get("percent", 0)
+            records = (
+                db.table("financial_records")
+                .select("*")
+                .eq("society_id", body.society_id)
+                .order("period_year", desc=True)
+                .order("period_month", desc=True)
+                .limit(1)
+                .execute()
+            )
+            if records.data:
+                record = records.data[0]
+                original = calcular_cascada(record)
+                simulated = dict(record)
+                simulated["revenue"] = record["revenue"] * (1 + pct / 100)
+                new_calc = calcular_cascada(simulated)
+                return NLPChatResponse(
+                    reply=f"Si subes precio {pct}%: EBITDA pasa de ${original['ebitda']:,.0f} a ${new_calc['ebitda']:,.0f}",
+                    action=action,
+                    source="regex",
+                    data={
+                        "original": original,
+                        "simulated": new_calc,
+                        "delta_ebitda": round(new_calc["ebitda"] - original["ebitda"], 2),
+                    },
+                )
+
+    # --- Paso 2: Regex no entendio → GPT-4o como motor inteligente ---
+    try:
+        client = get_openai()
+    except HTTPException:
+        # OpenAI no disponible — retornar respuesta amigable
+        return NLPChatResponse(
+            reply=(
+                "Lo siento, mi motor de inteligencia artificial no esta disponible en este momento. "
+                "Puedes intentar frases mas especificas como:\n"
+                "• 'Pague la luz $200'\n"
+                "• 'Mis ventas de enero fueron 50 mil'\n"
+                "• 'Como esta mi negocio?'\n"
+                "• 'Si subo el precio un 10%, que pasa?'"
+            ),
+            source="fallback",
+        )
+
+    # Construir system prompt con contexto financiero real
+    system_prompt = body.system_prompt or DEFAULT_SYSTEM_PROMPT
+    financial_context = _build_financial_context(body.society_id)
+    full_system = system_prompt + financial_context
+
+    # Construir mensajes para GPT-4o
+    messages = [{"role": "system", "content": full_system}]
+
+    # Agregar historial de conversacion (ultimos mensajes)
+    for msg in body.history[-10:]:  # Max 10 mensajes de contexto
+        if msg.role in ("user", "assistant"):
+            messages.append({"role": msg.role, "content": msg.content})
+
+    # Agregar el mensaje actual del usuario
+    messages.append({"role": "user", "content": raw_query})
+
+    # Llamar a GPT-4o
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages,
+            temperature=0.4,
+            max_tokens=1500,
+        )
+        reply = response.choices[0].message.content.strip()
+    except Exception as e:
+        error_msg = str(e)
+        if "rate_limit" in error_msg.lower() or "429" in error_msg:
+            reply = "He alcanzado el limite de consultas por minuto. Por favor intenta de nuevo en unos segundos."
+        elif "insufficient_quota" in error_msg.lower():
+            reply = "El servicio de IA no esta disponible temporalmente. Intenta mas tarde."
+        else:
+            reply = f"Ocurrio un error al procesar tu consulta. Intenta reformularla. (Error: {error_msg[:100]})"
+
+    # Audit log (non-blocking)
+    try:
+        db.table("audit_logs").insert({
+            "user_id": user.id,
+            "action_type": "nlp_chat_gpt4o",
+            "action_description": f"Chat GPT-4o: {raw_query[:100]}",
+            "nlp_raw_input": raw_query,
+            "nlp_interpreted_action": "gpt4o_chat",
+        }).execute()
+    except Exception:
+        pass
+
+    return NLPChatResponse(
+        reply=reply,
+        action="gpt4o_chat",
+        source="gpt-4o",
     )

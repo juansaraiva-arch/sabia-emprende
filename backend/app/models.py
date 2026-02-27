@@ -193,6 +193,40 @@ class NLPResponse(BaseModel):
     suggestion: Optional[str] = None
 
 
+class ChatMessage(BaseModel):
+    """Un mensaje en el historial de conversacion."""
+    role: str = Field(description="user o assistant")
+    content: str
+
+
+class NLPChatQuery(BaseModel):
+    """Input para el chat conversacional con GPT-4o."""
+    query: str = Field(
+        min_length=1,
+        max_length=2000,
+        description="Mensaje del usuario en español plano",
+    )
+    society_id: str
+    system_prompt: str = Field(
+        default="",
+        max_length=5000,
+        description="System prompt del frontend (contexto CFO/Legal)",
+    )
+    history: list[ChatMessage] = Field(
+        default=[],
+        max_length=20,
+        description="Ultimos mensajes de la conversacion para contexto",
+    )
+
+
+class NLPChatResponse(BaseModel):
+    """Respuesta del chat conversacional GPT-4o."""
+    reply: str
+    action: Optional[str] = None
+    data: Optional[dict] = None
+    source: str = "gpt-4o"
+
+
 # --- Audit ---
 class AuditLogEntry(BaseModel):
     id: str

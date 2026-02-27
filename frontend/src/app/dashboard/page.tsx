@@ -41,7 +41,7 @@ import {
   Landmark,
 } from "lucide-react";
 import type { FinancialRecord } from "@/lib/calculations";
-import SabiaLogo from "@/components/SabiaLogo";
+import MidfLogo from "@/components/MidfLogo";
 import BottomNavBar from "@/components/BottomNavBar";
 import DataEntryWizard from "@/components/DataEntryWizard";
 import NaturalLanguageInput from "@/components/NaturalLanguageInput";
@@ -898,7 +898,7 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
           }}
         >
           <div className="flex justify-center mb-3">
-            <SabiaLogo size={80} iconOnly />
+            <MidfLogo size={80} iconOnly />
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight font-heading"
             style={{ color: GOLD }}>
@@ -1635,8 +1635,8 @@ export default function Dashboard() {
               <span className="hidden sm:inline">Inicio</span>
             </button>
             <button onClick={handleLogoClick} className="flex items-center gap-2 lg:gap-3 hover:opacity-90 transition-opacity">
-              <SabiaLogo size={36} iconOnly className="lg:hidden" />
-              <SabiaLogo size={44} iconOnly className="hidden lg:block" />
+              <MidfLogo size={36} iconOnly className="lg:hidden" />
+              <MidfLogo size={44} iconOnly className="hidden lg:block" />
               <div className="text-left">
                 <h1 className="text-sm lg:text-base font-extrabold text-slate-800">
                   Mi Director Financier@ PTY

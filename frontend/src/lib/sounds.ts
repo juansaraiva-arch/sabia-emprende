@@ -4,7 +4,7 @@
  * Preferencia de usuario almacenada en localStorage.
  */
 
-const SOUND_ENABLED_KEY = "sabia_sound_enabled";
+const SOUND_ENABLED_KEY = "midf_sound_enabled";
 
 /** Verifica si el sonido esta habilitado (default: true) */
 export function isSoundEnabled(): boolean {

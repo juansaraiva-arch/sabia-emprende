@@ -10,7 +10,7 @@ import {
   ImageIcon,
   Sparkles,
 } from "lucide-react";
-import SabiaLogo from "@/components/SabiaLogo";
+import MidfLogo from "@/components/MidfLogo";
 
 const GOLD = "#C5A059";
 const NAVY = "#1A242F";
@@ -119,14 +119,14 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       localStorage.setItem("midf_has_ruc", "true");
     }
     // Mark wizard as complete + suppress old WelcomePopup
-    localStorage.setItem("sabia_welcomed", "true");
+    localStorage.setItem("midf_welcomed", "true");
     localStorage.setItem("midf_setup_complete", "true");
 
     setTimeout(() => onComplete(isFormalized === false ? "fabrica_empresa" : undefined), 1200);
   };
 
   const handleSkip = () => {
-    localStorage.setItem("sabia_welcomed", "true");
+    localStorage.setItem("midf_welcomed", "true");
     localStorage.setItem("midf_setup_complete", "true");
     onComplete();
   };
@@ -544,7 +544,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         // Finishing animation
         <div className="flex flex-col items-center justify-center py-12 space-y-4">
           <div className="relative">
-            <SabiaLogo size={64} iconOnly />
+            <MidfLogo size={64} iconOnly />
             <div
               className="absolute inset-0 rounded-full animate-ping"
               style={{
@@ -735,7 +735,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
-          <SabiaLogo size={56} iconOnly={false} />
+          <MidfLogo size={56} iconOnly={false} />
         </div>
 
         {/* Step indicator */}

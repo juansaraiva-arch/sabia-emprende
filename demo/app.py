@@ -1,5 +1,5 @@
 """
-SABIA EMPRENDE — Demo Interactiva (Streamlit)
+MI DIRECTOR FINANCIERO PTY — Demo Interactiva (Streamlit)
 Plataforma financiera para emprendedores de Panama.
 
 Ejecutar: streamlit run app.py
@@ -13,7 +13,7 @@ from dataclasses import dataclass
 # CONFIGURACION DE PAGINA
 # ============================================
 st.set_page_config(
-    page_title="SABIA EMPRENDE | Demo",
+    page_title="MI DIRECTOR FINANCIERO PTY | Demo",
     page_icon="🌿",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -390,7 +390,7 @@ def valoracion_chart(val, multiplo):
 # ============================================
 # SIDEBAR — DATOS DE ENTRADA
 # ============================================
-st.sidebar.markdown("## 🌿 SABIA EMPRENDE")
+st.sidebar.markdown("## 🌿 MI DIRECTOR FINANCIERO PTY")
 st.sidebar.markdown("##### Ingresa tus datos financieros mensuales")
 st.sidebar.markdown("---")
 
@@ -433,7 +433,7 @@ verdict, detail, severity = get_verdict(cascada, ox, ratios)
 # ============================================
 col_h1, col_h2 = st.columns([3, 1])
 with col_h1:
-    st.markdown("# 🌿 SABIA EMPRENDE")
+    st.markdown("# 🌿 MI DIRECTOR FINANCIERO PTY")
     st.markdown("*Tu Aliado Estratégico para Panama*")
 with col_h2:
     badge_class = f"badge-{severity}"
@@ -733,7 +733,7 @@ with tab3:
 st.markdown("---")
 st.markdown(
     "<p style='text-align:center; color:#94a3b8; font-size:12px;'>"
-    "SABIA EMPRENDE v1.0 — Tu Aliado Estratégico para Panama 🇵🇦 | "
+    "MI DIRECTOR FINANCIERO PTY v1.0 — Tu Aliado Estratégico para Panama 🇵🇦 | "
     "Demo Streamlit</p>",
     unsafe_allow_html=True,
 )

@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import { Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 const ACCESS_PASSWORD = process.env.NEXT_PUBLIC_ACCESS_PASSWORD || "";
-const STORAGE_KEY = "sabia_access_granted";
+const STORAGE_KEY = "midf_access_granted";
 
 export function AccessGate({ children }: { children: React.ReactNode }) {
   const [granted, setGranted] = useState(false);

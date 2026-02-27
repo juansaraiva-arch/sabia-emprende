@@ -79,7 +79,7 @@ function downloadTemplate() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "plantilla_sabia_12_meses.csv";
+  a.download = "plantilla_midf_12_meses.csv";
   a.click();
   URL.revokeObjectURL(url);
 }

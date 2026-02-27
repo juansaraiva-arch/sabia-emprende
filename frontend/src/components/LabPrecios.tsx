@@ -32,6 +32,9 @@ import {
 // ============================================
 
 export default function LabPrecios() {
+  // Nombre del producto o servicio
+  const [productName, setProductName] = useState("");
+
   // Estado de ingredientes/materiales
   const [ingredientes, setIngredientes] = useState<Ingredient[]>([
     {
@@ -226,6 +229,22 @@ export default function LabPrecios() {
         <span className="text-xs text-slate-500">
           Calcula el precio justo para tu producto
         </span>
+      </div>
+
+      {/* ====== NOMBRE DEL PRODUCTO/SERVICIO ====== */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200">
+        <label className="block text-sm font-bold text-violet-800 mb-2">
+          <FlaskConical size={14} className="inline mr-1.5 -mt-0.5" />
+          Nombre del Producto o Servicio
+        </label>
+        <input
+          type="text"
+          value={productName}
+          onChange={(e) => setProductName(e.target.value)}
+          placeholder="Ej: Pizza Margarita, Corte de Cabello, Camiseta Estampada..."
+          className="w-full px-4 py-3 rounded-xl border border-violet-300 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-violet-400 focus:border-violet-400 focus:outline-none font-medium"
+        />
+        <p className="text-[10px] text-violet-500 mt-1.5">Este nombre se usara para guardar el calculo en tu base de datos de precios.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -1832,16 +1832,16 @@ export default function Dashboard() {
                             description={isMordida ? "Cada dolar que vendes te cuesta mas. Ve al Lab de Precios." : "Tus ventas cubren costos. Manten la vigilancia."}
                             status={isMordida ? "critical" : "ok"} />
                           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                            <h4 className="text-sm font-bold text-slate-600">Estado de Resultados</h4>
+                            <h4 className="text-sm font-bold text-slate-600 flex items-center">Estado de Resultados<SmartTooltip term="estado_resultados" size={14} /></h4>
                             <SummaryRow label="Ventas" value={diagnosis.cascada.revenue} color="text-blue-600" />
-                            <SummaryRow label="(-) COGS" value={diagnosis.cascada.cogs} color="text-red-500" />
-                            <SummaryRow label="= U.B." value={diagnosis.cascada.gross_profit} color={diagnosis.cascada.gross_profit >= 0 ? "text-emerald-600" : "text-red-600"} />
-                            <SummaryRow label="(-) OPEX" value={diagnosis.cascada.total_opex} color="text-red-500" />
-                            <SummaryRow label="= EBITDA" value={diagnosis.cascada.ebitda} color={diagnosis.cascada.ebitda >= 0 ? "text-emerald-600" : "text-red-600"} />
-                            <SummaryRow label="= EBIT" value={diagnosis.cascada.ebit} color={diagnosis.cascada.ebit >= 0 ? "text-emerald-600" : "text-red-600"} />
-                            <SummaryRow label="= EBT" value={diagnosis.cascada.ebt} color={diagnosis.cascada.ebt >= 0 ? "text-emerald-600" : "text-red-600"} />
+                            <SummaryRow label={<span className="flex items-center">(-) COGS<SmartTooltip term="cogs" size={12} /></span>} value={diagnosis.cascada.cogs} color="text-red-500" />
+                            <SummaryRow label={<span className="flex items-center">= U.B.<SmartTooltip term="gross_profit" size={12} /></span>} value={diagnosis.cascada.gross_profit} color={diagnosis.cascada.gross_profit >= 0 ? "text-emerald-600" : "text-red-600"} />
+                            <SummaryRow label={<span className="flex items-center">(-) OPEX<SmartTooltip term="opex" size={12} /></span>} value={diagnosis.cascada.total_opex} color="text-red-500" />
+                            <SummaryRow label={<span className="flex items-center">= EBITDA<SmartTooltip term="ebitda" size={12} /></span>} value={diagnosis.cascada.ebitda} color={diagnosis.cascada.ebitda >= 0 ? "text-emerald-600" : "text-red-600"} />
+                            <SummaryRow label={<span className="flex items-center">= EBIT<SmartTooltip term="ebit" size={12} /></span>} value={diagnosis.cascada.ebit} color={diagnosis.cascada.ebit >= 0 ? "text-emerald-600" : "text-red-600"} />
+                            <SummaryRow label={<span className="flex items-center">= EBT<SmartTooltip term="ebt" size={12} /></span>} value={diagnosis.cascada.ebt} color={diagnosis.cascada.ebt >= 0 ? "text-emerald-600" : "text-red-600"} />
                             <div className="pt-1 border-t border-slate-300">
-                              <SummaryRow label="= U.N." value={diagnosis.cascada.net_income} color={diagnosis.cascada.net_income >= 0 ? "text-emerald-600" : "text-red-600"} />
+                              <SummaryRow label={<span className="flex items-center">= U.N.<SmartTooltip term="net_income" size={12} /></span>} value={diagnosis.cascada.net_income} color={diagnosis.cascada.net_income >= 0 ? "text-emerald-600" : "text-red-600"} />
                             </div>
                           </div>
                         </div>
@@ -1851,7 +1851,7 @@ export default function Dashboard() {
                   ) : (<EmptyState text="Carga datos en 'Mi Contabilidad' para ver la cascada." />)}
                 </div>
               )}
-              {activeNegocioTab === "mandibulas" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-6">Mandibulas: Ventas vs Costos</h2>{mandibulasData ? <MandibulasChart data={mandibulasData} /> : <EmptyState text="Ingresa datos de multiples meses en 'Mi Contabilidad' para ver el grafico de Mandibulas." />}</div>)}
+              {activeNegocioTab === "mandibulas" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-6 flex items-center">Mandibulas: Ventas vs Costos<SmartTooltip term="mandibulas" size={16} /></h2>{mandibulasData ? <MandibulasChart data={mandibulasData} /> : <EmptyState text="Ingresa datos de multiples meses en 'Mi Contabilidad' para ver el grafico de Mandibulas." />}</div>)}
               {activeNegocioTab === "semaforo" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-6">Semaforo Integral</h2>{diagnosis?.ratios ? <RatioGauges ratios={diagnosis.ratios} /> : <EmptyState text="Carga datos para ver el semaforo." />}</div>)}
               {activeNegocioTab === "equilibrio" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-6">Mapa de Supervivencia</h2>{breakeven ? <BreakevenChart breakevenMonthly={breakeven.breakeven_monthly} currentSales={breakeven.current_sales} marginOfSafety={breakeven.margin_of_safety} zone={breakeven.zone} contributionMarginPct={breakeven.contribution_margin_pct} targetSales={breakeven.target_sales} /> : <EmptyState text="Carga datos para ver el punto de equilibrio." />}</div>)}
               {activeNegocioTab === "oxigeno" && (hasData ? <OxigenoTab record={currentRecord!} /> : <EmptyState text="Ingresa datos en 'Mi Contabilidad' para ver el analisis de Oxigeno." />)}
@@ -2074,7 +2074,7 @@ export default function Dashboard() {
   );
 }
 
-function SummaryRow({ label, value, color }: { label: string; value: number; color: string }) {
+function SummaryRow({ label, value, color }: { label: React.ReactNode; value: number; color: string }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-slate-500">{label}</span>

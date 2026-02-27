@@ -577,6 +577,7 @@ export default function DiagnosticoFlashForm({
               <h4 className="text-sm font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                 <Calculator size={16} className="text-violet-500" />
                 Estado de Resultados
+                <SmartTooltip term="estado_resultados" size={14} />
               </h4>
 
               <div className="divide-y divide-slate-200 rounded-xl border border-slate-200 overflow-hidden">
@@ -587,13 +588,13 @@ export default function DiagnosticoFlashForm({
                   bold
                 />
                 <SummaryRow
-                  label="(-) Costo de Ventas"
+                  label={<span className="flex items-center">(-) Costo de Ventas<SmartTooltip term="cogs" size={12} /></span>}
                   value={data.cogs}
                   color="text-red-600"
                   negative
                 />
                 <SummaryRow
-                  label="= Utilidad Bruta"
+                  label={<span className="flex items-center">= Utilidad Bruta<SmartTooltip term="gross_profit" size={12} /></span>}
                   value={grossProfit}
                   color={grossProfit >= 0 ? "text-emerald-600" : "text-red-600"}
                   bold
@@ -618,7 +619,7 @@ export default function DiagnosticoFlashForm({
                   negative
                 />
                 <SummaryRow
-                  label="= EBITDA"
+                  label={<span className="flex items-center">= EBITDA<SmartTooltip term="ebitda" size={12} /></span>}
                   value={ebitda}
                   color={ebitda >= 0 ? "text-emerald-600" : "text-red-600"}
                   bold
@@ -635,7 +636,7 @@ export default function DiagnosticoFlashForm({
                       negative
                     />
                     <SummaryRow
-                      label="= EBIT"
+                      label={<span className="flex items-center">= EBIT<SmartTooltip term="ebit" size={12} /></span>}
                       value={ebit}
                       color={ebit >= 0 ? "text-emerald-600" : "text-red-600"}
                       bold
@@ -648,7 +649,7 @@ export default function DiagnosticoFlashForm({
                       negative
                     />
                     <SummaryRow
-                      label="= EBT"
+                      label={<span className="flex items-center">= EBT<SmartTooltip term="ebt" size={12} /></span>}
                       value={ebt}
                       color={ebt >= 0 ? "text-emerald-600" : "text-red-600"}
                       bold
@@ -663,7 +664,7 @@ export default function DiagnosticoFlashForm({
                   </>
                 )}
                 <SummaryRow
-                  label="= Utilidad Neta"
+                  label={<span className="flex items-center">= Utilidad Neta<SmartTooltip term="net_income" size={12} /></span>}
                   value={netIncome}
                   color={netIncome >= 0 ? "text-emerald-600" : "text-red-600"}
                   bold
@@ -792,7 +793,7 @@ function SummaryRow({
   highlight = false,
   large = false,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: number;
   color: string;
   bold?: boolean;

@@ -31,7 +31,7 @@ export default function BalanceGeneralCard({ record }: BalanceGeneralCardProps) 
       <div className="flex items-center gap-2 mb-5">
         <Landmark size={20} className="text-blue-600" />
         <h3 className="text-base font-bold text-slate-800">Balance General</h3>
-        <SmartTooltip text="Muestra la posicion patrimonial de tu empresa: lo que tienes (Activos), lo que debes (Pasivos) y tu riqueza real (Patrimonio)." size={15} />
+        <SmartTooltip term="balance_general" size={15} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

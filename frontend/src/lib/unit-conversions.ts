@@ -17,9 +17,11 @@ export const BUILTIN_UNITS: UnitOfMeasure[] = [
   { id: "quintal", label: "Quintal", category: "weight", conversionFactor: 45_359 },
   { id: "kg", label: "Kilogramo", category: "weight", conversionFactor: 1_000 },
   { id: "lb", label: "Libra", category: "weight", conversionFactor: 453.59 },
+  { id: "g", label: "Gramo", category: "weight", conversionFactor: 1 },
   // Volumen — conversion a mililitros
   { id: "galon", label: "Galon", category: "volume", conversionFactor: 3_785 },
   { id: "litro", label: "Litro", category: "volume", conversionFactor: 1_000 },
+  { id: "ml", label: "Mililitro", category: "volume", conversionFactor: 1 },
 ];
 
 // ============================================
@@ -73,15 +75,29 @@ export function computeIngredientCost(
   costoAdquisicion: number,
   unitId: string,
   cantidadUtilizada: number,
-  customUnits: UnitOfMeasure[] = []
+  customUnits: UnitOfMeasure[] = [],
+  cantidadCompra: number = 1,
+  unidadUsoId?: string,
 ): number {
   if (costoAdquisicion <= 0 || cantidadUtilizada <= 0) return 0;
+  const qty = cantidadCompra > 0 ? cantidadCompra : 1;
 
   const unit = findUnit(unitId, customUnits);
   if (!unit || unit.conversionFactor <= 0) return 0;
 
-  const costoPorBaseUnit = costoAdquisicion / unit.conversionFactor;
-  return costoPorBaseUnit * cantidadUtilizada;
+  // Costo por unidad base (g o ml)
+  const costoPorBaseUnit = costoAdquisicion / (qty * unit.conversionFactor);
+
+  // Convertir cantidad utilizada a unidades base si tiene unidad de uso
+  let usageInBaseUnits = cantidadUtilizada;
+  if (unidadUsoId) {
+    const usageUnit = findUnit(unidadUsoId, customUnits);
+    if (usageUnit && usageUnit.conversionFactor > 0) {
+      usageInBaseUnits = cantidadUtilizada * usageUnit.conversionFactor;
+    }
+  }
+
+  return costoPorBaseUnit * usageInBaseUnits;
 }
 
 /**
@@ -91,12 +107,14 @@ export function computeIngredientCost(
 export function costPerBaseUnit(
   costoAdquisicion: number,
   unitId: string,
-  customUnits: UnitOfMeasure[] = []
+  customUnits: UnitOfMeasure[] = [],
+  cantidadCompra: number = 1,
 ): number {
   if (costoAdquisicion <= 0) return 0;
+  const qty = cantidadCompra > 0 ? cantidadCompra : 1;
   const unit = findUnit(unitId, customUnits);
   if (!unit || unit.conversionFactor <= 0) return 0;
-  return costoAdquisicion / unit.conversionFactor;
+  return costoAdquisicion / (qty * unit.conversionFactor);
 }
 
 // ============================================
@@ -118,7 +136,9 @@ export function resolveIngredientCosts(
       ing.costoAdquisicion,
       ing.unidadCompraId,
       ing.cantidadUtilizada,
-      customUnits
+      customUnits,
+      ing.cantidadCompra,
+      ing.unidadUsoId,
     );
     return { ...ing, costo: computed };
   });

@@ -1,13 +1,16 @@
 /**
- * DGI Form Mappings — Espejo DGI
+ * DGI Form Mappings — Espejo de Declaracion de Renta
  *
  * Maps the DEFAULT_PANAMA_CHART accounts to official DGI form fields.
  * Form 430: Declaracion Jurada del ITBMS (trimestral)
- * Form 03:  Declaracion de Rentas (anual) para S.E. / Persona Juridica
+ * Form 03:  Declaracion Jurada de Renta Anual para S.E. / Persona Juridica
  *
+ * Casilla numbers match the forms shown in e-Tax 2.0 (DGI Panama).
  * This module is "Tax Preparation" only — it pre-fills form values
  * for the user to manually transcribe into e-Tax 2.0.
  */
+
+import type { FinancialRecord } from "./calculations";
 
 // ============================================
 // TYPES
@@ -68,6 +71,7 @@ export interface FormValidation {
 
 // ============================================
 // FORM 430 — DECLARACION JURADA DEL ITBMS
+// Casillas alineadas con formulario e-Tax 2.0
 // ============================================
 
 export const FORM_430: DGIFormDefinition = {
@@ -78,91 +82,58 @@ export const FORM_430: DGIFormDefinition = {
   frequency: "quarterly",
   dueDateRule: "15 del mes siguiente al cierre del trimestre",
   fields: [
-    // === SECCION: VENTAS E INGRESOS ===
+    // === SECCION: INGRESOS GRAVADOS ===
     {
-      casilla: "40",
-      label: "Ventas Gravadas (bienes y servicios)",
+      casilla: "10",
+      label: "Ingresos Gravados por Ventas y Servicios",
       accountCodes: ["4.1", "4.2"],
       aggregation: "sum_haber",
       section: "Ingresos Gravados",
-      helpText: "Total de ingresos por ventas y servicios sujetos al ITBMS 7%",
-    },
-    {
-      casilla: "41",
-      label: "Otros Ingresos Gravados",
-      accountCodes: ["4.3"],
-      aggregation: "sum_haber",
-      section: "Ingresos Gravados",
-      helpText: "Otros ingresos sujetos a ITBMS",
-    },
-    {
-      casilla: "42",
-      label: "(-) Descuentos y Devoluciones sobre Ventas",
-      accountCodes: ["4.4", "4.5"],
-      aggregation: "sum_debe",
-      section: "Ingresos Gravados",
-      helpText: "Descuentos y devoluciones que reducen la base gravable",
-    },
-    {
-      casilla: "43",
-      label: "Base Imponible (Ventas Netas Gravadas)",
-      accountCodes: [],
-      aggregation: "formula",
-      formula: (v) => (v["40"] || 0) + (v["41"] || 0) - (v["42"] || 0),
-      isSubtotal: true,
-      section: "Ingresos Gravados",
-      helpText: "Casilla 40 + 41 - 42",
+      helpText: "Total de ventas y servicios sujetos al ITBMS 7% (Cuentas 4.1 + 4.2)",
     },
 
-    // === SECCION: CALCULO DEL ITBMS ===
+    // === SECCION: COMPRAS Y GASTOS ===
+    {
+      casilla: "30",
+      label: "Compras y Gastos Gravados con ITBMS",
+      accountCodes: ["5.1.01", "5.1.02", "5.2.05", "5.2.06", "5.2.07", "5.2.09", "5.2.10", "5.2.11", "5.2.12"],
+      aggregation: "sum_debe",
+      section: "Compras y Gastos",
+      helpText: "Total de compras y gastos operativos sujetos al ITBMS (excluye nomina y CSS que son exentos)",
+    },
+
+    // === SECCION: LIQUIDACION DEL ITBMS ===
+    {
+      casilla: "45",
+      label: "Saldo Neto a Pagar",
+      accountCodes: [],
+      aggregation: "formula",
+      formula: (v) => Math.max(0, (v["10"] || 0) * 0.07 - (v["30"] || 0) * 0.07),
+      isSubtotal: true,
+      section: "Liquidacion del ITBMS",
+      helpText: "ITBMS Debito (7% de ventas) menos ITBMS Credito (7% de compras). Si es positivo, es la cantidad a pagar a la DGI.",
+    },
     {
       casilla: "50",
-      label: "ITBMS Causado (Debito Fiscal) — 7%",
+      label: "Credito Fiscal a Favor",
       accountCodes: [],
       aggregation: "formula",
-      formula: (v) => (v["43"] || 0) * 0.07,
+      formula: (v) => Math.max(0, (v["30"] || 0) * 0.07 - (v["10"] || 0) * 0.07),
       isSubtotal: true,
-      section: "Calculo del ITBMS",
-      helpText: "Base Imponible × 7%. Debe coincidir con cuenta 2.1.02",
-    },
-    {
-      casilla: "51",
-      label: "(-) Credito Fiscal (ITBMS pagado en compras)",
-      accountCodes: ["1.1.07"],
-      aggregation: "sum_debe",
-      section: "Calculo del ITBMS",
-      helpText: "ITBMS que pagaste a tus proveedores — cuenta 1.1.07",
-    },
-    {
-      casilla: "52",
-      label: "ITBMS Neto a Pagar (o a Favor)",
-      accountCodes: [],
-      aggregation: "formula",
-      formula: (v) => (v["50"] || 0) - (v["51"] || 0),
-      isSubtotal: true,
-      section: "Calculo del ITBMS",
-      helpText: "Casilla 50 - 51. Positivo = a pagar, Negativo = credito a favor",
-    },
-
-    // === SECCION: INFORMATIVA (COMPRAS) ===
-    {
-      casilla: "60",
-      label: "Total Compras del Periodo",
-      accountCodes: ["5.1.01", "5.1.02"],
-      aggregation: "sum_debe",
-      section: "Datos Informativos (Compras)",
-      helpText: "Total de compras realizadas en el periodo (informativo)",
+      section: "Liquidacion del ITBMS",
+      helpText: "Si el credito fiscal (ITBMS en compras) supera el debito fiscal (ITBMS en ventas), queda un saldo a tu favor.",
     },
   ],
 };
 
 // ============================================
-// FORM 03 — DECLARACION DE RENTAS (Anual)
+// FORM 03 — DECLARACION JURADA DE RENTA ANUAL
+// Casillas alineadas con formulario e-Tax 2.0
 // ============================================
 
 export const FORM_03: DGIFormDefinition = {
   formId: "03",
-  formName: "Declaracion de Rentas (ISR)",
+  formName: "Declaracion Jurada de Renta Anual",
   formDescription:
     "Formulario anual de Impuesto sobre la Renta. Para persona juridica (S.E.) la tasa es 25% sobre la utilidad neta gravable.",
   frequency: "annual",
@@ -170,234 +141,85 @@ export const FORM_03: DGIFormDefinition = {
   fields: [
     // === SECCION: INGRESOS ===
     {
-      casilla: "10",
-      label: "Ingresos por Ventas de Bienes",
-      accountCodes: ["4.1"],
+      casilla: "15",
+      label: "Ingresos Brutos Anuales",
+      accountCodes: ["4.1", "4.2", "4.3"],
       aggregation: "sum_haber",
       section: "Ingresos",
-      helpText: "Cuenta 4.1 — Ingresos por Ventas",
-    },
-    {
-      casilla: "11",
-      label: "Ingresos por Servicios Prestados",
-      accountCodes: ["4.2"],
-      aggregation: "sum_haber",
-      section: "Ingresos",
-      helpText: "Cuenta 4.2 — Ingresos por Servicios",
-    },
-    {
-      casilla: "12",
-      label: "Otros Ingresos",
-      accountCodes: ["4.3"],
-      aggregation: "sum_haber",
-      section: "Ingresos",
-      helpText: "Cuenta 4.3 — Otros Ingresos",
-    },
-    {
-      casilla: "13",
-      label: "(-) Descuentos y Devoluciones",
-      accountCodes: ["4.4", "4.5"],
-      aggregation: "sum_debe",
-      section: "Ingresos",
-      helpText: "Cuentas 4.4 + 4.5",
-    },
-    {
-      casilla: "14",
-      label: "Ingresos Brutos",
-      accountCodes: [],
-      aggregation: "formula",
-      formula: (v) =>
-        (v["10"] || 0) + (v["11"] || 0) + (v["12"] || 0) - (v["13"] || 0),
-      isSubtotal: true,
-      section: "Ingresos",
-      helpText: "Casillas 10 + 11 + 12 - 13",
+      helpText: "Total de ingresos por ventas, servicios y otros (Cuentas 4.1 + 4.2 + 4.3) neto de devoluciones",
     },
 
-    // === SECCION: COSTO DE VENTAS ===
-    {
-      casilla: "20",
-      label: "Compras de Mercancia",
-      accountCodes: ["5.1.01"],
-      aggregation: "sum_debe",
-      section: "Costo de Ventas",
-      helpText: "Cuenta 5.1.01",
-    },
-    {
-      casilla: "21",
-      label: "Fletes y Gastos de Importacion",
-      accountCodes: ["5.1.02"],
-      aggregation: "sum_debe",
-      section: "Costo de Ventas",
-      helpText: "Cuenta 5.1.02",
-    },
-    {
-      casilla: "22",
-      label: "Total Costo de Ventas",
-      accountCodes: [],
-      aggregation: "formula",
-      formula: (v) => (v["20"] || 0) + (v["21"] || 0),
-      isSubtotal: true,
-      section: "Costo de Ventas",
-      helpText: "Casillas 20 + 21",
-    },
-
-    // === SECCION: UTILIDAD BRUTA ===
-    {
-      casilla: "25",
-      label: "Utilidad Bruta",
-      accountCodes: [],
-      aggregation: "formula",
-      formula: (v) => (v["14"] || 0) - (v["22"] || 0),
-      isSubtotal: true,
-      section: "Utilidad Bruta",
-      helpText: "Ingresos Brutos - Costo de Ventas (Casilla 14 - 22)",
-    },
-
-    // === SECCION: GASTOS DE OPERACION ===
+    // === SECCION: GASTOS DEDUCIBLES ===
     {
       casilla: "30",
-      label: "Sueldos, Salarios y Prestaciones Laborales",
-      accountCodes: ["5.2.01", "5.2.02", "5.2.03", "5.2.04"],
+      label: "Total de Gastos Deducibles",
+      accountCodes: [
+        "5.1.01", "5.1.02",
+        "5.2.01", "5.2.02", "5.2.03", "5.2.04",
+        "5.2.05", "5.2.06", "5.2.07", "5.2.08",
+        "5.2.09", "5.2.10", "5.2.11", "5.2.12",
+        "5.3.01", "5.3.02",
+      ],
       aggregation: "sum_debe",
-      section: "Gastos de Operacion",
-      helpText: "Sueldos + CSS Patronal + Seguro Educativo + XIII Mes",
-    },
-    {
-      casilla: "31",
-      label: "Alquiler de Local Comercial",
-      accountCodes: ["5.2.05"],
-      aggregation: "sum_debe",
-      section: "Gastos de Operacion",
-      helpText: "Cuenta 5.2.05",
-    },
-    {
-      casilla: "32",
-      label: "Servicios Publicos (Agua, Luz, Internet, Telefono)",
-      accountCodes: ["5.2.06"],
-      aggregation: "sum_debe",
-      section: "Gastos de Operacion",
-      helpText: "Cuenta 5.2.06",
-    },
-    {
-      casilla: "33",
-      label: "Honorarios Profesionales",
-      accountCodes: ["5.2.07"],
-      aggregation: "sum_debe",
-      section: "Gastos de Operacion",
-      helpText: "Cuenta 5.2.07 — Contadores, abogados, consultores",
-    },
-    {
-      casilla: "34",
-      label: "Depreciacion de Activos Fijos",
-      accountCodes: ["5.2.08"],
-      aggregation: "sum_debe",
-      section: "Gastos de Operacion",
-      helpText: "Cuenta 5.2.08",
-    },
-    {
-      casilla: "35",
-      label: "Publicidad y Marketing",
-      accountCodes: ["5.2.09"],
-      aggregation: "sum_debe",
-      section: "Gastos de Operacion",
-      helpText: "Cuenta 5.2.09",
-    },
-    {
-      casilla: "36",
-      label: "Seguros",
-      accountCodes: ["5.2.10"],
-      aggregation: "sum_debe",
-      section: "Gastos de Operacion",
-      helpText: "Cuenta 5.2.10",
-    },
-    {
-      casilla: "37",
-      label: "Gastos Legales y Notariales",
-      accountCodes: ["5.2.11"],
-      aggregation: "sum_debe",
-      section: "Gastos de Operacion",
-      helpText: "Cuenta 5.2.11",
-    },
-    {
-      casilla: "38",
-      label: "Suministros de Oficina",
-      accountCodes: ["5.2.12"],
-      aggregation: "sum_debe",
-      section: "Gastos de Operacion",
-      helpText: "Cuenta 5.2.12",
-    },
-    {
-      casilla: "39",
-      label: "Total Gastos de Operacion",
-      accountCodes: [],
-      aggregation: "formula",
-      formula: (v) =>
-        (v["30"] || 0) +
-        (v["31"] || 0) +
-        (v["32"] || 0) +
-        (v["33"] || 0) +
-        (v["34"] || 0) +
-        (v["35"] || 0) +
-        (v["36"] || 0) +
-        (v["37"] || 0) +
-        (v["38"] || 0),
-      isSubtotal: true,
-      section: "Gastos de Operacion",
-      helpText: "Suma de casillas 30 a 38",
-    },
-
-    // === SECCION: GASTOS FINANCIEROS ===
-    {
-      casilla: "44",
-      label: "Intereses Bancarios",
-      accountCodes: ["5.3.01"],
-      aggregation: "sum_debe",
-      section: "Gastos Financieros",
-      helpText: "Cuenta 5.3.01",
-    },
-    {
-      casilla: "45",
-      label: "Comisiones Bancarias",
-      accountCodes: ["5.3.02"],
-      aggregation: "sum_debe",
-      section: "Gastos Financieros",
-      helpText: "Cuenta 5.3.02",
-    },
-    {
-      casilla: "46",
-      label: "Total Gastos Financieros",
-      accountCodes: [],
-      aggregation: "formula",
-      formula: (v) => (v["44"] || 0) + (v["45"] || 0),
-      isSubtotal: true,
-      section: "Gastos Financieros",
-      helpText: "Casilla 44 + 45",
+      section: "Gastos Deducibles",
+      helpText: "Costo de ventas + gastos de operacion + gastos financieros (todas las cuentas 5.x)",
     },
 
     // === SECCION: RESULTADO FISCAL ===
     {
-      casilla: "55",
+      casilla: "45",
       label: "Utilidad Neta Gravable",
       accountCodes: [],
       aggregation: "formula",
-      formula: (v) => (v["25"] || 0) - (v["39"] || 0) - (v["46"] || 0),
+      formula: (v) => (v["15"] || 0) - (v["30"] || 0),
       isSubtotal: true,
       section: "Resultado Fiscal",
-      helpText: "Utilidad Bruta - Gastos Operacion - Gastos Financieros",
-    },
-    {
-      casilla: "56",
-      label: "ISR a Pagar (25% Persona Juridica)",
-      accountCodes: [],
-      aggregation: "formula",
-      formula: (v) => Math.max(0, (v["55"] || 0) * 0.25),
-      isSubtotal: true,
-      section: "Resultado Fiscal",
-      helpText:
-        "25% sobre la Utilidad Neta Gravable. Si hay perdida, ISR = 0. Debe coincidir con cuenta 2.1.03",
+      helpText: "Ingresos Brutos menos Gastos Deducibles (Casilla 15 - 30)",
     },
   ],
 };
+
+// ============================================
+// FINANCIAL RECORD → ACCOUNT BALANCES FALLBACK
+// ============================================
+
+/**
+ * Converts a FinancialRecord (from Diagnostico Flash) to AccountBalance[]
+ * so the Espejo can auto-populate even without formal journal entries.
+ */
+export function financialRecordToBalances(r: FinancialRecord): AccountBalance[] {
+  const balances: AccountBalance[] = [];
+
+  const add = (code: string, name: string, debe: number, haber: number) => {
+    if (debe > 0 || haber > 0) {
+      balances.push({
+        account_code: code,
+        account_name: name,
+        total_debe: debe,
+        total_haber: haber,
+        saldo_debe: Math.max(0, debe - haber),
+        saldo_haber: Math.max(0, haber - debe),
+      });
+    }
+  };
+
+  // Ingresos (haber)
+  add("4.1", "Ingresos por Ventas", 0, r.revenue);
+
+  // Costo de ventas (debe)
+  add("5.1.01", "Compras de Mercancia", r.cogs, 0);
+
+  // Gastos de operacion (debe)
+  add("5.2.01", "Sueldos y Salarios", r.opex_payroll, 0);
+  add("5.2.05", "Alquiler de Local", r.opex_rent, 0);
+  add("5.2.06", "Servicios Publicos y Otros", r.opex_other, 0);
+  add("5.2.08", "Depreciacion", r.depreciation, 0);
+
+  // Gastos financieros (debe)
+  add("5.3.01", "Intereses Bancarios", r.interest_expense, 0);
+
+  return balances;
+}
 
 // ============================================
 // COMPUTATION ENGINE
@@ -405,10 +227,6 @@ export const FORM_03: DGIFormDefinition = {
 
 /**
  * Computes form field values from account balances.
- *
- * @param form - The DGI form definition
- * @param balances - Array of account balances (from Balance de Comprobacion)
- * @returns Computed form values + validations
  */
 export function computeFormValues(
   form: DGIFormDefinition,
@@ -463,21 +281,8 @@ export function computeFormValues(
   const validations: FormValidation[] = [];
 
   if (form.formId === "430") {
-    // Check ITBMS coherence
-    const itbmsPorPagar = balanceMap.get("2.1.02");
-    const itbmsCausado = values["50"] || 0;
-    if (itbmsPorPagar) {
-      const diff = Math.abs(itbmsCausado - itbmsPorPagar.saldo_haber);
-      if (diff > itbmsCausado * 0.01 && itbmsCausado > 0) {
-        validations.push({
-          type: "warning",
-          message: `ITBMS Causado (B/. ${itbmsCausado.toFixed(2)}) difiere de la cuenta 2.1.02 (B/. ${itbmsPorPagar.saldo_haber.toFixed(2)}). Revisa los asientos.`,
-        });
-      }
-    }
-
     // Check zero sales
-    if ((values["43"] || 0) === 0) {
+    if ((values["10"] || 0) === 0) {
       validations.push({
         type: "warning",
         message: "No hay ventas gravadas en este periodo. Verifica que hayas registrado ingresos.",
@@ -486,21 +291,8 @@ export function computeFormValues(
   }
 
   if (form.formId === "03") {
-    // Check ISR coherence
-    const isrPorPagar = balanceMap.get("2.1.03");
-    const isrCalculado = values["56"] || 0;
-    if (isrPorPagar && isrCalculado > 0) {
-      const diff = Math.abs(isrCalculado - isrPorPagar.saldo_haber);
-      if (diff > isrCalculado * 0.01) {
-        validations.push({
-          type: "warning",
-          message: `ISR calculado (B/. ${isrCalculado.toFixed(2)}) difiere de cuenta 2.1.03 (B/. ${isrPorPagar.saldo_haber.toFixed(2)}). Revisa los asientos.`,
-        });
-      }
-    }
-
     // Check zero revenue
-    if ((values["14"] || 0) === 0) {
+    if ((values["15"] || 0) === 0) {
       validations.push({
         type: "warning",
         message: "No hay ingresos registrados en el periodo fiscal. Verifica los datos.",
@@ -508,10 +300,10 @@ export function computeFormValues(
     }
 
     // Check negative taxable income
-    if ((values["55"] || 0) < 0) {
+    if ((values["45"] || 0) < 0) {
       validations.push({
         type: "ok",
-        message: `Resultado fiscal: Perdida de B/. ${Math.abs(values["55"]).toFixed(2)}. No hay ISR a pagar.`,
+        message: `Resultado fiscal: Perdida de B/. ${Math.abs(values["45"]).toFixed(2)}. No hay ISR a pagar.`,
       });
     }
   }
@@ -523,28 +315,17 @@ export function computeFormValues(
   if (!hasAnyBalance) {
     validations.push({
       type: "error",
-      message: "No hay movimientos contables registrados. Ingresa datos en el Libro Diario primero.",
-    });
-  }
-
-  // Check balance cuadrado
-  const totalDebe = balances.reduce((s, b) => s + b.total_debe, 0);
-  const totalHaber = balances.reduce((s, b) => s + b.total_haber, 0);
-  if (Math.abs(totalDebe - totalHaber) > 0.01 && hasAnyBalance) {
-    validations.push({
-      type: "error",
-      message: `Balance NO cuadra: Debe B/. ${totalDebe.toFixed(2)} ≠ Haber B/. ${totalHaber.toFixed(2)}. Corrige antes de exportar.`,
+      message: "No hay movimientos contables registrados. Ingresa datos en Mi Contabilidad primero.",
     });
   }
 
   if (
     hasAnyBalance &&
-    Math.abs(totalDebe - totalHaber) < 0.01 &&
     validations.filter((v) => v.type === "error").length === 0
   ) {
     validations.unshift({
       type: "ok",
-      message: "Balance cuadrado correctamente. Datos listos para transcribir a e-Tax 2.0.",
+      message: "Datos listos para transcribir a e-Tax 2.0.",
     });
   }
 

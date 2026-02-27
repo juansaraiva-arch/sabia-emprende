@@ -38,16 +38,20 @@ export default function LabPrecios() {
       id: "1",
       nombre: "Material principal",
       costoAdquisicion: 5.0,
+      cantidadCompra: 1,
       unidadCompraId: "kg",
       cantidadUtilizada: 1000,
+      unidadUsoId: "g",
       costo: 5.0,
     },
     {
       id: "2",
       nombre: "Empaque",
       costoAdquisicion: 1.5,
+      cantidadCompra: 1,
       unidadCompraId: "kg",
       cantidadUtilizada: 1000,
+      unidadUsoId: "g",
       costo: 1.5,
     },
   ]);
@@ -106,8 +110,10 @@ export default function LabPrecios() {
         id: Date.now().toString(),
         nombre: "",
         costoAdquisicion: 0,
+        cantidadCompra: 1,
         unidadCompraId: "kg",
         cantidadUtilizada: 0,
+        unidadUsoId: "g",
         costo: 0,
       },
     ]);
@@ -127,18 +133,30 @@ export default function LabPrecios() {
       ingredientes.map((i) => {
         if (i.id !== id) return i;
         const updated = { ...i, [field]: value };
+        // Si cambia la unidad de compra a otra categoria, resetear unidad de uso
+        if (field === "unidadCompraId") {
+          const newCat = findUnit(value as string, customUnits)?.category;
+          const oldCat = findUnit(i.unidadCompraId, customUnits)?.category;
+          if (newCat && oldCat && newCat !== oldCat) {
+            updated.unidadUsoId = newCat === "weight" ? "g" : "ml";
+          }
+        }
         // Recalcular costo si cambia un campo de conversion
         if (
           !updated.modoSimple &&
           (field === "costoAdquisicion" ||
+            field === "cantidadCompra" ||
             field === "unidadCompraId" ||
-            field === "cantidadUtilizada")
+            field === "cantidadUtilizada" ||
+            field === "unidadUsoId")
         ) {
           updated.costo = computeIngredientCost(
             updated.costoAdquisicion,
             updated.unidadCompraId,
             updated.cantidadUtilizada,
-            customUnits
+            customUnits,
+            updated.cantidadCompra,
+            updated.unidadUsoId,
           );
         }
         return updated;
@@ -163,23 +181,27 @@ export default function LabPrecios() {
   };
 
   const removeCustomUnit = (unitId: string) => {
-    setCustomUnits(customUnits.filter((u) => u.id !== unitId));
-    // Si algun ingrediente usaba esta unidad, resetearlo a "kg"
+    const remaining = customUnits.filter((u) => u.id !== unitId);
+    setCustomUnits(remaining);
+    // Si algun ingrediente usaba esta unidad (compra o uso), resetearlo
     setIngredientes(
-      ingredientes.map((ing) =>
-        ing.unidadCompraId === unitId
-          ? {
-              ...ing,
-              unidadCompraId: "kg",
-              costo: computeIngredientCost(
-                ing.costoAdquisicion,
-                "kg",
-                ing.cantidadUtilizada,
-                customUnits.filter((u) => u.id !== unitId)
-              ),
-            }
-          : ing
-      )
+      ingredientes.map((ing) => {
+        const resetCompra = ing.unidadCompraId === unitId;
+        const resetUso = ing.unidadUsoId === unitId;
+        if (!resetCompra && !resetUso) return ing;
+        const updated = { ...ing };
+        if (resetCompra) updated.unidadCompraId = "kg";
+        if (resetUso) updated.unidadUsoId = "g";
+        updated.costo = computeIngredientCost(
+          updated.costoAdquisicion,
+          updated.unidadCompraId,
+          updated.cantidadUtilizada,
+          remaining,
+          updated.cantidadCompra,
+          updated.unidadUsoId,
+        );
+        return updated;
+      })
     );
   };
 
@@ -219,7 +241,7 @@ export default function LabPrecios() {
                 </span>
                 <TooltipButton
                   id="materiales"
-                  text="Ingresa el costo de compra, la unidad de medida y cuanto usas por producto. El sistema calcula el costo automaticamente."
+                  text="Ingresa el costo total de compra, cantidad y unidad comprada, y cuanto usas por producto. El sistema calcula el precio unitario y costo automaticamente."
                   active={activeTooltip}
                   onToggle={toggleTooltip}
                 />
@@ -236,7 +258,6 @@ export default function LabPrecios() {
             <div className="space-y-3">
               {ingredientes.map((ing) => {
                 const unitCategory = getUnitCategory(ing.unidadCompraId);
-                const unitSuffix = baseUnitLabel(unitCategory);
 
                 return (
                   <div
@@ -263,80 +284,115 @@ export default function LabPrecios() {
                       </button>
                     </div>
 
-                    {/* Fila 2: 3 sub-campos */}
-                    <div className="grid grid-cols-3 gap-2">
-                      {/* Costo de Adquisicion */}
-                      <div>
-                        <label className="text-[10px] text-slate-400 mb-0.5 block">
-                          Costo compra
-                        </label>
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-emerald-500 text-xs">
-                            $
-                          </span>
+                    {/* Fila 2: Compra (3 campos) */}
+                    <div>
+                      <span className="text-[10px] font-semibold text-purple-400 uppercase tracking-wide">Compra</span>
+                      <div className="grid grid-cols-3 gap-2 mt-1">
+                        {/* Costo total de la compra */}
+                        <div>
+                          <label className="text-[10px] text-slate-400 mb-0.5 block">
+                            Costo total
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-emerald-500 text-xs">
+                              $
+                            </span>
+                            <input
+                              type="number"
+                              value={ing.costoAdquisicion || ""}
+                              onChange={(e) =>
+                                updateIngredient(
+                                  ing.id,
+                                  "costoAdquisicion",
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              placeholder="0.00"
+                              className="w-full text-xs pl-5 pr-1 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px]"
+                              step="0.01"
+                              min="0"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Cantidad comprada */}
+                        <div>
+                          <label className="text-[10px] text-slate-400 mb-0.5 block">
+                            Cantidad
+                          </label>
                           <input
                             type="number"
-                            value={ing.costoAdquisicion || ""}
+                            value={ing.cantidadCompra || ""}
                             onChange={(e) =>
                               updateIngredient(
                                 ing.id,
-                                "costoAdquisicion",
+                                "cantidadCompra",
                                 parseFloat(e.target.value) || 0
                               )
                             }
-                            placeholder="0.00"
-                            className="w-full text-xs pl-5 pr-1 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px]"
-                            step="0.01"
+                            placeholder="1"
+                            className="w-full text-xs px-2 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px]"
+                            step="1"
                             min="0"
                           />
                         </div>
-                      </div>
 
-                      {/* Unidad de Medida */}
-                      <div>
-                        <label className="text-[10px] text-slate-400 mb-0.5 block">
-                          Unidad
-                        </label>
-                        <select
-                          value={ing.unidadCompraId}
-                          onChange={(e) =>
-                            updateIngredient(
-                              ing.id,
-                              "unidadCompraId",
-                              e.target.value
-                            )
-                          }
-                          className="w-full text-xs py-2 px-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px] cursor-pointer"
-                        >
-                          <optgroup label="Peso">
-                            {allUnits
-                              .filter((u) => u.category === "weight")
-                              .map((u) => (
-                                <option key={u.id} value={u.id}>
-                                  {u.label}
-                                  {u.isCustom ? " *" : ""}
-                                </option>
-                              ))}
-                          </optgroup>
-                          <optgroup label="Volumen">
-                            {allUnits
-                              .filter((u) => u.category === "volume")
-                              .map((u) => (
-                                <option key={u.id} value={u.id}>
-                                  {u.label}
-                                  {u.isCustom ? " *" : ""}
-                                </option>
-                              ))}
-                          </optgroup>
-                        </select>
+                        {/* Unidad de Compra */}
+                        <div>
+                          <label className="text-[10px] text-slate-400 mb-0.5 block">
+                            Unidad
+                          </label>
+                          <select
+                            value={ing.unidadCompraId}
+                            onChange={(e) =>
+                              updateIngredient(
+                                ing.id,
+                                "unidadCompraId",
+                                e.target.value
+                              )
+                            }
+                            className="w-full text-xs py-2 px-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px] cursor-pointer"
+                          >
+                            <optgroup label="Peso">
+                              {allUnits
+                                .filter((u) => u.category === "weight")
+                                .map((u) => (
+                                  <option key={u.id} value={u.id}>
+                                    {u.label}
+                                    {u.isCustom ? " *" : ""}
+                                  </option>
+                                ))}
+                            </optgroup>
+                            <optgroup label="Volumen">
+                              {allUnits
+                                .filter((u) => u.category === "volume")
+                                .map((u) => (
+                                  <option key={u.id} value={u.id}>
+                                    {u.label}
+                                    {u.isCustom ? " *" : ""}
+                                  </option>
+                                ))}
+                            </optgroup>
+                          </select>
+                        </div>
                       </div>
+                      {/* Precio unitario calculado */}
+                      {(ing.cantidadCompra ?? 1) > 1 && ing.costoAdquisicion > 0 && (
+                        <p className="text-[10px] text-emerald-600 mt-1">
+                          Precio unitario: ${(ing.costoAdquisicion / (ing.cantidadCompra ?? 1)).toFixed(2)}/{findUnit(ing.unidadCompraId, customUnits)?.label ?? ing.unidadCompraId}
+                        </p>
+                      )}
+                    </div>
 
-                      {/* Cantidad Utilizada */}
-                      <div>
-                        <label className="text-[10px] text-slate-400 mb-0.5 block">
-                          Usas ({unitSuffix})
-                        </label>
-                        <div className="relative">
+                    {/* Fila 3: Uso por producto (2 campos) */}
+                    <div>
+                      <span className="text-[10px] font-semibold text-purple-400 uppercase tracking-wide">Uso por producto</span>
+                      <div className="grid grid-cols-2 gap-2 mt-1">
+                        {/* Cantidad que usas */}
+                        <div>
+                          <label className="text-[10px] text-slate-400 mb-0.5 block">
+                            Cantidad
+                          </label>
                           <input
                             type="number"
                             value={ing.cantidadUtilizada || ""}
@@ -348,18 +404,42 @@ export default function LabPrecios() {
                               )
                             }
                             placeholder="0"
-                            className="w-full text-xs pl-2 pr-6 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px]"
-                            step="1"
+                            className="w-full text-xs px-2 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px]"
+                            step="0.01"
                             min="0"
                           />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">
-                            {unitSuffix}
-                          </span>
+                        </div>
+
+                        {/* Unidad de uso */}
+                        <div>
+                          <label className="text-[10px] text-slate-400 mb-0.5 block">
+                            Unidad
+                          </label>
+                          <select
+                            value={ing.unidadUsoId || (unitCategory === "weight" ? "g" : "ml")}
+                            onChange={(e) =>
+                              updateIngredient(
+                                ing.id,
+                                "unidadUsoId",
+                                e.target.value
+                              )
+                            }
+                            className="w-full text-xs py-2 px-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px] cursor-pointer"
+                          >
+                            {allUnits
+                              .filter((u) => u.category === unitCategory)
+                              .map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.label}
+                                  {u.isCustom ? " *" : ""}
+                                </option>
+                              ))}
+                          </select>
                         </div>
                       </div>
                     </div>
 
-                    {/* Fila 3: Costo calculado */}
+                    {/* Fila 4: Costo calculado */}
                     <div className="flex items-center justify-between px-2.5 py-1.5 bg-purple-50 rounded-lg border border-purple-100">
                       <span className="text-[10px] text-purple-500 font-medium">
                         Costo en tu producto:

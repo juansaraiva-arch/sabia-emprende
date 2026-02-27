@@ -71,12 +71,16 @@ export interface UnitOfMeasure {
 export interface Ingredient {
   id: string;
   nombre: string;
-  /** Monto pagado por la compra (ej: $500 por un quintal) */
+  /** Monto total pagado por la compra (ej: $100 por 10 libras) */
   costoAdquisicion: number;
+  /** Cantidad comprada (ej: 10 libras). Si no se indica, asume 1 */
+  cantidadCompra?: number;
   /** ID de la unidad de compra (ej: "quintal", "kg", "lb", "galon", "litro") */
   unidadCompraId: string;
-  /** Cantidad utilizada por unidad de producto, en gramos o ml */
+  /** Cantidad utilizada por unidad de producto */
   cantidadUtilizada: number;
+  /** ID de la unidad de uso (ej: "g", "kg"). Si no se indica, asume unidad base (g/ml) */
+  unidadUsoId?: string;
   /** Costo calculado del ingrediente por unidad de producto (auto o manual) */
   costo: number;
   /** true = modo legacy (usuario ingresa costo directo sin conversion) */

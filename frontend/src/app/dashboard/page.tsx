@@ -106,8 +106,8 @@ import {
 // ============================================
 
 type Section = "datos" | "negocio" | "legal";
-type DatosMode = "flash" | "contabilidad";
-type ContabilidadTab = "plan_cuentas" | "libro_diario" | "libro_mayor" | "balance_comprobacion" | "libro_inventarios" | "cierre_periodo" | "espejo_dgi";
+type DatosMode = "flash" | "contabilidad" | "espejo_dgi";
+type ContabilidadTab = "plan_cuentas" | "libro_diario" | "libro_mayor" | "balance_comprobacion" | "libro_inventarios" | "cierre_periodo";
 type NegocioTab =
   | "cascada"
   | "mandibulas"
@@ -1570,7 +1570,6 @@ export default function Dashboard() {
         { key: "balance_comprobacion", label: "Balance Comprobacion", icon: <CheckSquare size={22} />, tooltip: "Verificacion de saldos", color: "bg-amber-500" },
         { key: "libro_inventarios", label: "Inventarios y Balances", icon: <Package size={22} />, tooltip: "Control de inventario y balances", color: "bg-cyan-600" },
         { key: "cierre_periodo", label: "Cierre y Reportes", icon: <Lock size={22} />, tooltip: "Cierre mensual y reportes finales", color: "bg-red-600" },
-        { key: "espejo_dgi", label: "Espejo DGI", icon: <Shield size={22} />, tooltip: "Vista espejo para la DGI", color: "bg-indigo-600" },
       ],
     },
   ];
@@ -1706,6 +1705,17 @@ export default function Dashboard() {
                 <BookOpen size={14} />
                 Contabilidad Formal
               </button>
+              <button
+                onClick={() => setDatosMode("espejo_dgi")}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+                  datosMode === "espejo_dgi"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-50"
+                }`}
+              >
+                <Shield size={14} />
+                Espejo de Declaracion de Renta
+              </button>
             </div>
 
             {datosMode === "flash" && (
@@ -1740,10 +1750,15 @@ export default function Dashboard() {
                   {activeContabilidadTab === "balance_comprobacion" && <BalanceComprobacion societyId={societyId} />}
                   {activeContabilidadTab === "libro_inventarios" && <LibroInventarios societyId={societyId} />}
                   {activeContabilidadTab === "cierre_periodo" && <PeriodClosingPanel societyId={societyId} />}
-                  {activeContabilidadTab === "espejo_dgi" && <EspejoDGI societyId={societyId} />}
                 </div>
                 </>
                 )}
+              </div>
+            )}
+
+            {datosMode === "espejo_dgi" && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6 min-h-[400px]">
+                <EspejoDGI societyId={societyId} financialRecord={currentRecord} />
               </div>
             )}
           </div>

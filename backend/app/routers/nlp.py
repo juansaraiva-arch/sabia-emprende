@@ -110,14 +110,17 @@ async def interpret_natural_language(body: NLPQuery, user: AuthenticatedUser = D
     # 1. Interpretar la frase
     interpretation = interpret_query(body.query)
 
-    # 2. Log en audit_logs (NLP tracking)
-    db.table("audit_logs").insert({
-        "user_id": user.id,
-        "action_type": "nlp_query_executed",
-        "action_description": interpretation.get("description", "Query NLP"),
-        "nlp_raw_input": body.query,
-        "nlp_interpreted_action": interpretation.get("action", "unknown"),
-    }).execute()
+    # 2. Log en audit_logs (NLP tracking) — non-blocking, no debe romper el endpoint
+    try:
+        db.table("audit_logs").insert({
+            "user_id": user.id,
+            "action_type": "nlp_query_executed",
+            "action_description": interpretation.get("description", "Query NLP"),
+            "nlp_raw_input": body.query,
+            "nlp_interpreted_action": interpretation.get("action", "unknown"),
+        }).execute()
+    except Exception:
+        pass  # Audit log failure should never block the NLP response
 
     if not interpretation["understood"]:
         return NLPResponse(

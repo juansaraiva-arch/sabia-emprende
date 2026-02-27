@@ -256,9 +256,11 @@ export default function MiAsistente({ societyId, onResult, forceOpen, onClose, h
         onResult?.(result);
       }
     } catch (err: any) {
+      const errorDetail = err?.message || "Error desconocido";
+      console.error("[MiAsistente] Error:", errorDetail);
       addMessage(
         "assistant",
-        "No pude procesar tu solicitud en este momento. Intenta de nuevo o reformula tu pregunta."
+        `No pude procesar tu solicitud: ${errorDetail}. Intenta de nuevo o reformula tu pregunta.`
       );
     } finally {
       setLoading(false);

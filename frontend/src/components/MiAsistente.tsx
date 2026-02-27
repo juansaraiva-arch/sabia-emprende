@@ -10,6 +10,7 @@ import {
   Sparkles,
   BookOpen,
   Check,
+  Bot,
 } from "lucide-react";
 import { nlpApi, accountingApi } from "@/lib/api";
 import { checkFormalizationStatus } from "@/lib/formalizacion";
@@ -325,15 +326,17 @@ export default function MiAsistente({ societyId, onResult, forceOpen, onClose, h
       {!isOpen && !hideButton && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3.5 rounded-full font-bold text-sm shadow-xl hover:scale-105 active:scale-95 transition-all"
+          className="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-50 flex items-center gap-2.5 pl-3 pr-4 py-2.5 rounded-full font-bold text-sm shadow-xl hover:scale-105 active:scale-95 transition-all group"
           style={{
-            backgroundColor: "#C5A059",
-            color: "#1A242F",
-            boxShadow: "0 4px 20px rgba(197, 160, 89, 0.4)",
+            backgroundColor: "#1A242F",
+            color: "#C5A059",
+            boxShadow: "0 4px 24px rgba(26, 36, 47, 0.35)",
           }}
           aria-label="Abrir Mi Asistente"
         >
-          <MessageCircle size={20} />
+          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#C5A059]/20 group-hover:bg-[#C5A059]/30 transition-colors">
+            <Bot size={18} className="text-[#C5A059]" />
+          </div>
           <span className="hidden sm:inline">Mi Asistente</span>
         </button>
       )}

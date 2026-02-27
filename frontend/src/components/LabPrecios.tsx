@@ -16,6 +16,9 @@ import {
   Ruler,
   Save,
   X,
+  Pencil,
+  Database,
+  Clock,
 } from "lucide-react";
 import { computePricing } from "@/lib/calculations";
 import type { Ingredient, PricingResult, UnitOfMeasure, UnitCategory } from "@/lib/calculations";
@@ -83,8 +86,26 @@ export default function LabPrecios() {
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   // Guardar producto
+  interface SavedProduct {
+    id: string;
+    name: string;
+    precio: number;
+    costo: number;
+    margen: number;
+    fecha: string;
+    // Datos completos para restaurar
+    ingredientes: Ingredient[];
+    salarioMensual: number;
+    minutosElaboracion: number;
+    opexMensual: number;
+    capacidadMensual: number;
+    margenDeseado: number;
+    comisionPlataforma: number;
+    customUnits: UnitOfMeasure[];
+  }
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const [savedProducts, setSavedProducts] = useState<Array<{ id: string; name: string; precio: number; costo: number; margen: number; fecha: string }>>(() => {
+  const [showCatalog, setShowCatalog] = useState(false);
+  const [savedProducts, setSavedProducts] = useState<SavedProduct[]>(() => {
     if (typeof window === "undefined") return [];
     try {
       return JSON.parse(localStorage.getItem("midf_saved_products") || "[]");
@@ -231,13 +252,21 @@ export default function LabPrecios() {
   const handleSaveProduct = () => {
     if (!productName.trim()) return;
     setSaveStatus("saving");
-    const product = {
+    const product: SavedProduct = {
       id: Date.now().toString(),
       name: productName.trim(),
       precio: result.precio_final,
       costo: result.costo_total_unitario,
       margen: margenDeseado,
       fecha: new Date().toISOString(),
+      ingredientes: [...ingredientes],
+      salarioMensual,
+      minutosElaboracion,
+      opexMensual,
+      capacidadMensual,
+      margenDeseado,
+      comisionPlataforma,
+      customUnits: [...customUnits],
     };
     const existing = savedProducts.filter((p) => p.name !== product.name);
     const updated = [product, ...existing];
@@ -247,6 +276,27 @@ export default function LabPrecios() {
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2500);
     }, 400);
+  };
+
+  // ====== CARGAR PRODUCTO GUARDADO ======
+  const handleLoadProduct = (product: SavedProduct) => {
+    setProductName(product.name);
+    if (product.ingredientes) setIngredientes(product.ingredientes);
+    if (product.salarioMensual !== undefined) setSalarioMensual(product.salarioMensual);
+    if (product.minutosElaboracion !== undefined) setMinutosElaboracion(product.minutosElaboracion);
+    if (product.opexMensual !== undefined) setOpexMensual(product.opexMensual);
+    if (product.capacidadMensual !== undefined) setCapacidadMensual(product.capacidadMensual);
+    if (product.margenDeseado !== undefined) setMargenDeseado(product.margenDeseado);
+    if (product.comisionPlataforma !== undefined) setComisionPlataforma(product.comisionPlataforma);
+    if (product.customUnits) setCustomUnits(product.customUnits);
+    setShowCatalog(false);
+  };
+
+  // ====== ELIMINAR PRODUCTO GUARDADO ======
+  const handleDeleteProduct = (id: string) => {
+    const updated = savedProducts.filter((p) => p.id !== id);
+    setSavedProducts(updated);
+    localStorage.setItem("midf_saved_products", JSON.stringify(updated));
   };
 
   return (
@@ -261,6 +311,59 @@ export default function LabPrecios() {
           Calcula el precio justo para tu producto
         </span>
       </div>
+
+      {/* ====== PRODUCTOS GUARDADOS (CATALOGO) ====== */}
+      {savedProducts.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <button
+            onClick={() => setShowCatalog(!showCatalog)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Database size={16} className="text-violet-500" />
+              <span className="text-sm font-bold text-slate-700">Productos Guardados</span>
+              <span className="text-[10px] bg-violet-100 text-violet-700 font-bold px-2 py-0.5 rounded-full">{savedProducts.length}</span>
+            </div>
+            {showCatalog ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+          </button>
+          {showCatalog && (
+            <div className="border-t border-slate-100 divide-y divide-slate-100 max-h-64 overflow-y-auto">
+              {savedProducts.map((p) => (
+                <div key={p.id} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 group">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{p.name}</p>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="text-xs font-bold text-emerald-600">${p.precio.toFixed(2)}</span>
+                      <span className="text-[10px] text-slate-400">Costo: ${p.costo.toFixed(2)}</span>
+                      <span className="text-[10px] text-slate-400">Margen: {p.margen}%</span>
+                      <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+                        <Clock size={10} />
+                        {new Date(p.fecha).toLocaleDateString("es-PA")}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 ml-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => handleLoadProduct(p)}
+                      className="p-2 rounded-lg text-violet-500 hover:bg-violet-100 hover:text-violet-700 transition-colors"
+                      title="Editar producto"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProduct(p.id)}
+                      className="p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                      title="Eliminar producto"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ====== NOMBRE DEL PRODUCTO/SERVICIO ====== */}
       <div className="p-4 rounded-2xl bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200">

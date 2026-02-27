@@ -104,10 +104,17 @@ export default function LegalSimplifierButton() {
           <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && inputText.trim().length >= 10 && !isLoading) {
+                e.preventDefault();
+                handleSimplify();
+              }
+            }}
             placeholder='Ejemplo: "El compareciente confiere poder especial irrevocable al apoderado para que en su nombre y representación ejerza todos los actos de dominio..."'
             rows={4}
             className="w-full text-xs bg-white border border-indigo-200 rounded-lg p-3 outline-none focus:border-indigo-400 resize-none text-slate-700 placeholder:text-slate-300"
           />
+          <p className="text-[9px] text-indigo-300 text-right -mt-1">Ctrl + Enter para enviar</p>
 
           {/* Botón Simplificar */}
           <button

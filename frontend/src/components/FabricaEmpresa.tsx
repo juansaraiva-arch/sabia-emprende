@@ -74,7 +74,8 @@ export default function FabricaEmpresa({ onDocumentUploaded, onFileUpload, showW
     if (!state) {
       state = initFormalizacionState();
     }
-    setSteps(state.steps);
+    // Ordenar por campo order para garantizar secuencia correcta
+    setSteps([...state.steps].sort((a, b) => a.order - b.order));
     // Load attached documents & sync events
     setStepDocs(getStepDocuments());
     const allSyncEvents = state.steps.map((s) => s.id).filter((id) => getSyncEventsForStep(id).length > 0);
@@ -84,7 +85,7 @@ export default function FabricaEmpresa({ onDocumentUploaded, onFileUpload, showW
   const handleStatusChange = (stepId: string, newStatus: StepStatus) => {
     const updated = updateStepStatus(stepId, newStatus);
     if (updated) {
-      setSteps([...updated.steps]);
+      setSteps([...updated.steps].sort((a, b) => a.order - b.order));
 
       // Si se marca completado y hay callback, notificar para sincronizar con Boveda
       if (newStatus === "completado" && onDocumentUploaded) {

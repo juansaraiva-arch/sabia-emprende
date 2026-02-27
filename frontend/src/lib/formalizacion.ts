@@ -162,7 +162,24 @@ export function getFormalizacionState(): FormalizacionState | null {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw);
+    const saved: FormalizacionState = JSON.parse(raw);
+    // Migrar: actualizar datos de cada paso desde FORMALIZACION_STEPS_DATA
+    // pero conservar status y completedAt del usuario
+    const statusMap: Record<string, { status: StepStatus; completedAt?: string }> = {};
+    for (const s of saved.steps) {
+      statusMap[s.id] = { status: s.status, completedAt: s.completedAt };
+    }
+    const migrated: FormalizacionState = {
+      ...saved,
+      steps: FORMALIZACION_STEPS_DATA.map((canonical) => ({
+        ...canonical,
+        status: statusMap[canonical.id]?.status || ("pendiente" as StepStatus),
+        completedAt: statusMap[canonical.id]?.completedAt,
+      })),
+    };
+    // Guardar migrado para que la proxima carga sea rapida
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+    return migrated;
   } catch {
     return null;
   }

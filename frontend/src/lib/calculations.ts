@@ -55,10 +55,32 @@ export interface PricingResult {
   ganancia_por_unidad: number;
 }
 
+/** Categoria de unidad de medida */
+export type UnitCategory = "weight" | "volume";
+
+/** Definicion de una unidad de medida (built-in o custom) */
+export interface UnitOfMeasure {
+  id: string;
+  label: string;
+  category: UnitCategory;
+  /** Cuantos gramos (peso) o ml (volumen) equivale 1 unidad */
+  conversionFactor: number;
+  isCustom?: boolean;
+}
+
 export interface Ingredient {
   id: string;
   nombre: string;
+  /** Monto pagado por la compra (ej: $500 por un quintal) */
+  costoAdquisicion: number;
+  /** ID de la unidad de compra (ej: "quintal", "kg", "lb", "galon", "litro") */
+  unidadCompraId: string;
+  /** Cantidad utilizada por unidad de producto, en gramos o ml */
+  cantidadUtilizada: number;
+  /** Costo calculado del ingrediente por unidad de producto (auto o manual) */
   costo: number;
+  /** true = modo legacy (usuario ingresa costo directo sin conversion) */
+  modoSimple?: boolean;
 }
 
 // ============================================

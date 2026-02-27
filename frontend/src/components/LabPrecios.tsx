@@ -11,9 +11,21 @@ import {
   Building,
   Percent,
   ShoppingCart,
+  ChevronDown,
+  ChevronUp,
+  Ruler,
+  Save,
+  X,
 } from "lucide-react";
 import { computePricing } from "@/lib/calculations";
-import type { Ingredient, PricingResult } from "@/lib/calculations";
+import type { Ingredient, PricingResult, UnitOfMeasure, UnitCategory } from "@/lib/calculations";
+import {
+  BUILTIN_UNITS,
+  findUnit,
+  baseUnitLabel,
+  computeIngredientCost,
+  resolveIngredientCosts,
+} from "@/lib/unit-conversions";
 
 // ============================================
 // COMPONENTE PRINCIPAL
@@ -22,9 +34,35 @@ import type { Ingredient, PricingResult } from "@/lib/calculations";
 export default function LabPrecios() {
   // Estado de ingredientes/materiales
   const [ingredientes, setIngredientes] = useState<Ingredient[]>([
-    { id: "1", nombre: "Material principal", costo: 5.0 },
-    { id: "2", nombre: "Empaque", costo: 1.5 },
+    {
+      id: "1",
+      nombre: "Material principal",
+      costoAdquisicion: 5.0,
+      unidadCompraId: "kg",
+      cantidadUtilizada: 1000,
+      costo: 5.0,
+    },
+    {
+      id: "2",
+      nombre: "Empaque",
+      costoAdquisicion: 1.5,
+      unidadCompraId: "kg",
+      cantidadUtilizada: 1000,
+      costo: 1.5,
+    },
   ]);
+
+  // Unidades personalizadas
+  const [customUnits, setCustomUnits] = useState<UnitOfMeasure[]>([]);
+  const [showCustomUnitForm, setShowCustomUnitForm] = useState(false);
+  const [newUnitName, setNewUnitName] = useState("");
+  const [newUnitCategory, setNewUnitCategory] = useState<UnitCategory>("weight");
+  const [newUnitFactor, setNewUnitFactor] = useState(0);
+
+  const allUnits = useMemo(
+    () => [...BUILTIN_UNITS, ...customUnits],
+    [customUnits]
+  );
 
   // Parametros
   const [salarioMensual, setSalarioMensual] = useState(800);
@@ -38,27 +76,27 @@ export default function LabPrecios() {
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   // ====== CALCULO ======
-  const result: PricingResult = useMemo(
-    () =>
-      computePricing(
-        ingredientes,
-        salarioMensual,
-        minutosElaboracion,
-        opexMensual,
-        capacidadMensual,
-        margenDeseado,
-        comisionPlataforma
-      ),
-    [
-      ingredientes,
+  const result: PricingResult = useMemo(() => {
+    const resolved = resolveIngredientCosts(ingredientes, customUnits);
+    return computePricing(
+      resolved,
       salarioMensual,
       minutosElaboracion,
       opexMensual,
       capacidadMensual,
       margenDeseado,
-      comisionPlataforma,
-    ]
-  );
+      comisionPlataforma
+    );
+  }, [
+    ingredientes,
+    customUnits,
+    salarioMensual,
+    minutosElaboracion,
+    opexMensual,
+    capacidadMensual,
+    margenDeseado,
+    comisionPlataforma,
+  ]);
 
   // ====== INGREDIENT HANDLERS ======
   const addIngredient = () => {
@@ -67,6 +105,9 @@ export default function LabPrecios() {
       {
         id: Date.now().toString(),
         nombre: "",
+        costoAdquisicion: 0,
+        unidadCompraId: "kg",
+        cantidadUtilizada: 0,
         costo: 0,
       },
     ]);
@@ -79,18 +120,77 @@ export default function LabPrecios() {
 
   const updateIngredient = (
     id: string,
-    field: "nombre" | "costo",
+    field: keyof Ingredient,
     value: string | number
   ) => {
     setIngredientes(
-      ingredientes.map((i) =>
-        i.id === id ? { ...i, [field]: value } : i
+      ingredientes.map((i) => {
+        if (i.id !== id) return i;
+        const updated = { ...i, [field]: value };
+        // Recalcular costo si cambia un campo de conversion
+        if (
+          !updated.modoSimple &&
+          (field === "costoAdquisicion" ||
+            field === "unidadCompraId" ||
+            field === "cantidadUtilizada")
+        ) {
+          updated.costo = computeIngredientCost(
+            updated.costoAdquisicion,
+            updated.unidadCompraId,
+            updated.cantidadUtilizada,
+            customUnits
+          );
+        }
+        return updated;
+      })
+    );
+  };
+
+  // ====== CUSTOM UNIT HANDLERS ======
+  const addCustomUnit = () => {
+    if (!newUnitName.trim() || newUnitFactor <= 0) return;
+    const newUnit: UnitOfMeasure = {
+      id: `custom_${Date.now()}`,
+      label: newUnitName.trim(),
+      category: newUnitCategory,
+      conversionFactor: newUnitFactor,
+      isCustom: true,
+    };
+    setCustomUnits([...customUnits, newUnit]);
+    setNewUnitName("");
+    setNewUnitFactor(0);
+    setShowCustomUnitForm(false);
+  };
+
+  const removeCustomUnit = (unitId: string) => {
+    setCustomUnits(customUnits.filter((u) => u.id !== unitId));
+    // Si algun ingrediente usaba esta unidad, resetearlo a "kg"
+    setIngredientes(
+      ingredientes.map((ing) =>
+        ing.unidadCompraId === unitId
+          ? {
+              ...ing,
+              unidadCompraId: "kg",
+              costo: computeIngredientCost(
+                ing.costoAdquisicion,
+                "kg",
+                ing.cantidadUtilizada,
+                customUnits.filter((u) => u.id !== unitId)
+              ),
+            }
+          : ing
       )
     );
   };
 
   const toggleTooltip = (id: string) => {
     setActiveTooltip(activeTooltip === id ? null : id);
+  };
+
+  // Obtener la categoria de la unidad actual de un ingrediente
+  const getUnitCategory = (unitId: string): UnitCategory => {
+    const unit = findUnit(unitId, customUnits);
+    return unit?.category || "weight";
   };
 
   return (
@@ -119,7 +219,7 @@ export default function LabPrecios() {
                 </span>
                 <TooltipButton
                   id="materiales"
-                  text="Lista todo lo que necesitas para hacer UNA unidad de tu producto."
+                  text="Ingresa el costo de compra, la unidad de medida y cuanto usas por producto. El sistema calcula el costo automaticamente."
                   active={activeTooltip}
                   onToggle={toggleTooltip}
                 />
@@ -133,50 +233,238 @@ export default function LabPrecios() {
               </button>
             </div>
 
-            <div className="space-y-2">
-              {ingredientes.map((ing) => (
-                <div
-                  key={ing.id}
-                  className="flex items-center gap-2 bg-white rounded-xl p-2"
-                >
-                  <input
-                    type="text"
-                    value={ing.nombre}
-                    onChange={(e) =>
-                      updateIngredient(ing.id, "nombre", e.target.value)
-                    }
-                    placeholder="Nombre"
-                    className="flex-1 text-sm px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-2 focus:ring-purple-500/10 outline-none min-h-[44px]"
-                  />
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500 text-sm">
-                      $
-                    </span>
-                    <input
-                      type="number"
-                      value={ing.costo || ""}
-                      onChange={(e) =>
-                        updateIngredient(
-                          ing.id,
-                          "costo",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      placeholder="0.00"
-                      className="w-24 text-sm pl-7 pr-2 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-2 focus:ring-purple-500/10 outline-none min-h-[44px]"
-                      step="0.01"
-                      min="0"
-                    />
+            <div className="space-y-3">
+              {ingredientes.map((ing) => {
+                const unitCategory = getUnitCategory(ing.unidadCompraId);
+                const unitSuffix = baseUnitLabel(unitCategory);
+
+                return (
+                  <div
+                    key={ing.id}
+                    className="bg-white rounded-xl p-3 space-y-2 border border-purple-100"
+                  >
+                    {/* Fila 1: Nombre + Eliminar */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={ing.nombre}
+                        onChange={(e) =>
+                          updateIngredient(ing.id, "nombre", e.target.value)
+                        }
+                        placeholder="Nombre del material"
+                        className="flex-1 text-sm px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-2 focus:ring-purple-500/10 outline-none min-h-[40px]"
+                      />
+                      <button
+                        onClick={() => removeIngredient(ing.id)}
+                        className="p-2 text-slate-300 hover:text-red-500 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
+                        disabled={ingredientes.length <= 1}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+
+                    {/* Fila 2: 3 sub-campos */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* Costo de Adquisicion */}
+                      <div>
+                        <label className="text-[10px] text-slate-400 mb-0.5 block">
+                          Costo compra
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-emerald-500 text-xs">
+                            $
+                          </span>
+                          <input
+                            type="number"
+                            value={ing.costoAdquisicion || ""}
+                            onChange={(e) =>
+                              updateIngredient(
+                                ing.id,
+                                "costoAdquisicion",
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            placeholder="0.00"
+                            className="w-full text-xs pl-5 pr-1 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px]"
+                            step="0.01"
+                            min="0"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Unidad de Medida */}
+                      <div>
+                        <label className="text-[10px] text-slate-400 mb-0.5 block">
+                          Unidad
+                        </label>
+                        <select
+                          value={ing.unidadCompraId}
+                          onChange={(e) =>
+                            updateIngredient(
+                              ing.id,
+                              "unidadCompraId",
+                              e.target.value
+                            )
+                          }
+                          className="w-full text-xs py-2 px-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px] cursor-pointer"
+                        >
+                          <optgroup label="Peso">
+                            {allUnits
+                              .filter((u) => u.category === "weight")
+                              .map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.label}
+                                  {u.isCustom ? " *" : ""}
+                                </option>
+                              ))}
+                          </optgroup>
+                          <optgroup label="Volumen">
+                            {allUnits
+                              .filter((u) => u.category === "volume")
+                              .map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.label}
+                                  {u.isCustom ? " *" : ""}
+                                </option>
+                              ))}
+                          </optgroup>
+                        </select>
+                      </div>
+
+                      {/* Cantidad Utilizada */}
+                      <div>
+                        <label className="text-[10px] text-slate-400 mb-0.5 block">
+                          Usas ({unitSuffix})
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            value={ing.cantidadUtilizada || ""}
+                            onChange={(e) =>
+                              updateIngredient(
+                                ing.id,
+                                "cantidadUtilizada",
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            placeholder="0"
+                            className="w-full text-xs pl-2 pr-6 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px]"
+                            step="1"
+                            min="0"
+                          />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">
+                            {unitSuffix}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Fila 3: Costo calculado */}
+                    <div className="flex items-center justify-between px-2.5 py-1.5 bg-purple-50 rounded-lg border border-purple-100">
+                      <span className="text-[10px] text-purple-500 font-medium">
+                        Costo en tu producto:
+                      </span>
+                      <span className="text-xs font-bold text-purple-800">
+                        ${ing.costo.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* --- Unidades Personalizadas --- */}
+            <div className="mt-3 pt-3 border-t border-purple-200">
+              <button
+                onClick={() => setShowCustomUnitForm(!showCustomUnitForm)}
+                className="flex items-center gap-1.5 text-[11px] text-purple-500 hover:text-purple-700 font-medium transition-colors"
+              >
+                <Ruler size={12} />
+                {showCustomUnitForm ? "Cancelar" : "Crear unidad personalizada"}
+                {showCustomUnitForm ? (
+                  <ChevronUp size={12} />
+                ) : (
+                  <ChevronDown size={12} />
+                )}
+              </button>
+
+              {showCustomUnitForm && (
+                <div className="mt-2 p-3 bg-white rounded-xl border border-purple-100 space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[10px] text-slate-400 mb-0.5 block">
+                        Nombre
+                      </label>
+                      <input
+                        type="text"
+                        value={newUnitName}
+                        onChange={(e) => setNewUnitName(e.target.value)}
+                        placeholder="Ej: Saco 25kg"
+                        className="w-full text-xs px-2 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 outline-none focus:border-purple-400 min-h-[36px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 mb-0.5 block">
+                        Tipo
+                      </label>
+                      <select
+                        value={newUnitCategory}
+                        onChange={(e) =>
+                          setNewUnitCategory(e.target.value as UnitCategory)
+                        }
+                        className="w-full text-xs py-2 px-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 outline-none focus:border-purple-400 min-h-[36px] cursor-pointer"
+                      >
+                        <option value="weight">Peso (g)</option>
+                        <option value="volume">Volumen (ml)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 mb-0.5 block">
+                        Equivale a ({baseUnitLabel(newUnitCategory)})
+                      </label>
+                      <input
+                        type="number"
+                        value={newUnitFactor || ""}
+                        onChange={(e) =>
+                          setNewUnitFactor(parseFloat(e.target.value) || 0)
+                        }
+                        placeholder="25000"
+                        className="w-full text-xs px-2 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 outline-none focus:border-purple-400 min-h-[36px]"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
                   </div>
                   <button
-                    onClick={() => removeIngredient(ing.id)}
-                    className="p-2 text-slate-300 hover:text-red-500 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                    disabled={ingredientes.length <= 1}
+                    onClick={addCustomUnit}
+                    disabled={!newUnitName.trim() || newUnitFactor <= 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    <Trash2 size={16} />
+                    <Save size={12} />
+                    Guardar unidad
                   </button>
                 </div>
-              ))}
+              )}
+
+              {/* Lista de unidades custom */}
+              {customUnits.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {customUnits.map((u) => (
+                    <span
+                      key={u.id}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-purple-600 bg-purple-100 rounded-full"
+                    >
+                      {u.label} ({u.conversionFactor.toLocaleString()}{baseUnitLabel(u.category)})
+                      <button
+                        onClick={() => removeCustomUnit(u.id)}
+                        className="text-purple-400 hover:text-red-500 transition-colors"
+                      >
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

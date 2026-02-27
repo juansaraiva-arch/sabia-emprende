@@ -108,6 +108,21 @@ export default function MupaPanel() {
         </div>
       </div>
 
+      {/* ====== SIMULADOR DE RECARGOS ====== */}
+      <SimuladorRecargos
+        montoBase={simMontoBase}
+        setMontoBase={setSimMontoBase}
+        mesesMora={simMesesMora}
+        setMesesMora={setSimMesesMora}
+        tasaAnual={simTasaAnual}
+        setTasaAnual={setSimTasaAnual}
+        tasaTarde={simTasaTarde}
+        setTasaTarde={setSimTasaTarde}
+      />
+
+      {/* ====== MATRIZ MAESTRA DE SANCIONES ====== */}
+      <MatrizSanciones hasPublicidad={hasPublicidad} />
+
       {/* ====== SEMAFORO DE SUPERVIVENCIA ====== */}
       <SemaforoPanel simulatedNow={simulatedNow} declaracionEnBoveda={declaracionEnBoveda} />
 
@@ -148,23 +163,8 @@ export default function MupaPanel() {
         </div>
       </details>
 
-      {/* ====== SIMULADOR DE RECARGOS ====== */}
-      <SimuladorRecargos
-        montoBase={simMontoBase}
-        setMontoBase={setSimMontoBase}
-        mesesMora={simMesesMora}
-        setMesesMora={setSimMesesMora}
-        tasaAnual={simTasaAnual}
-        setTasaAnual={setSimTasaAnual}
-        tasaTarde={simTasaTarde}
-        setTasaTarde={setSimTasaTarde}
-      />
-
-      {/* ====== MATRIZ MAESTRA DE SANCIONES ====== */}
-      <MatrizSanciones hasPublicidad={hasPublicidad} />
-
       {/* ====== PUENTES DE ACCION ====== */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 justify-center">
         <a
           href="https://mupa.gob.pa/"
           target="_blank"

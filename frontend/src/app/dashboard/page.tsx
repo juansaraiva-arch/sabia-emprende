@@ -463,15 +463,14 @@ function ExecutiveSummaryWidget() {
 
   return (
     <div
-      className="my-3 w-full max-w-lg mx-auto rounded-2xl border-2 p-4 lg:p-5"
+      className="my-3 w-full max-w-lg mx-auto rounded-2xl border-2 p-4 lg:p-5 bg-white shadow-sm"
       style={{
-        backgroundColor: "rgba(197, 160, 89, 0.06)",
-        borderColor: "rgba(197, 160, 89, 0.25)",
+        borderColor: "rgba(26, 36, 47, 0.12)",
       }}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs lg:text-sm font-bold tracking-wide" style={{ color: GOLD }}>
+        <p className="text-xs lg:text-sm font-bold tracking-wide" style={{ color: NAVY }}>
           Tu Resumen Ejecutivo
         </p>
         {!editing ? (
@@ -521,14 +520,14 @@ function ExecutiveSummaryWidget() {
             </div>
 
             {/* Value / Label / Subtitle */}
-            <p className="text-sm lg:text-base font-extrabold leading-tight" style={{ color: GOLD }}>
+            <p className="text-sm lg:text-base font-extrabold leading-tight" style={{ color: NAVY }}>
               {slot.value}
             </p>
-            <p className="text-[10px] font-bold mt-0.5" style={{ color: "rgba(197, 160, 89, 0.7)" }}>
+            <p className="text-[10px] font-bold mt-0.5 text-slate-500">
               {slot.label}
             </p>
             {slot.subtitle && (
-              <p className="text-[9px] mt-0.5 leading-snug" style={{ color: "rgba(197, 160, 89, 0.5)" }}>
+              <p className="text-[9px] mt-0.5 leading-snug text-slate-400">
                 {slot.subtitle}
               </p>
             )}
@@ -651,9 +650,8 @@ function FormalizacionProgressWidget({ onNavigate }: { onNavigate: () => void })
   return (
     <button
       onClick={onNavigate}
-      className="my-3 w-full max-w-md mx-auto block rounded-2xl border-2 p-4 lg:p-5 transition-all hover:scale-[1.02] hover:border-opacity-60"
+      className="my-3 w-full max-w-md mx-auto block rounded-2xl border-2 p-4 lg:p-5 transition-all hover:scale-[1.02] hover:border-opacity-60 bg-white shadow-sm"
       style={{
-        backgroundColor: "rgba(197, 160, 89, 0.1)",
         borderColor: "rgba(197, 160, 89, 0.35)",
       }}
     >
@@ -665,7 +663,7 @@ function FormalizacionProgressWidget({ onNavigate }: { onNavigate: () => void })
           <Rocket size={22} style={{ color: GOLD }} />
         </div>
         <div className="flex-1 min-w-0 text-left">
-          <p className="text-xs lg:text-sm font-bold leading-tight" style={{ color: GOLD }}>
+          <p className="text-xs lg:text-sm font-bold leading-tight text-slate-700">
             {status.percentComplete === 100
               ? "Empresa Formalizada!"
               : status.started
@@ -696,7 +694,7 @@ function FormalizacionProgressWidget({ onNavigate }: { onNavigate: () => void })
 }
 
 // ============================================
-// HUB VIEW — Organigrama Empresarial (Dark Theme)
+// HUB VIEW — Organigrama Empresarial (Light Theme)
 // ============================================
 
 function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onSelectModule: (section: Section) => void; onOpenAsistente: () => void; onNavigateToFabrica: () => void; }) {
@@ -758,19 +756,18 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
   const NAVY = "#1A242F";
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-[#1A242F] via-[#1A242F] to-[#0F171E]">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-100">
       {/* Decorative gold accent lines */}
-      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#C5A059] to-transparent opacity-40" />
-      <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#C5A059] to-transparent opacity-40" />
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#C5A059] to-transparent opacity-60" />
+      <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#C5A059] to-transparent opacity-60" />
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col items-center px-4 pt-8 pb-20 lg:pt-12 lg:pb-24 max-w-5xl mx-auto">
 
         {/* ===== NIVEL 0: EMPRESA DEL USUARIO (Nodo editable) ===== */}
         <div
-          className="relative rounded-2xl border-2 p-5 lg:p-6 w-full max-w-sm text-center cursor-pointer transition-all hover:border-opacity-60"
+          className="relative rounded-2xl border-2 p-5 lg:p-6 w-full max-w-sm text-center cursor-pointer transition-all hover:border-opacity-60 bg-white shadow-sm"
           style={{
-            backgroundColor: "rgba(197, 160, 89, 0.08)",
             borderColor: "rgba(197, 160, 89, 0.3)",
           }}
           onClick={() => { if (!editingCompany) { setTempName(companyName); setTempRubro(companyRubro); setEditingCompany(true); } }}
@@ -783,7 +780,7 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
                   src={companyLogo}
                   alt="Logo empresa"
                   className="w-16 h-16 lg:w-20 lg:h-20 rounded-xl object-contain border-2"
-                  style={{ borderColor: "rgba(197, 160, 89, 0.3)", backgroundColor: "rgba(255,255,255,0.05)" }}
+                  style={{ borderColor: "rgba(197, 160, 89, 0.3)", backgroundColor: "rgba(255,255,255,0.8)" }}
                 />
                 <button
                   onClick={(e) => { e.stopPropagation(); logoInputRef.current?.click(); }}
@@ -822,7 +819,7 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
                 placeholder="Nombre de su Empresa"
                 autoFocus
                 className="w-full text-center text-sm font-bold bg-transparent border-b-2 py-1 outline-none placeholder-opacity-40"
-                style={{ color: GOLD, borderColor: "rgba(197, 160, 89, 0.4)", caretColor: GOLD }}
+                style={{ color: NAVY, borderColor: "rgba(197, 160, 89, 0.4)", caretColor: GOLD }}
                 onKeyDown={(e) => e.key === "Enter" && handleSaveCompany()}
               />
               {/* Rubro selector */}
@@ -831,14 +828,14 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
                 onChange={(e) => setTempRubro(e.target.value)}
                 className="w-full text-center text-[11px] font-semibold bg-transparent border rounded-lg py-1.5 outline-none appearance-none cursor-pointer"
                 style={{
-                  color: tempRubro ? GOLD : "rgba(197, 160, 89, 0.4)",
+                  color: tempRubro ? NAVY : "#94a3b8",
                   borderColor: "rgba(197, 160, 89, 0.3)",
-                  backgroundColor: "rgba(197, 160, 89, 0.05)",
+                  backgroundColor: "rgba(255, 255, 255, 0.6)",
                 }}
               >
-                <option value="" style={{ backgroundColor: NAVY, color: "rgba(197, 160, 89, 0.5)" }}>Seleccionar rubro...</option>
+                <option value="" style={{ backgroundColor: "white", color: "#94a3b8" }}>Seleccionar rubro...</option>
                 {Object.entries(RUBROS_MAP).map(([key, label]) => (
-                  <option key={key} value={key} style={{ backgroundColor: NAVY, color: GOLD }}>{label}</option>
+                  <option key={key} value={key} style={{ backgroundColor: "white", color: NAVY }}>{label}</option>
                 ))}
               </select>
               <button
@@ -854,7 +851,7 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
               <p className="text-[10px] font-medium tracking-widest uppercase" style={{ color: "rgba(197, 160, 89, 0.5)" }}>
                 MI EMPRESA
               </p>
-              <p className="text-sm lg:text-base font-bold mt-0.5" style={{ color: GOLD }}>
+              <p className="text-sm lg:text-base font-bold mt-0.5" style={{ color: NAVY }}>
                 {companyName || "Nombre de su Empresa"}
               </p>
               {companyRubro && (
@@ -891,9 +888,8 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
 
         {/* ===== NIVEL 1: MI DIRECTOR FINANCIERO PTY ===== */}
         <div
-          className="relative rounded-2xl border-2 p-6 lg:p-8 w-full max-w-md text-center"
+          className="relative rounded-2xl border-2 p-6 lg:p-8 w-full max-w-md text-center bg-white shadow-sm"
           style={{
-            backgroundColor: "rgba(197, 160, 89, 0.06)",
             borderColor: "rgba(197, 160, 89, 0.25)",
           }}
         >
@@ -901,15 +897,14 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
             <MidfLogo size={80} iconOnly />
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight font-heading"
-            style={{ color: GOLD }}>
+            style={{ color: NAVY }}>
             Mi Director Financiero
           </h1>
           <p className="text-lg sm:text-xl font-bold tracking-widest mt-1"
-            style={{ color: GOLD, opacity: 0.85 }}>
+            style={{ color: GOLD }}>
             PTY
           </p>
-          <p className="text-xs sm:text-sm mt-2 font-semibold tracking-wide"
-            style={{ color: GOLD, opacity: 0.6 }}>
+          <p className="text-xs sm:text-sm mt-2 font-semibold tracking-wide text-slate-500">
             Tu Aliado Estrat&eacute;gico
           </p>
         </div>
@@ -931,9 +926,8 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
             {/* Mi Asistente node — sits right after the line, no overlap */}
             <button
               onClick={onOpenAsistente}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 transition-all hover:scale-105 group shrink-0"
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 transition-all hover:scale-105 group shrink-0 bg-white shadow-sm"
               style={{
-                backgroundColor: "rgba(197, 160, 89, 0.08)",
                 borderColor: "rgba(197, 160, 89, 0.3)",
               }}
             >
@@ -941,8 +935,8 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
                 <Bot size={22} style={{ color: GOLD }} />
               </div>
               <div className="text-left">
-                <p className="text-sm font-bold" style={{ color: GOLD }}>Mi Asistente</p>
-                <p className="text-[10px]" style={{ color: "rgba(197, 160, 89, 0.5)" }}>IA Chatbot</p>
+                <p className="text-sm font-bold" style={{ color: NAVY }}>Mi Asistente</p>
+                <p className="text-[10px] text-slate-400">IA Chatbot</p>
               </div>
             </button>
           </div>
@@ -963,9 +957,8 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
           {/* Mi Asistente node (mobile — centered) */}
           <button
             onClick={onOpenAsistente}
-            className="flex items-center gap-3 px-5 py-3 rounded-xl border-2 transition-all hover:scale-105"
+            className="flex items-center gap-3 px-5 py-3 rounded-xl border-2 transition-all hover:scale-105 bg-white shadow-sm"
             style={{
-              backgroundColor: "rgba(197, 160, 89, 0.08)",
               borderColor: "rgba(197, 160, 89, 0.3)",
             }}
           >
@@ -973,8 +966,8 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
               <Bot size={22} style={{ color: GOLD }} />
             </div>
             <div className="text-left">
-              <p className="text-sm font-bold" style={{ color: GOLD }}>Mi Asistente</p>
-              <p className="text-[10px]" style={{ color: "rgba(197, 160, 89, 0.5)" }}>IA Chatbot</p>
+              <p className="text-sm font-bold" style={{ color: NAVY }}>Mi Asistente</p>
+              <p className="text-[10px] text-slate-400">IA Chatbot</p>
             </div>
           </button>
 
@@ -987,31 +980,30 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
           {/* Mi Contador */}
           <button
             onClick={() => onSelectModule("datos")}
-            className="group relative rounded-2xl border-2 p-5 lg:p-6 text-left overflow-hidden transition-all hover:-translate-y-1 hover:border-opacity-60"
+            className="group relative rounded-2xl border-2 p-5 lg:p-6 text-left overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg bg-white"
             style={{
-              backgroundColor: "rgba(197, 160, 89, 0.05)",
-              borderColor: "rgba(197, 160, 89, 0.15)",
+              borderColor: "rgba(197, 160, 89, 0.25)",
             }}
           >
-            <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GOLD }} />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500" />
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 rounded-xl" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
-                <BookOpen size={24} style={{ color: GOLD }} />
+              <div className="p-2.5 rounded-xl bg-emerald-50">
+                <BookOpen size={24} className="text-emerald-600" />
               </div>
-              <h3 className="text-base lg:text-lg font-bold" style={{ color: GOLD }}>Mi Contador</h3>
+              <h3 className="text-base lg:text-lg font-bold" style={{ color: NAVY }}>Mi Contador</h3>
             </div>
 
             <div className="space-y-2.5 mb-4">
-              <div className="flex items-center gap-2 text-sm text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
                 <CheckSquare size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Impuestos al d&iacute;a</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
                 <BookOpen size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Libro Diario &amp; Mayor</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
                 <PenLine size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Registro por voz y foto</span>
               </div>
@@ -1039,10 +1031,9 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
           {/* Mis Finanzas */}
           <button
             onClick={() => onSelectModule("negocio")}
-            className="group relative rounded-2xl border-2 p-5 lg:p-6 text-left overflow-hidden transition-all hover:-translate-y-1 hover:border-opacity-60"
+            className="group relative rounded-2xl border-2 p-5 lg:p-6 text-left overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg bg-white"
             style={{
-              backgroundColor: "rgba(197, 160, 89, 0.05)",
-              borderColor: "rgba(197, 160, 89, 0.15)",
+              borderColor: "rgba(197, 160, 89, 0.25)",
             }}
           >
             <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GOLD }} />
@@ -1051,19 +1042,19 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
               <div className="p-2.5 rounded-xl" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
                 <BarChart3 size={24} style={{ color: GOLD }} />
               </div>
-              <h3 className="text-base lg:text-lg font-bold" style={{ color: GOLD }}>Mis Finanzas</h3>
+              <h3 className="text-base lg:text-lg font-bold" style={{ color: NAVY }}>Mis Finanzas</h3>
             </div>
 
             <div className="space-y-2.5 mb-4">
-              <div className="flex items-center gap-2 text-sm text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
                 <TrendingUp size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Cascada de Rentabilidad</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
                 <BarChart3 size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Punto de Equilibrio</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
                 <Gem size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Valoraci&oacute;n de Empresa</span>
               </div>
@@ -1089,34 +1080,33 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
           {/* Mi Empresa (Doc. Legales) */}
           <button
             onClick={() => onSelectModule("legal")}
-            className="group relative rounded-2xl border-2 p-5 lg:p-6 text-left overflow-hidden transition-all hover:-translate-y-1 hover:border-opacity-60"
+            className="group relative rounded-2xl border-2 p-5 lg:p-6 text-left overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg bg-white"
             style={{
-              backgroundColor: "rgba(197, 160, 89, 0.05)",
-              borderColor: "rgba(197, 160, 89, 0.15)",
+              borderColor: "rgba(197, 160, 89, 0.25)",
             }}
           >
-            <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GOLD }} />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-violet-500" />
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 rounded-xl" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
-                <Shield size={24} style={{ color: GOLD }} />
+              <div className="p-2.5 rounded-xl bg-violet-50">
+                <Shield size={24} className="text-violet-600" />
               </div>
               <div>
-                <h3 className="text-base lg:text-lg font-bold" style={{ color: GOLD }}>Mi Empresa</h3>
+                <h3 className="text-base lg:text-lg font-bold" style={{ color: NAVY }}>Mi Empresa</h3>
                 <p className="text-[10px] text-slate-500">Doc. Legales</p>
               </div>
             </div>
 
             <div className="space-y-2.5 mb-4">
-              <div className="flex items-center gap-2 text-sm text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
                 <Shield size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>B&oacute;veda KYC</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
                 <Scale size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Vigilante Legal</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
                 <FileText size={13} style={{ color: GOLD, opacity: 0.6 }} />
                 <span>Traductor Legal</span>
               </div>
@@ -1148,30 +1138,29 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
             {/* Mi Contador — mobile */}
             <button
               onClick={() => onSelectModule("datos")}
-              className="group relative rounded-2xl border-2 p-4 text-left overflow-hidden transition-all active:scale-[0.98] shrink-0"
+              className="group relative rounded-2xl border-2 p-4 text-left overflow-hidden transition-all active:scale-[0.98] shrink-0 bg-white shadow-sm"
               style={{
                 width: "260px",
-                backgroundColor: "rgba(197, 160, 89, 0.05)",
-                borderColor: "rgba(197, 160, 89, 0.15)",
+                borderColor: "rgba(197, 160, 89, 0.25)",
               }}
             >
-              <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GOLD }} />
+              <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500" />
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="p-2 rounded-xl" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
-                  <BookOpen size={20} style={{ color: GOLD }} />
+                <div className="p-2 rounded-xl bg-emerald-50">
+                  <BookOpen size={20} className="text-emerald-600" />
                 </div>
-                <h3 className="text-sm font-bold" style={{ color: GOLD }}>Mi Contador</h3>
+                <h3 className="text-sm font-bold" style={{ color: NAVY }}>Mi Contador</h3>
               </div>
               <div className="space-y-1.5 mb-3">
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
                   <CheckSquare size={11} style={{ color: GOLD, opacity: 0.6 }} />
                   <span>Impuestos al d&iacute;a</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
                   <BookOpen size={11} style={{ color: GOLD, opacity: 0.6 }} />
                   <span>Libro Diario &amp; Mayor</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
                   <PenLine size={11} style={{ color: GOLD, opacity: 0.6 }} />
                   <span>Registro por voz y foto</span>
                 </div>
@@ -1185,11 +1174,10 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
             {/* Mis Finanzas — mobile */}
             <button
               onClick={() => onSelectModule("negocio")}
-              className="group relative rounded-2xl border-2 p-4 text-left overflow-hidden transition-all active:scale-[0.98] shrink-0"
+              className="group relative rounded-2xl border-2 p-4 text-left overflow-hidden transition-all active:scale-[0.98] shrink-0 bg-white shadow-sm"
               style={{
                 width: "260px",
-                backgroundColor: "rgba(197, 160, 89, 0.05)",
-                borderColor: "rgba(197, 160, 89, 0.15)",
+                borderColor: "rgba(197, 160, 89, 0.25)",
               }}
             >
               <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GOLD }} />
@@ -1197,18 +1185,18 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
                 <div className="p-2 rounded-xl" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
                   <BarChart3 size={20} style={{ color: GOLD }} />
                 </div>
-                <h3 className="text-sm font-bold" style={{ color: GOLD }}>Mis Finanzas</h3>
+                <h3 className="text-sm font-bold" style={{ color: NAVY }}>Mis Finanzas</h3>
               </div>
               <div className="space-y-1.5 mb-3">
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
                   <TrendingUp size={11} style={{ color: GOLD, opacity: 0.6 }} />
                   <span>Cascada de Rentabilidad</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
                   <BarChart3 size={11} style={{ color: GOLD, opacity: 0.6 }} />
                   <span>Punto de Equilibrio</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
                   <Gem size={11} style={{ color: GOLD, opacity: 0.6 }} />
                   <span>Valoraci&oacute;n de Empresa</span>
                 </div>
@@ -1222,33 +1210,32 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
             {/* Mi Empresa — mobile */}
             <button
               onClick={() => onSelectModule("legal")}
-              className="group relative rounded-2xl border-2 p-4 text-left overflow-hidden transition-all active:scale-[0.98] shrink-0"
+              className="group relative rounded-2xl border-2 p-4 text-left overflow-hidden transition-all active:scale-[0.98] shrink-0 bg-white shadow-sm"
               style={{
                 width: "260px",
-                backgroundColor: "rgba(197, 160, 89, 0.05)",
-                borderColor: "rgba(197, 160, 89, 0.15)",
+                borderColor: "rgba(197, 160, 89, 0.25)",
               }}
             >
-              <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GOLD }} />
+              <div className="absolute top-0 left-0 right-0 h-1 bg-violet-500" />
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="p-2 rounded-xl" style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}>
-                  <Shield size={20} style={{ color: GOLD }} />
+                <div className="p-2 rounded-xl bg-violet-50">
+                  <Shield size={20} className="text-violet-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold" style={{ color: GOLD }}>Mi Empresa</h3>
+                  <h3 className="text-sm font-bold" style={{ color: NAVY }}>Mi Empresa</h3>
                   <p className="text-[9px] text-slate-500">Doc. Legales</p>
                 </div>
               </div>
               <div className="space-y-1.5 mb-3">
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
                   <Shield size={11} style={{ color: GOLD, opacity: 0.6 }} />
                   <span>B&oacute;veda KYC</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
                   <Scale size={11} style={{ color: GOLD, opacity: 0.6 }} />
                   <span>Vigilante Legal</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
                   <FileText size={11} style={{ color: GOLD, opacity: 0.6 }} />
                   <span>Traductor Legal</span>
                 </div>
@@ -1262,7 +1249,7 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
         </div>
 
         {/* Footer */}
-        <p className="mt-10 text-xs text-center" style={{ color: "rgba(197, 160, 89, 0.35)" }}>
+        <p className="mt-10 text-xs text-center text-slate-400">
           Mi Director Financiero PTY v1.0 &mdash; Plataforma de Alta Direcci&oacute;n para PYMEs paname&ntilde;as
         </p>
       </div>
@@ -1309,6 +1296,27 @@ export default function Dashboard() {
   const [budgetSaving, setBudgetSaving] = useState(false);
 
   const societyId = "demo-society-001";
+
+  // White-label branding (empresa del usuario) — reused from HubView
+  const [companyLogo, setCompanyLogo] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("midf_company_logo") || "";
+    return "";
+  });
+  const [companyName, setCompanyName] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("midf_company_name") || "";
+    return "";
+  });
+  // Sync when returning from HubView edit
+  React.useEffect(() => {
+    const sync = () => {
+      setCompanyLogo(localStorage.getItem("midf_company_logo") || "");
+      setCompanyName(localStorage.getItem("midf_company_name") || "");
+    };
+    window.addEventListener("storage", sync);
+    // Also sync on view changes
+    sync();
+    return () => window.removeEventListener("storage", sync);
+  }, [dashboardView]);
 
   const handleSelectModule = (section: Section) => {
     setActiveSection(section);
@@ -1622,7 +1630,7 @@ export default function Dashboard() {
     <main className="min-h-screen bg-slate-50">
       {/* ====== TOP BAR ====== */}
       <header className="bg-white border-b border-slate-200 px-4 py-3 lg:px-6 lg:py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between relative">
           <div className="flex items-center gap-3">
             {/* Back to Hub button */}
             <button
@@ -1645,6 +1653,16 @@ export default function Dashboard() {
                 </p>
               </div>
             </button>
+          </div>
+
+          {/* White-label branding — centro del header */}
+          <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-2">
+            {companyLogo ? (
+              <img src={companyLogo} alt="" className="h-8 w-8 rounded-lg object-contain border border-slate-200" />
+            ) : (
+              <span className="text-[10px] text-slate-300 italic border border-dashed border-slate-200 rounded-lg px-3 py-1.5">Tu Logo Aqui</span>
+            )}
+            {companyName && <span className="text-xs font-bold text-slate-600">{companyName}</span>}
           </div>
 
           <div className="flex items-center gap-2">
@@ -1767,6 +1785,40 @@ export default function Dashboard() {
         {/* SECCION 2: MIS FINANZAS */}
         {activeSection === "negocio" && (
           <div className="space-y-4">
+            {/* ====== TAB BAR HORIZONTAL PERSISTENTE ====== */}
+            <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
+              {([
+                { key: "cascada" as NegocioTab, label: "Cascada", icon: <TrendingUp size={14} /> },
+                { key: "semaforo" as NegocioTab, label: "Semaforo", icon: <Activity size={14} /> },
+                { key: "lab" as NegocioTab, label: "Lab Precios", icon: <FlaskConical size={14} /> },
+                { key: "nomina" as NegocioTab, label: "Nomina", icon: <Wallet size={14} /> },
+              ]).map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => { setActiveNegocioTab(t.key); setShowFinanzasGrid(false); }}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+                    !showFinanzasGrid && activeNegocioTab === t.key
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-500 hover:bg-slate-50"
+                  }`}
+                >
+                  {t.icon}
+                  {t.label}
+                </button>
+              ))}
+              <button
+                onClick={() => setShowFinanzasGrid(true)}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+                  showFinanzasGrid
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-50"
+                }`}
+              >
+                <SlidersHorizontal size={14} />
+                Mas Herramientas
+              </button>
+            </div>
+
             {!hasData && (
               <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-3">
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-100 mx-auto">
@@ -1779,7 +1831,11 @@ export default function Dashboard() {
               </div>
             )}
             {diagnosis && (
-              <div className="bg-slate-800 text-white p-4 lg:p-6 rounded-2xl shadow-lg border-l-8 border-amber-400">
+              <div className="bg-slate-800 text-white p-4 lg:p-6 rounded-2xl shadow-lg border-l-8 border-amber-400 relative overflow-hidden"
+                   style={{ animation: "veredicto-pulse 3s ease-in-out infinite" }}>
+                {/* Shimmer bar */}
+                <div className="absolute top-0 left-0 right-0 h-[2px]"
+                     style={{ background: "linear-gradient(90deg, transparent, #C5A059, transparent)", backgroundSize: "200% 100%", animation: "shimmer 3s linear infinite" }} />
                 <h3 className="text-base lg:text-lg font-bold mb-1">Veredicto: {diagnosis.verdict}</h3>
                 <p className="text-sm text-slate-300">{diagnosis.detail}</p>
                 <p className="text-xs text-slate-400 mt-1">Motor: {diagnosis.motor?.description}</p>
@@ -1805,13 +1861,6 @@ export default function Dashboard() {
               />
             ) : (
             <>
-            <button
-              onClick={() => setShowFinanzasGrid(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-500 hover:text-blue-600 bg-white hover:bg-blue-50 border border-slate-200 rounded-full transition-colors mb-3"
-            >
-              <ArrowLeft size={14} />
-              Volver al Centro de Mando
-            </button>
 
             <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6 min-h-[400px]">
               {activeNegocioTab === "cascada" && (
@@ -1963,69 +2012,27 @@ export default function Dashboard() {
         {/* SECCION 3: MI EMPRESA - DOC LEGALES */}
         {activeSection === "legal" && (
           <div className="space-y-4">
-            {showLegalGrid ? (
-              <ModuleCardGrid
-                sections={legalGridSections}
-                onSelect={(key) => {
-                  setActiveLegalTab(key as LegalTab);
-                  setShowLegalGrid(false);
-                }}
-              />
-            ) : (
-            <>
-            <button
-              onClick={() => setShowLegalGrid(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-500 hover:text-violet-600 bg-white hover:bg-violet-50 border border-slate-200 rounded-full transition-colors"
-            >
-              <ArrowLeft size={14} />
-              Volver al Centro de Mando
-            </button>
-
-            {/* Tab bar: 2 principales + 3 secundarias */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Tabs principales */}
-              <button
-                onClick={() => setActiveLegalTab("fabrica_empresa")}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeLegalTab === "fabrica_empresa"
-                    ? "bg-emerald-100 text-emerald-700 ring-2 ring-emerald-300"
-                    : "bg-white text-slate-500 hover:bg-emerald-50 border border-slate-200"
-                }`}
-              >
-                <Rocket size={14} />
-                Constitucion de mi Empresa
-              </button>
-              <button
-                onClick={() => setActiveLegalTab("boveda")}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeLegalTab === "boveda"
-                    ? "bg-violet-100 text-violet-700 ring-2 ring-violet-300"
-                    : "bg-white text-slate-500 hover:bg-violet-50 border border-slate-200"
-                }`}
-              >
-                <Shield size={14} />
-                Boveda KYC
-              </button>
-              {/* Separador */}
-              <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block" />
-              {/* Tabs secundarias con colores vivos */}
+            {/* ====== TAB BAR HORIZONTAL UNIFICADO ====== */}
+            <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
               {([
-                { key: "mupa" as LegalTab, label: "MUPA", icon: <Landmark size={12} />, activeClass: "bg-red-100 text-red-700 ring-1 ring-red-300", hoverClass: "text-red-400 hover:bg-red-50" },
-                { key: "vigilante" as LegalTab, label: "Vigilante", icon: <Scale size={12} />, activeClass: "bg-amber-100 text-amber-700 ring-1 ring-amber-300", hoverClass: "text-amber-500 hover:bg-amber-50" },
-                { key: "auditoria" as LegalTab, label: "Auditoria", icon: <History size={12} />, activeClass: "bg-blue-100 text-blue-700 ring-1 ring-blue-300", hoverClass: "text-blue-400 hover:bg-blue-50" },
-                { key: "libro_actas" as LegalTab, label: "Actas", icon: <ClipboardList size={12} />, activeClass: "bg-slate-200 text-slate-700 ring-1 ring-slate-300", hoverClass: "text-slate-400 hover:bg-slate-100" },
+                { key: "fabrica_empresa" as LegalTab, label: "Constitucion", icon: <Rocket size={14} />, activeColor: "bg-emerald-600 text-white" },
+                { key: "boveda" as LegalTab, label: "Boveda KYC", icon: <Shield size={14} />, activeColor: "bg-violet-600 text-white" },
+                { key: "mupa" as LegalTab, label: "MUPA", icon: <Landmark size={14} />, activeColor: "bg-red-600 text-white" },
+                { key: "vigilante" as LegalTab, label: "Vigilante", icon: <Scale size={14} />, activeColor: "bg-amber-600 text-white" },
+                { key: "auditoria" as LegalTab, label: "Auditoria", icon: <History size={14} />, activeColor: "bg-blue-600 text-white" },
+                { key: "libro_actas" as LegalTab, label: "Actas", icon: <ClipboardList size={14} />, activeColor: "bg-slate-600 text-white" },
               ]).map((t) => (
                 <button
                   key={t.key}
-                  onClick={() => setActiveLegalTab(t.key)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                    activeLegalTab === t.key
-                      ? t.activeClass
-                      : t.hoverClass
+                  onClick={() => { setActiveLegalTab(t.key); setShowLegalGrid(false); }}
+                  className={`flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap min-h-[44px] ${
+                    !showLegalGrid && activeLegalTab === t.key
+                      ? `${t.activeColor} shadow-sm`
+                      : "text-slate-500 hover:bg-slate-50"
                   }`}
                 >
                   {t.icon}
-                  <span>{t.label}</span>
+                  {t.label}
                 </button>
               ))}
             </div>
@@ -2046,8 +2053,6 @@ export default function Dashboard() {
               <p className="text-xs text-slate-400 mb-3">Pega cualquier clausula legal y te la explicamos en espanol sencillo.</p>
               <LegalSimplifierButton />
             </div>
-            </>
-            )}
           </div>
         )}
       </div>

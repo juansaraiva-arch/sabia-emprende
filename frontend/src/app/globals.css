@@ -13,3 +13,17 @@ body {
 h1, h2, h3, .font-heading {
   font-family: var(--font-heading), 'Playfair Display', Georgia, serif;
 }
+
+/* ============================================
+   Animations — Veredicto & Shimmer
+   ============================================ */
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes veredicto-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(197, 160, 89, 0.4); }
+  50% { box-shadow: 0 0 20px 4px rgba(197, 160, 89, 0.15); }
+}

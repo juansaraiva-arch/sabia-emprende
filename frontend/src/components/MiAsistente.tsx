@@ -326,7 +326,7 @@ export default function MiAsistente({ societyId, onResult, forceOpen, onClose, h
       {!isOpen && !hideButton && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-[88px] lg:bottom-6 right-4 lg:right-6 z-[60] flex items-center gap-2.5 pl-2.5 pr-4 py-2 rounded-2xl font-bold text-sm hover:scale-105 active:scale-95 transition-all group"
+          className="fixed bottom-[120px] lg:bottom-8 right-5 lg:right-8 z-[60] flex items-center gap-2.5 pl-2.5 pr-4 py-2.5 rounded-2xl font-bold text-sm hover:scale-105 active:scale-95 transition-all group"
           style={{
             backgroundColor: "#1A242F",
             color: "#C5A059",

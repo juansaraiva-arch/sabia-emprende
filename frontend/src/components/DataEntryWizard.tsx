@@ -544,7 +544,7 @@ export default function DataEntryWizard({
       )}
 
       {/* ====== FLOATING AI BUTTONS ====== */}
-      <div className="fixed bottom-[148px] lg:bottom-6 right-4 flex flex-col gap-3 z-40">
+      <div className="fixed bottom-[180px] lg:bottom-8 right-5 flex flex-col gap-3 z-40">
         <button
           onClick={handleToggleTextInput}
           disabled={isProcessing}

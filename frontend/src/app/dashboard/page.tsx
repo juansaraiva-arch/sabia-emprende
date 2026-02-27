@@ -268,7 +268,7 @@ function _getAvailableMetrics(): MetricOption[] {
     },
     {
       metricKey: "formalizacion",
-      label: "Formalizacion S.E.",
+      label: "Constitucion S.E.",
       iconKey: "rocket",
       colorBg: "rgba(168, 85, 247, 0.12)",
       colorIcon: "#a855f7",
@@ -669,8 +669,8 @@ function FormalizacionProgressWidget({ onNavigate }: { onNavigate: () => void })
             {status.percentComplete === 100
               ? "Empresa Formalizada!"
               : status.started
-                ? `Formalizacion S.E.: ${status.percentComplete}% Completado`
-                : "Formaliza tu Sociedad de Emprendimiento"}
+                ? `Convierte tu idea en una Sociedad de Emprendimiento — ${status.percentComplete}% Completado`
+                : "Convierte tu idea en una Sociedad de Emprendimiento"}
           </p>
           <div className="flex items-center gap-2 mt-1.5">
             <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: "rgba(197, 160, 89, 0.2)" }}>
@@ -699,7 +699,7 @@ function FormalizacionProgressWidget({ onNavigate }: { onNavigate: () => void })
 // HUB VIEW — Organigrama Empresarial (Dark Theme)
 // ============================================
 
-function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onSelectModule: (section: Section) => void; onOpenAsistente: () => void; onNavigateToFabrica: () => void }) {
+function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onSelectModule: (section: Section) => void; onOpenAsistente: () => void; onNavigateToFabrica: () => void; }) {
   // Company info (localStorage temporal, luego Supabase)
   const [companyName, setCompanyName] = React.useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("midf_company_name") || "";
@@ -1287,7 +1287,7 @@ export default function Dashboard() {
   const [showLegalGrid, setShowLegalGrid] = useState(true);
   const [showContabilidadGrid, setShowContabilidadGrid] = useState(true);
 
-  // Smart Routing: show welcome popup on Fabrica de Empresa when user came from onboarding "NO"
+  // Smart Routing: show welcome popup on Constitucion de mi Empresa when user came from onboarding "NO"
   const [showFabricaWelcome, setShowFabricaWelcome] = useState(false);
 
   const [currentRecord, setCurrentRecord] = useState<FinancialRecord | null>(null);
@@ -1339,7 +1339,7 @@ export default function Dashboard() {
     }
   };
 
-  // Upload file from FabricaEmpresa paso → Supabase Storage (misma logica que LegalVault)
+  // Upload file from Constitucion de mi Empresa paso → Supabase Storage (misma logica que LegalVault)
   const handleFabricaFileUpload = async (file: File, category: string) => {
     const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
@@ -1545,7 +1545,7 @@ export default function Dashboard() {
     {
       title: "Ruta de Formalizacion",
       cards: [
-        { key: "fabrica_empresa", label: "Fabrica de Empresa (Ruta S.E.)", icon: <Rocket size={22} />, tooltip: "Ruta paso a paso para formalizar tu Sociedad de Emprendimiento", color: "bg-emerald-600" },
+        { key: "fabrica_empresa", label: "Constitucion de mi Empresa", icon: <Rocket size={22} />, tooltip: "Ruta paso a paso para constituir tu Sociedad de Emprendimiento", color: "bg-emerald-600" },
         { key: "boveda", label: "Boveda KYC (Debida Diligencia)", icon: <Shield size={22} />, tooltip: "Almacenamiento permanente de documentos legales", color: "bg-violet-600" },
       ],
     },
@@ -1585,7 +1585,7 @@ export default function Dashboard() {
         onComplete={(routeTo) => {
           setSetupComplete(true);
           if (routeTo === "fabrica_empresa") {
-            // Smart Routing: NO tiene empresa → Mi Empresa → Fábrica de Empresa con welcome popup
+            // Smart Routing: NO tiene empresa → Mi Empresa → Constitucion de mi Empresa con welcome popup
             setActiveSection("legal");
             setActiveLegalTab("fabrica_empresa");
             setShowLegalGrid(false);
@@ -1978,7 +1978,7 @@ export default function Dashboard() {
                 }`}
               >
                 <Rocket size={14} />
-                Fabrica de Empresa
+                Constitucion de mi Empresa
               </button>
               <button
                 onClick={() => setActiveLegalTab("boveda")}
@@ -2016,7 +2016,7 @@ export default function Dashboard() {
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6 min-h-[400px]">
-              {activeLegalTab === "fabrica_empresa" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Fabrica de Empresa — Ruta S.E.</h2><FabricaEmpresa onDocumentUploaded={handleDocumentUploaded} onFileUpload={handleFabricaFileUpload} showWelcome={showFabricaWelcome} /></div>)}
+              {activeLegalTab === "fabrica_empresa" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Constitucion de mi Empresa — Ruta S.E.</h2><FabricaEmpresa onDocumentUploaded={handleDocumentUploaded} onFileUpload={handleFabricaFileUpload} showWelcome={showFabricaWelcome} /></div>)}
               {activeLegalTab === "boveda" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Boveda KYC — Debida Diligencia</h2><LegalVault onDocumentUploaded={handleDocumentUploaded} /></div>)}
               {activeLegalTab === "mupa" && (<div><h2 className="text-lg lg:text-xl font-bold text-red-800 mb-4">MUPA — Inteligencia Fiscal Municipal</h2><MupaPanel /></div>)}
               {activeLegalTab === "vigilante" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Vigilante Legal: Alertas de Cumplimiento</h2><WatchdogDashboard /></div>)}

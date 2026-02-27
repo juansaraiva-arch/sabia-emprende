@@ -145,7 +145,7 @@ export default function FabricaEmpresa({ onDocumentUploaded, onFileUpload, showW
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-800">
-                Fabrica de Empresa — Ruta S.E.
+                Constitucion de mi Empresa — Ruta S.E.
               </h3>
               <p className="text-xs text-slate-500">
                 Sociedad de Emprendimiento (Ley 186 de 2020)

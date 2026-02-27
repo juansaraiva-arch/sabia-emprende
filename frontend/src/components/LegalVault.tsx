@@ -208,7 +208,7 @@ export default function LegalVault({ onDocumentUploaded }: { onDocumentUploaded?
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const [fabricaSyncEvents, setFabricaSyncEvents] = useState<DocSyncEvent[]>([]);
 
-  // Load sync events from Fabrica de Empresa
+  // Load sync events from Constitucion de mi Empresa
   useEffect(() => {
     const events = getSyncEventsFromSource("fabrica");
     setFabricaSyncEvents(events);
@@ -399,13 +399,13 @@ export default function LegalVault({ onDocumentUploaded }: { onDocumentUploaded?
         </div>
       </div>
 
-      {/* ====== SYNC DESDE FABRICA DE EMPRESA ====== */}
+      {/* ====== SYNC DESDE CONSTITUCION DE MI EMPRESA ====== */}
       {fabricaSyncEvents.length > 0 && (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 space-y-2">
           <div className="flex items-center gap-2 mb-1">
             <Rocket size={16} className="text-emerald-600" />
             <h4 className="text-xs font-bold text-emerald-700">
-              Documentos sincronizados desde Fabrica de Empresa
+              Documentos sincronizados desde Constitucion de mi Empresa
             </h4>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600">
               {fabricaSyncEvents.length}

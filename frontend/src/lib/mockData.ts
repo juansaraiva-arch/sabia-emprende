@@ -65,7 +65,7 @@ export function computeMockRatios(r: Record) {
   const rent_ratio = r.revenue > 0 ? (r.opex_rent / r.revenue) * 100 : 0;
   // Factor 1.36: Costo Real Empresa (Ley 462/2025)
   // El usuario ingresa sueldos brutos; el costo patronal real es ~36% más
-  // (SS 13.25% + SE 1.5% + RP 1.5% + XIII 8.33% + Vac 4.17% + Prima 1.92%)
+  // (SS 12.25% + SE 1.5% + RP 1.5% + XIII 8.33% + Vac 4.17% + Prima 1.92%)
   const FACTOR_COSTO_REAL = 1.36;
   const costoRealNomina = r.opex_payroll * FACTOR_COSTO_REAL;
   const payroll_ratio =

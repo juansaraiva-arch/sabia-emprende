@@ -1,6 +1,6 @@
 """
 Motor de Cálculo de Nómina Panamá 2026
-Ley 462 de 2025 — CSS Patronal actualizada al 13.25%
+Ley 462 de 2025 — CSS Patronal base 12.25% + RP 1.50% + SE 1.50% = 15.25%
 Calcula: SS Patronal, SE, Riesgos Prof., XIII Mes, Vacaciones,
          Prima Antigüedad, ISR progresivo (3 tramos), retenciones.
 """
@@ -8,28 +8,50 @@ Calcula: SS Patronal, SE, Riesgos Prof., XIII Mes, Vacaciones,
 
 def calcular_isr_mensual(salario: float) -> float:
     """
-    Tabla ISR Mensual DGI Panamá 2026 (3 tramos progresivos).
-    Tramo 1: $0 – $846.15 → 0%
-    Tramo 2: $846.16 – $1,538.46 → 15%
-    Tramo 3: >$1,538.46 → 25%
+    ISR sobre salarios — Retención mensual DGI Panamá 2026.
+
+    Procedimiento correcto:
+    1. Deducir cuota obrera CSS (9.75%) + SE (1.25%) = 11%
+    2. Anualizar la base gravable (× 12)
+    3. Aplicar tabla progresiva ANUAL DGI:
+       - Hasta B/.11,000 → 0%
+       - B/.11,001 a B/.50,000 → 15%
+       - Más de B/.50,000 → 25%
+    4. Dividir ISR anual ÷ 12 = retención mensual
+
+    Ejemplo: salario B/.1,500
+      Base = 1,500 × 0.89 = B/.1,335
+      Anual = 1,335 × 12 = B/.16,020
+      ISR = (16,020 − 11,000) × 15% = B/.753/año
+      Retención = 753 / 12 = B/.62.75/mes
     """
-    if salario <= 846.15:
+    if salario <= 0:
         return 0.0
 
-    if salario <= 1538.46:
-        return (salario - 846.15) * 0.15
+    # Paso 1: Deducir cuota obrera (CSS 9.75% + SE 1.25% = 11%)
+    base_gravable_mensual = salario * (1 - 0.11)
 
-    # Tramo 2 completo + Tramo 3
-    isr = (1538.46 - 846.15) * 0.15  # $103.85 fijos del tramo 2
-    isr += (salario - 1538.46) * 0.25
-    return isr
+    # Paso 2: Anualizar
+    base_anual = base_gravable_mensual * 12
+
+    # Paso 3: Tabla progresiva anual DGI
+    if base_anual <= 11_000:
+        isr_anual = 0.0
+    elif base_anual <= 50_000:
+        isr_anual = (base_anual - 11_000) * 0.15
+    else:
+        isr_anual = (50_000 - 11_000) * 0.15   # B/.5,850 fijos del tramo 2
+        isr_anual += (base_anual - 50_000) * 0.25
+
+    # Paso 4: Retención mensual
+    return isr_anual / 12
 
 
 def calcular_carga_panama(salario: float, tipo: str, years_worked: int = 0) -> dict:
     """
     Calcula el Costo Real para la empresa y el Neto para el empleado
     basado en las leyes laborales de Panamá 2026.
-    Ley 462 de 2025: CSS Patronal sube de 12.25% a 13.25%.
+    Ley 462 de 2025: CSS Patronal base 12.25% + RP 1.50% + SE 1.50%.
 
     Args:
         salario: Salario bruto mensual pactado
@@ -49,7 +71,7 @@ def calcular_carga_panama(salario: float, tipo: str, years_worked: int = 0) -> d
 
     if tipo == "payroll":
         # --- Costos Patronales (paga la empresa ADICIONAL al salario) ---
-        ss_patronal = salario * 0.1325       # Ley 462/2025: 13.25%
+        ss_patronal = salario * 0.1225       # Ley 462/2025: CSS Patronal base 12.25%
         se_patronal = salario * 0.0150       # Seguro Educativo patronal
         rp_patronal = salario * 0.0150       # Riesgos Profesionales (promedio)
         decimo_prov = salario / 12           # Provisión XIII Mes (8.33%)
@@ -82,7 +104,7 @@ def calcular_carga_panama(salario: float, tipo: str, years_worked: int = 0) -> d
             "total_deductions": round(total_deductions, 2),
             "carga_patronal_pct": round((carga_patronal / salario) * 100, 2) if salario > 0 else 0,
             "breakdown": {
-                "css_patronal_13_25": round(ss_patronal, 2),
+                "css_patronal_12_25": round(ss_patronal, 2),
                 "se_patronal": round(se_patronal, 2),
                 "rp_patronal": round(rp_patronal, 2),
                 "decimo_provision": round(decimo_prov, 2),
@@ -235,7 +257,7 @@ def calcular_deduccion_ausencia(salario: float, dias_injustificados: int) -> dic
     salario_ajustado = salario - deduccion
 
     # Ahorro patronal por la reduccion de base
-    ahorro_ss = deduccion * 0.1325
+    ahorro_ss = deduccion * 0.1225
     ahorro_se = deduccion * 0.015
     ahorro_rp = deduccion * 0.015
     ahorro_total = ahorro_ss + ahorro_se + ahorro_rp
@@ -321,5 +343,5 @@ def calcular_nomina_total(empleados: list[dict]) -> dict:
         "total_employee_net": round(total_net, 2),
         "hidden_cost": round(total_employer - sum(e["gross_salary"] for e in empleados), 2),
         "employees": detalles,
-        "ley": "Ley 462 de 2025 — CSS Patronal 13.25%",
+        "ley": "Ley 462 de 2025 — CSS Patronal 12.25% + RP 1.50% + SE 1.50%",
     }

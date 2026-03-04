@@ -19,52 +19,90 @@ from app.engines.panama_payroll import (
 # ============================================================
 
 class TestCalcularIsrMensual:
-    def test_tramo1_zero_salary(self):
+    """
+    ISR correcto: deducir CSS+SE 11%, anualizar, tabla anual DGI, dividir /12.
+    Tabla anual: 0-11,000 → 0% | 11,001-50,000 → 15% | >50,000 → 25%
+    """
+
+    @staticmethod
+    def _expected_isr(salario):
+        """Calcula ISR esperado paso a paso para verificacion."""
+        if salario <= 0:
+            return 0.0
+        base_mensual = salario * 0.89       # deducir 11%
+        base_anual = base_mensual * 12
+        if base_anual <= 11_000:
+            isr_anual = 0.0
+        elif base_anual <= 50_000:
+            isr_anual = (base_anual - 11_000) * 0.15
+        else:
+            isr_anual = (50_000 - 11_000) * 0.15
+            isr_anual += (base_anual - 50_000) * 0.25
+        return isr_anual / 12
+
+    def test_zero_salary(self):
         assert calcular_isr_mensual(0) == 0.0
 
-    def test_tramo1_exact_boundary(self):
-        assert calcular_isr_mensual(846.15) == 0.0
-
-    def test_tramo1_mid_range(self):
-        assert calcular_isr_mensual(500) == 0.0
-
-    def test_tramo2_just_above_boundary(self):
-        result = calcular_isr_mensual(850)
-        expected = (850 - 846.15) * 0.15
-        assert result == pytest.approx(expected, abs=0.01)
-
-    def test_tramo2_mid_range(self):
-        result = calcular_isr_mensual(1000)
-        assert result == pytest.approx(23.0775, abs=0.01)
-
-    def test_tramo2_exact_boundary(self):
-        result = calcular_isr_mensual(1538.46)
-        expected = (1538.46 - 846.15) * 0.15
-        assert result == pytest.approx(expected, abs=0.01)
-
-    def test_tramo3_salary_2000(self):
-        tramo2 = (1538.46 - 846.15) * 0.15
-        tramo3 = (2000 - 1538.46) * 0.25
-        result = calcular_isr_mensual(2000)
-        assert result == pytest.approx(tramo2 + tramo3, abs=0.01)
-
-    def test_tramo3_salary_5000(self):
-        tramo2 = (1538.46 - 846.15) * 0.15
-        tramo3 = (5000 - 1538.46) * 0.25
-        result = calcular_isr_mensual(5000)
-        assert result == pytest.approx(tramo2 + tramo3, abs=0.01)
-
-    def test_tramo3_just_above_boundary(self):
-        result = calcular_isr_mensual(1540)
-        tramo2 = (1538.46 - 846.15) * 0.15
-        tramo3 = (1540 - 1538.46) * 0.25
-        assert result == pytest.approx(tramo2 + tramo3, abs=0.01)
-
-    def test_negative_salary_treated_as_tramo1(self):
+    def test_negative_salary(self):
         assert calcular_isr_mensual(-100) == 0.0
 
+    def test_tramo1_low_salary_500(self):
+        """500 × 0.89 × 12 = 5,340 < 11,000 → ISR = 0"""
+        assert calcular_isr_mensual(500) == 0.0
+
+    def test_tramo1_boundary_exact(self):
+        """Salario donde base_anual = 11,000 exacto → ISR = 0.
+        11,000 / 12 / 0.89 = ~1,030.17"""
+        salario = 11_000 / 12 / 0.89
+        assert calcular_isr_mensual(salario) == pytest.approx(0.0, abs=0.01)
+
+    def test_tramo1_salary_1000(self):
+        """1,000 × 0.89 × 12 = 10,680 < 11,000 → ISR = 0"""
+        assert calcular_isr_mensual(1000) == 0.0
+
+    def test_verificacion_salario_1500(self):
+        """Caso de verificacion del requerimiento:
+        1,500 × 0.89 = 1,335 → anual = 16,020
+        ISR anual = (16,020 - 11,000) × 15% = 753
+        Mensual = 753 / 12 = 62.75"""
+        result = calcular_isr_mensual(1500)
+        assert result == pytest.approx(62.75, abs=0.01)
+
+    def test_tramo2_salary_2000(self):
+        """2,000 × 0.89 × 12 = 21,360
+        ISR = (21,360 - 11,000) × 15% = 1,554 / 12 = 129.50"""
+        result = calcular_isr_mensual(2000)
+        expected = self._expected_isr(2000)
+        assert result == pytest.approx(expected, abs=0.01)
+        assert result == pytest.approx(129.50, abs=0.01)
+
+    def test_tramo2_salary_3000(self):
+        result = calcular_isr_mensual(3000)
+        expected = self._expected_isr(3000)
+        assert result == pytest.approx(expected, abs=0.01)
+
+    def test_tramo3_boundary(self):
+        """Salario donde base_anual = 50,000 → frontera tramo 3.
+        50,000 / 12 / 0.89 = ~4,681.65"""
+        salario = 50_000 / 12 / 0.89
+        result = calcular_isr_mensual(salario)
+        # ISR = (50,000 - 11,000) × 15% = 5,850 / 12 = 487.50
+        assert result == pytest.approx(487.50, abs=0.01)
+
+    def test_tramo3_salary_5000(self):
+        """5,000 × 0.89 × 12 = 53,400 > 50,000 → entra a tramo 3"""
+        result = calcular_isr_mensual(5000)
+        expected = self._expected_isr(5000)
+        assert result == pytest.approx(expected, abs=0.01)
+
+    def test_tramo3_salary_high(self):
+        """10,000 × 0.89 × 12 = 106,800 → bien dentro del tramo 3"""
+        result = calcular_isr_mensual(10000)
+        expected = self._expected_isr(10000)
+        assert result == pytest.approx(expected, abs=0.01)
+
     def test_isr_increases_with_salary(self):
-        salarios = [0, 500, 846.15, 1000, 1538.46, 2000, 3000, 5000]
+        salarios = [0, 500, 1000, 1500, 2000, 3000, 5000, 10000]
         isrs = [calcular_isr_mensual(s) for s in salarios]
         for i in range(1, len(isrs)):
             assert isrs[i] >= isrs[i - 1]
@@ -86,7 +124,7 @@ class TestCalcularCargaPanama:
     def test_payroll_patronal_rates(self):
         result = calcular_carga_panama(1500, "payroll", 0)
         bd = result["breakdown"]
-        assert bd["css_patronal_13_25"] == pytest.approx(1500 * 0.1325, abs=0.01)
+        assert bd["css_patronal_12_25"] == pytest.approx(1500 * 0.1225, abs=0.01)
         assert bd["se_patronal"] == pytest.approx(1500 * 0.015, abs=0.01)
         assert bd["rp_patronal"] == pytest.approx(1500 * 0.015, abs=0.01)
 
@@ -377,15 +415,15 @@ class TestCalcularDeduccionAusencia:
         expected_deduccion = (1500 / 30) * 2
         assert result["deduccion_empleado"] == pytest.approx(expected_deduccion, abs=0.01)
         assert result["salario_ajustado"] == pytest.approx(1500 - expected_deduccion, abs=0.01)
-        assert result["ahorro_patronal_ss"] == pytest.approx(expected_deduccion * 0.1325, abs=0.01)
+        assert result["ahorro_patronal_ss"] == pytest.approx(expected_deduccion * 0.1225, abs=0.01)
 
     def test_ahorro_patronal_breakdown(self):
         result = calcular_deduccion_ausencia(1500, 3)
         deduccion = (1500 / 30) * 3
-        assert result["ahorro_patronal_ss"] == pytest.approx(deduccion * 0.1325, abs=0.01)
+        assert result["ahorro_patronal_ss"] == pytest.approx(deduccion * 0.1225, abs=0.01)
         assert result["ahorro_patronal_se"] == pytest.approx(deduccion * 0.015, abs=0.01)
         assert result["ahorro_patronal_rp"] == pytest.approx(deduccion * 0.015, abs=0.01)
-        expected_total = deduccion * 0.1325 + deduccion * 0.015 + deduccion * 0.015
+        expected_total = deduccion * 0.1225 + deduccion * 0.015 + deduccion * 0.015
         assert result["ahorro_patronal_total"] == pytest.approx(expected_total, abs=0.01)
 
     def test_zero_days_absent(self):
@@ -480,7 +518,7 @@ class TestCalcularNominaTotal:
         assert result["total_employee_net"] > 0
         assert len(result["employees"]) == 3
         assert result["hidden_cost"] > 0
-        assert result["ley"] == "Ley 462 de 2025 — CSS Patronal 13.25%"
+        assert result["ley"] == "Ley 462 de 2025 — CSS Patronal 12.25% + RP 1.50% + SE 1.50%"
 
     def test_empty_list(self):
         result = calcular_nomina_total([])
@@ -537,4 +575,4 @@ class TestCalcularNominaTotal:
 
     def test_ley_string(self):
         result = calcular_nomina_total([])
-        assert result["ley"] == "Ley 462 de 2025 — CSS Patronal 13.25%"
+        assert result["ley"] == "Ley 462 de 2025 — CSS Patronal 12.25% + RP 1.50% + SE 1.50%"

@@ -105,7 +105,7 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
   },
   payroll_ratio: {
     titulo: "Costo Real Nomina / Ut. Bruta (%)",
-    explicacion: "Que porcentaje de tu ganancia bruta consume la nomina incluyendo cargas patronales (Factor 1.36x: CSS 13.25%, SE 1.5%, RP 1.5%, XIII Mes 8.33%, Vacaciones 4.17%, Prima 1.92%). Si pasa del 35%, necesitas mas productividad o ajustar plantilla.",
+    explicacion: "Que porcentaje de tu ganancia bruta consume la nomina incluyendo cargas patronales (CSS 12.25%, SE 1.5%, RP 1.5%, XIII Mes 8.33%, Vacaciones 4.17%, Prima 1.92%). Si pasa del 35%, necesitas mas productividad o ajustar plantilla.",
   },
   prueba_acida: {
     titulo: "Prueba Acida",
@@ -166,7 +166,7 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
     explicacion: "Impuesto de Transferencia de Bienes Muebles y Servicios. Si vendes mas de $36,000 al año, DEBES cobrarlo. Es el IVA panameno.",
   },
   css_patronal: {
-    titulo: "Cuota Patronal CSS (13.25%)",
+    titulo: "Cuota Patronal CSS (12.25%)",
     explicacion: "Lo que el patrono paga a la Caja de Seguro Social por cada empleado. Se calcula sobre el salario bruto. Ley 462 de 2025.",
   },
 
@@ -303,7 +303,7 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
   },
   costo_patronal: {
     titulo: "Costo Patronal Total",
-    explicacion: "Gasto total que la empresa asume por encima del sueldo: Seguro Social 13.25%, Educativo 1.5%, Riesgos 1.5%, XIII Mes 8.33%, Vacaciones y Prima. Factor real: 1.36x.",
+    explicacion: "Gasto total que la empresa asume por encima del sueldo: Seguro Social 12.25%, Educativo 1.5%, Riesgos 1.5%, XIII Mes 8.33%, Vacaciones y Prima.",
   },
   pasivo_laboral: {
     titulo: "Pasivo Laboral",

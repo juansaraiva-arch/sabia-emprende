@@ -27,7 +27,7 @@ function getProactiveMessages(topAlert: StrategicAlert | null): string[] {
 
   // Deteccion de ausentismo
   if (topAlert.id === "ausentismo-critico") {
-    msgs.push("Detecte faltas injustificadas. He recalculado el costo patronal (13.25%) ahorrandote el sobrecosto de los dias no laborados.");
+    msgs.push("Detecte faltas injustificadas. He recalculado el costo patronal (12.25%) ahorrandote el sobrecosto de los dias no laborados.");
   }
   // Vacaciones acumuladas
   if (topAlert.id.startsWith("vacaciones-acumuladas")) {

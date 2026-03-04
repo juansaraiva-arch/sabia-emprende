@@ -132,13 +132,36 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
     if (typeof window !== "undefined") return localStorage.getItem("midf_company_logo") || "";
     return "";
   });
+  const [companyRubro, setCompanyRubro] = React.useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("midf_company_rubro") || "";
+    return "";
+  });
   const [editingCompany, setEditingCompany] = React.useState(false);
   const [tempName, setTempName] = React.useState(companyName);
+  const [tempRubro, setTempRubro] = React.useState(companyRubro);
   const logoInputRef = React.useRef<HTMLInputElement>(null);
+
+  const RUBROS_MAP: Record<string, string> = {
+    restaurante: "Restaurante / Alimentos",
+    comercio_minorista: "Comercio Minorista",
+    tecnologia: "Tecnologia / Software",
+    servicios_profesionales: "Servicios Profesionales",
+    construccion: "Construccion / Bienes Raices",
+    transporte: "Transporte / Logistica",
+    salud: "Salud / Clinica / Farmacia",
+    educacion: "Educacion / Academia",
+    turismo: "Turismo / Hoteleria",
+    manufactura: "Manufactura / Produccion",
+    agro: "Agropecuario / Agroindustria",
+    belleza: "Belleza / Estetica / Salon",
+    otro: "Otro",
+  };
 
   const handleSaveCompany = () => {
     localStorage.setItem("midf_company_name", tempName);
+    localStorage.setItem("midf_company_rubro", tempRubro);
     setCompanyName(tempName);
+    setCompanyRubro(tempRubro);
     setEditingCompany(false);
   };
 
@@ -168,22 +191,22 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
 
         {/* ===== NIVEL 0: EMPRESA DEL USUARIO (Nodo editable) ===== */}
         <div
-          className="relative rounded-2xl border-2 p-5 lg:p-6 w-full max-w-sm text-center cursor-pointer transition-all hover:border-opacity-60"
+          className="relative rounded-2xl border-2 p-3 lg:p-4 w-full max-w-sm text-center cursor-pointer transition-all hover:border-opacity-60 flex flex-col items-center"
           style={{
             backgroundColor: "rgba(197, 160, 89, 0.08)",
             borderColor: "rgba(197, 160, 89, 0.3)",
           }}
-          onClick={() => !editingCompany && setEditingCompany(true)}
+          onClick={() => { if (!editingCompany) { setTempName(companyName); setTempRubro(companyRubro); setEditingCompany(true); } }}
         >
-          {/* Logo area */}
-          <div className="flex justify-center mb-3">
+          {/* Logo area — 2/3 del card, pegado al tope */}
+          <div className="w-2/3 aspect-square flex items-center justify-center mb-2">
             {companyLogo ? (
-              <div className="relative group">
+              <div className="relative group w-full h-full">
                 <img
                   src={companyLogo}
                   alt="Logo empresa"
-                  className="w-16 h-16 lg:w-20 lg:h-20 rounded-xl object-contain border-2"
-                  style={{ borderColor: "rgba(197, 160, 89, 0.3)", backgroundColor: "rgba(255,255,255,0.05)" }}
+                  className="w-full h-full rounded-xl object-contain"
+                  style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
                 />
                 <button
                   onClick={(e) => { e.stopPropagation(); logoInputRef.current?.click(); }}
@@ -196,11 +219,11 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); logoInputRef.current?.click(); }}
-                className="w-16 h-16 lg:w-20 lg:h-20 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all hover:border-opacity-60"
+                className="w-full h-full rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all hover:border-opacity-60"
                 style={{ borderColor: "rgba(197, 160, 89, 0.4)" }}
               >
-                <Upload size={18} style={{ color: GOLD, opacity: 0.6 }} />
-                <span className="text-[9px] font-medium" style={{ color: GOLD, opacity: 0.5 }}>Logo</span>
+                <Upload size={24} style={{ color: GOLD, opacity: 0.6 }} />
+                <span className="text-[10px] font-medium" style={{ color: GOLD, opacity: 0.5 }}>Logo</span>
               </button>
             )}
             <input
@@ -214,7 +237,7 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
 
           {/* Company name */}
           {editingCompany ? (
-            <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-2 w-full" onClick={(e) => e.stopPropagation()}>
               <input
                 type="text"
                 value={tempName}
@@ -225,6 +248,17 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
                 style={{ color: GOLD, borderColor: "rgba(197, 160, 89, 0.4)", caretColor: GOLD }}
                 onKeyDown={(e) => e.key === "Enter" && handleSaveCompany()}
               />
+              <select
+                value={tempRubro}
+                onChange={(e) => setTempRubro(e.target.value)}
+                className="w-full text-center text-xs bg-transparent border-b-2 py-1 outline-none"
+                style={{ color: GOLD, borderColor: "rgba(197, 160, 89, 0.4)" }}
+              >
+                <option value="">Selecciona tu rubro</option>
+                {Object.entries(RUBROS_MAP).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
               <button
                 onClick={handleSaveCompany}
                 className="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
@@ -234,15 +268,23 @@ function HubView({ onSelectModule, onOpenAsistente }: { onSelectModule: (section
               </button>
             </div>
           ) : (
-            <div>
+            <div className="text-center">
               <p className="text-[10px] font-medium tracking-widest uppercase" style={{ color: "rgba(197, 160, 89, 0.5)" }}>
                 MI EMPRESA
               </p>
-              <p className="text-sm lg:text-base font-bold mt-0.5" style={{ color: GOLD }}>
+              <p className="text-lg lg:text-xl font-bold mt-0.5" style={{ color: GOLD }}>
                 {companyName || "Nombre de su Empresa"}
               </p>
-              {!companyName && (
-                <p className="text-[10px] mt-1" style={{ color: "rgba(197, 160, 89, 0.4)" }}>
+              {companyRubro && (
+                <span
+                  className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wide"
+                  style={{ backgroundColor: "rgba(197, 160, 89, 0.15)", color: "rgba(197, 160, 89, 0.7)" }}
+                >
+                  {RUBROS_MAP[companyRubro] || companyRubro}
+                </span>
+              )}
+              {!companyName && !companyRubro && (
+                <p className="text-[9px] mt-1" style={{ color: "rgba(197, 160, 89, 0.4)" }}>
                   Toca para editar
                 </p>
               )}

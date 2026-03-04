@@ -49,7 +49,7 @@ const TAX_DATA: TaxRow[] = [
   },
   {
     impuesto: "CSS Patronal",
-    tasa: "13.25%",
+    tasa: "12.25%",
     base: "Salario bruto empleado",
     frecuencia: "Mensual",
     aplica: "Empleadores con planilla",

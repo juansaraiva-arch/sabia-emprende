@@ -69,11 +69,23 @@ interface PayrollEngineProps {
 // ============================================
 
 function calcularISR(salario: number): number {
-  if (salario <= 846.15) return 0;
-  if (salario <= 1538.46) return (salario - 846.15) * 0.15;
-  let isr = (1538.46 - 846.15) * 0.15;
-  isr += (salario - 1538.46) * 0.25;
-  return isr;
+  if (salario <= 0) return 0;
+  // Paso 1: Deducir cuota obrera (CSS 9.75% + SE 1.25% = 11%)
+  const baseGravable = salario * (1 - 0.11);
+  // Paso 2: Anualizar
+  const baseAnual = baseGravable * 12;
+  // Paso 3: Tabla progresiva anual DGI
+  let isrAnual = 0;
+  if (baseAnual <= 11000) {
+    isrAnual = 0;
+  } else if (baseAnual <= 50000) {
+    isrAnual = (baseAnual - 11000) * 0.15;
+  } else {
+    isrAnual = (50000 - 11000) * 0.15;
+    isrAnual += (baseAnual - 50000) * 0.25;
+  }
+  // Paso 4: Retención mensual
+  return isrAnual / 12;
 }
 
 function calcularCargaLocal(
@@ -86,7 +98,7 @@ function calcularCargaLocal(
   }
 
   if (tipo === "planilla" || tipo === "payroll") {
-    const ssP = salario * 0.1325;
+    const ssP = salario * 0.1225;
     const seP = salario * 0.015;
     const rpP = salario * 0.015;
     const decimo = salario / 12;
@@ -106,7 +118,7 @@ function calcularCargaLocal(
       totalDeductions: r2(totalDed),
       cargaPatronalPct: r2((carga / salario) * 100),
       breakdown: {
-        "CSS Patronal (13.25%)": r2(ssP),
+        "CSS Patronal (12.25%)": r2(ssP),
         "Seguro Educativo Patr. (1.50%)": r2(seP),
         "Riesgos Prof. (1.50%)": r2(rpP),
         "Fondo Cesantia (2.25%)": r2(cesantia),
@@ -432,7 +444,7 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
         <Shield size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
         <div>
           <p className="text-xs font-bold text-amber-700">
-            Ley 462 de 2025 — CSS Patronal actualizada al 13.25%
+            Ley 462 de 2025 — CSS Patronal base 12.25% + RP 1.50% + SE 1.50%
           </p>
           <p className="text-[10px] text-amber-600 mt-0.5">
             Incluye: XIII Mes, Vacaciones (9.09%), Fondo Cesantia (2.25%), Prima de
@@ -1057,7 +1069,7 @@ export default function PayrollEngine({ societyId }: PayrollEngineProps) {
       {/* ====== LEGAL FOOTER ====== */}
       <p className="text-[10px] text-slate-400 italic border-t border-slate-100 pt-3">
         Basado en legislacion laboral de Panama 2026.{" "}
-        <strong>Ley 462 de 2025</strong>: CSS Patronal 13.25%, SE 1.50%,
+        <strong>Ley 462 de 2025</strong>: CSS Patronal 12.25%, SE 1.50%,
         Riesgos Prof. 1.50%, Fondo Cesantia 2.25%, XIII Mes (8.33%),
         Vacaciones (9.09%), Prima de Antiguedad (1 semana/ano). Descuento
         automatico por faltas injustificadas: (Salario/30) x (30 - Faltas).

@@ -175,7 +175,7 @@ def get_verdict(cascada, ox, ratios):
 # NOMINA PANAMA
 # ============================================
 def compute_nomina(salario: float):
-    ss_patronal = salario * 0.1325
+    ss_patronal = salario * 0.1225
     se_patronal = salario * 0.015
     rp_patronal = salario * 0.015
     decimo = salario * (1/12)
@@ -192,7 +192,7 @@ def compute_nomina(salario: float):
         "carga_total": carga, "costo_empresa": costo_total,
         "factor": factor,
         "desglose": {
-            "CSS Patronal (13.25%)": ss_patronal,
+            "CSS Patronal (12.25%)": ss_patronal,
             "Seg. Educativo (1.5%)": se_patronal,
             "Riesgos Prof. (1.5%)": rp_patronal,
             "XIII Mes (8.33%)": decimo,
@@ -600,7 +600,7 @@ with tab2:
 
     elif subtab == "Nomina Panama 2026":
         st.markdown("### Costo Real de Personal — Panama 2026")
-        st.info("**Ley 462 de 2025:** CSS Patronal sube de 12.25% a **13.25%**")
+        st.info("**Ley 462 de 2025:** CSS Patronal base **12.25%** + Riesgos Prof. 1.50% + Seg. Educativo 1.50% = **15.25%**")
 
         sal = st.slider("Salario bruto mensual ($)", 600, 10000, 1500, 50)
         nom = compute_nomina(sal)

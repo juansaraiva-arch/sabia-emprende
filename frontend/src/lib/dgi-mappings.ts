@@ -1,3 +1,5 @@
+import type { FinancialRecord } from "@/lib/calculations";
+
 /**
  * DGI Form Mappings — Espejo DGI
  *
@@ -402,6 +404,44 @@ export const FORM_03: DGIFormDefinition = {
 // ============================================
 // COMPUTATION ENGINE
 // ============================================
+
+/**
+ * Converts a FinancialRecord (from Diagnostico Flash) to AccountBalance[]
+ * so the Espejo can auto-populate even without formal journal entries.
+ */
+export function financialRecordToBalances(r: FinancialRecord): AccountBalance[] {
+  const balances: AccountBalance[] = [];
+
+  const add = (code: string, name: string, debe: number, haber: number) => {
+    if (debe > 0 || haber > 0) {
+      balances.push({
+        account_code: code,
+        account_name: name,
+        total_debe: debe,
+        total_haber: haber,
+        saldo_debe: Math.max(0, debe - haber),
+        saldo_haber: Math.max(0, haber - debe),
+      });
+    }
+  };
+
+  // Ingresos (haber)
+  add("4.1.1", "Ingresos por Ventas", 0, r.revenue);
+
+  // Costo de ventas (debe)
+  add("5.1.1", "Compras de Mercancia", r.cogs, 0);
+
+  // Gastos de operacion (debe)
+  add("5.2.01", "Sueldos y Salarios", r.opex_payroll, 0);
+  add("5.2.05", "Alquiler de Local", r.opex_rent, 0);
+  add("5.2.06", "Servicios Publicos y Otros", r.opex_other, 0);
+  add("5.2.08", "Depreciacion", r.depreciation, 0);
+
+  // Gastos financieros (debe)
+  add("5.3.01", "Intereses Bancarios", r.interest_expense, 0);
+
+  return balances;
+}
 
 /**
  * Computes form field values from account balances.

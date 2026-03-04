@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-interface SabiaLogoProps {
+interface MidfLogoProps {
   size?: number;
   className?: string;
   /** Show only the compass icon (no text) */
@@ -13,11 +13,11 @@ interface SabiaLogoProps {
  * Brujula dorada con simbolo $ sobre fondo azul marino (#1A242F)
  * Colores: Dorado #C5A059, Fondo #1A242F
  */
-export default function SabiaLogo({
+export default function MidfLogo({
   size = 40,
   className = "",
   iconOnly = true,
-}: SabiaLogoProps) {
+}: MidfLogoProps) {
   if (iconOnly) {
     return (
       <svg
@@ -118,7 +118,7 @@ export default function SabiaLogo({
   // Full logo with text
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <SabiaLogo size={size} iconOnly />
+      <MidfLogo size={size} iconOnly />
       <div className="text-left">
         <h1
           className="font-extrabold tracking-wide"

@@ -14,10 +14,9 @@ import {
   Receipt,
   Scale,
   Users,
-  CalendarDays,
+  Landmark,
 } from "lucide-react";
 import SmartTooltip from "@/components/SmartTooltip";
-import MultasDGICalculator from "@/components/MultasDGICalculator";
 import TaxReferenceTable from "@/components/TaxReferenceTable";
 
 // ============================================
@@ -30,8 +29,8 @@ interface SocietyDates {
   incorporationDate: Date;
   reservationDate: Date | null;
   avisoOperacionesDate: Date | null;
-  revenueAnual: number; // Para determinar obligacion ITBMS
-  hasEmployees: boolean; // Para determinar obligacion CSS
+  revenueAnual: number;
+  hasEmployees: boolean;
 }
 
 type AlertLevel = "ok" | "yellow" | "red";
@@ -42,7 +41,11 @@ type AlertType =
   | "aviso_operaciones"
   | "agente_residente"
   | "itbms"
-  | "css_planilla";
+  | "css_planilla"
+  | "mupa_declaracion_jurada"
+  | "mupa_recargos_morosidad"
+  | "mupa_tasa_municipal"
+  | "mupa_publicidad";
 
 interface WatchdogAlert {
   id: string;
@@ -56,25 +59,6 @@ interface WatchdogAlert {
   multa?: string;
   accion?: string;
 }
-
-// ============================================
-// OBLIGACIONES FISCALES PANAMA 2026
-// ============================================
-
-const OBLIGACIONES_CALENDARIO = [
-  { mes: "Enero", items: ["Declaracion ISR (si aplica)", "Planilla CSS (dic anterior)"] },
-  { mes: "Febrero", items: ["Planilla CSS (ene)"] },
-  { mes: "Marzo", items: ["Tasa Unica (si aniversario)", "Planilla CSS (feb)", "Declaracion ITBMS trimestral (Q4)"] },
-  { mes: "Abril", items: ["Planilla CSS (mar)"] },
-  { mes: "Mayo", items: ["Planilla CSS (abr)"] },
-  { mes: "Junio", items: ["Planilla CSS (may)", "Declaracion ITBMS trimestral (Q1)", "Informe Agente Residente"] },
-  { mes: "Julio", items: ["Planilla CSS (jun)"] },
-  { mes: "Agosto", items: ["Planilla CSS (jul)"] },
-  { mes: "Septiembre", items: ["Planilla CSS (ago)", "Declaracion ITBMS trimestral (Q2)"] },
-  { mes: "Octubre", items: ["Planilla CSS (sep)"] },
-  { mes: "Noviembre", items: ["Planilla CSS (oct)"] },
-  { mes: "Diciembre", items: ["Planilla CSS (nov)", "Declaracion ITBMS trimestral (Q3)", "Renovacion Aviso Operaciones"] },
-];
 
 // ============================================
 // MOCK DATA
@@ -97,13 +81,13 @@ function createDemoSociety(): SocietyDates {
     incorporationDate: incDate,
     reservationDate: resDate,
     avisoOperacionesDate: avisoDate,
-    revenueAnual: 48000, // > $36k = obligatorio ITBMS
+    revenueAnual: 48000,
     hasEmployees: true,
   };
 }
 
 // ============================================
-// MOTOR DE ALERTAS AMPLIADO
+// MOTOR DE ALERTAS CENTRALIZADO
 // ============================================
 
 function computeAlerts(
@@ -115,7 +99,6 @@ function computeAlerts(
   // ------ 1. TASA UNICA ANUAL ($300) ------
   const tasaDeadline = new Date(society.incorporationDate);
   tasaDeadline.setFullYear(tasaDeadline.getFullYear() + 1);
-  // Si ya paso, calcular proximo aniversario
   while (tasaDeadline.getTime() < simulatedNow.getTime() - 30 * 86400000) {
     tasaDeadline.setFullYear(tasaDeadline.getFullYear() + 1);
   }
@@ -217,7 +200,7 @@ function computeAlerts(
 
   // ------ 4. INFORME AGENTE RESIDENTE (Anual, vence 30 de junio) ------
   const currentYear = simulatedNow.getFullYear();
-  let agenteDeadline = new Date(currentYear, 5, 30); // 30 de junio
+  let agenteDeadline = new Date(currentYear, 5, 30);
   if (agenteDeadline.getTime() < simulatedNow.getTime() - 30 * 86400000) {
     agenteDeadline = new Date(currentYear + 1, 5, 30);
   }
@@ -250,7 +233,6 @@ function computeAlerts(
 
   // ------ 5. DECLARACION ITBMS (si aplica) ------
   if (society.revenueAnual >= 36000) {
-    // ITBMS trimestral: vence el 15 del mes siguiente al trimestre
     const month = simulatedNow.getMonth();
     let nextQuarterEnd: Date;
     if (month < 3) nextQuarterEnd = new Date(currentYear, 3, 15);
@@ -288,7 +270,6 @@ function computeAlerts(
 
   // ------ 6. PLANILLA CSS (Mensual, si tiene empleados) ------
   if (society.hasEmployees) {
-    // Vence el 15 de cada mes (del mes anterior)
     let cssDeadline = new Date(currentYear, simulatedNow.getMonth(), 15);
     if (cssDeadline.getTime() < simulatedNow.getTime()) {
       cssDeadline = new Date(currentYear, simulatedNow.getMonth() + 1, 15);
@@ -318,18 +299,116 @@ function computeAlerts(
     });
   }
 
+  // ------ 7. DECLARACION JURADA ANUAL MUPA (Vence 31 de marzo) ------
+  const mupaYear = simulatedNow.getMonth() >= 3 ? currentYear + 1 : currentYear;
+  let mupaDeadline = new Date(mupaYear, 2, 31);
+  if (mupaDeadline.getTime() < simulatedNow.getTime() - 30 * 86400000) {
+    mupaDeadline = new Date(mupaYear + 1, 2, 31);
+  }
+  const mupaDays = Math.ceil((mupaDeadline.getTime() - simulatedNow.getTime()) / 86400000);
+
+  let mupaLevel: AlertLevel = "ok";
+  let mupaMsg = "";
+  if (mupaDays < 0) {
+    mupaLevel = "red";
+    mupaMsg = `VENCIDA hace ${Math.abs(mupaDays)} dia(s). Multa de $500 y riesgo de cierre del establecimiento. Presenta la Declaracion Jurada YA ante la Tesoreria Municipal.`;
+  } else if (mupaDays <= 30) {
+    mupaLevel = "yellow";
+    mupaMsg = `Vence en ${mupaDays} dia(s) (31 de marzo ${mupaDeadline.getFullYear()}). Prepara tu Declaracion Jurada Anual para el MUPA.`;
+  } else {
+    mupaMsg = `Proxima declaracion en ${mupaDays} dia(s) — 31 de marzo ${mupaDeadline.getFullYear()}.`;
+  }
+
+  alerts.push({
+    id: "mupa_declaracion_jurada",
+    type: "mupa_declaracion_jurada",
+    level: mupaLevel,
+    title: "Declaracion Jurada Anual MUPA",
+    message: mupaMsg,
+    daysRemaining: mupaDays,
+    deadline: mupaDeadline,
+    icon: <Landmark size={18} />,
+    multa: "$500 + riesgo de cierre (Acuerdo Municipal N° 40 de 2011)",
+    accion: "Presentar en la Tesoreria Municipal de Panama (mupa.gob.pa)",
+  });
+
+  // ------ 8. RECARGOS POR MOROSIDAD MUPA ------
+  let mupaRecDeadline = new Date(currentYear, simulatedNow.getMonth(), 15);
+  if (mupaRecDeadline.getTime() < simulatedNow.getTime()) {
+    mupaRecDeadline = new Date(currentYear, simulatedNow.getMonth() + 1, 15);
+  }
+  const mupaRecDays = Math.ceil((mupaRecDeadline.getTime() - simulatedNow.getTime()) / 86400000);
+
+  let mupaRecLevel: AlertLevel = "ok";
+  let mupaRecMsg = "";
+  if (mupaRecDays <= 5) {
+    mupaRecLevel = "yellow";
+    mupaRecMsg = `Impuesto municipal mensual vence en ${mupaRecDays} dia(s) (${mupaRecDeadline.toLocaleDateString("es-PA")}). Si no pagas a tiempo: 20% recargo + 1% interes por cada mes adicional.`;
+  } else {
+    mupaRecMsg = `Proximo pago municipal en ${mupaRecDays} dia(s) — ${mupaRecDeadline.toLocaleDateString("es-PA")}. Mantente al dia para evitar recargos.`;
+  }
+
+  alerts.push({
+    id: "mupa_recargos_morosidad",
+    type: "mupa_recargos_morosidad",
+    level: mupaRecLevel,
+    title: "Recargos por Morosidad MUPA",
+    message: mupaRecMsg,
+    daysRemaining: mupaRecDays,
+    deadline: mupaRecDeadline,
+    icon: <Landmark size={18} />,
+    multa: "20% recargo + 1% interes mensual adicional",
+    accion: "Pagar en la Tesoreria Municipal o en linea (mupa.gob.pa)",
+  });
+
+  // ------ 9. TASA UNICA MUNICIPAL (Vence 31 de marzo, 10% recargo si tarde) ------
+  const mupaTasaDeadline = new Date(mupaYear, 2, 31);
+  const mupaTasaDays = Math.ceil((mupaTasaDeadline.getTime() - simulatedNow.getTime()) / 86400000);
+
+  let mupaTasaLevel: AlertLevel = "ok";
+  let mupaTasaMsg = "";
+  if (mupaTasaDays < 0) {
+    mupaTasaLevel = "red";
+    mupaTasaMsg = `VENCIDA hace ${Math.abs(mupaTasaDays)} dia(s). Recargo del 10% aplicado sobre la Tasa Unica Municipal. Paga de inmediato en el MUPA.`;
+  } else if (mupaTasaDays <= 30) {
+    mupaTasaLevel = "yellow";
+    mupaTasaMsg = `Tasa Unica Municipal vence en ${mupaTasaDays} dia(s) (31 de marzo). Paga antes para evitar el 10% de recargo.`;
+  } else {
+    mupaTasaMsg = `Proximo pago de Tasa Unica Municipal en ${mupaTasaDays} dia(s) — 31 de marzo ${mupaTasaDeadline.getFullYear()}.`;
+  }
+
+  alerts.push({
+    id: "mupa_tasa_municipal",
+    type: "mupa_tasa_municipal",
+    level: mupaTasaLevel,
+    title: "Tasa Unica Municipal",
+    message: mupaTasaMsg,
+    daysRemaining: mupaTasaDays,
+    deadline: mupaTasaDeadline,
+    icon: <Landmark size={18} />,
+    multa: "10% recargo sobre el monto adeudado",
+    accion: "Pagar antes del 31 de marzo en el MUPA (mupa.gob.pa)",
+  });
+
   return alerts;
 }
 
 // ============================================
-// COMPONENTE PRINCIPAL
+// COMPONENTE PRINCIPAL — Solo Alertas
+// Vigilante Legal = Panel centralizado de alertas
+// Gestion MUPA se movio a MupaPanel.tsx
 // ============================================
 
 export default function WatchdogDashboard() {
   const [society] = useState<SocietyDates>(() => createDemoSociety());
   const [timeOffsetMonths, setTimeOffsetMonths] = useState(0);
   const [timeOffsetDays, setTimeOffsetDays] = useState(0);
-  const [showCalendario, setShowCalendario] = useState(false);
+
+  // Lee estado de publicidad desde localStorage (sin UI — se gestiona en MupaPanel)
+  const [hasPublicidad] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("midf_has_publicidad") === "true";
+    return false;
+  });
 
   const simulatedNow = useMemo(() => {
     const d = new Date();
@@ -338,10 +417,30 @@ export default function WatchdogDashboard() {
     return d;
   }, [timeOffsetMonths, timeOffsetDays]);
 
-  const alerts = useMemo(
+  const baseAlerts = useMemo(
     () => computeAlerts(society, simulatedNow),
     [society, simulatedNow]
   );
+
+  // Agregar alerta de publicidad MUPA si el usuario marco la opcion en MupaPanel
+  const alerts = useMemo(() => {
+    const all = [...baseAlerts];
+    if (hasPublicidad) {
+      all.push({
+        id: "mupa_publicidad",
+        type: "mupa_publicidad" as AlertType,
+        level: "yellow" as AlertLevel,
+        title: "Permiso de Publicidad MUPA",
+        message: "Posees letreros o vehiculos rotulados. Se requiere permiso de publicidad del MUPA. Verifica que tu permiso este vigente en la Boveda KYC.",
+        daysRemaining: null,
+        deadline: new Date(),
+        icon: <Landmark size={18} />,
+        multa: "Multa por publicidad no autorizada",
+        accion: "Tramitar permiso de publicidad en mupa.gob.pa y subir a Boveda KYC",
+      });
+    }
+    return all;
+  }, [baseAlerts, hasPublicidad]);
 
   const redAlerts = alerts.filter((a) => a.level === "red");
   const yellowAlerts = alerts.filter((a) => a.level === "yellow");
@@ -353,7 +452,6 @@ export default function WatchdogDashboard() {
   };
 
   const isDev = process.env.NODE_ENV === "development";
-  const currentMonth = simulatedNow.getMonth();
 
   return (
     <div className="space-y-6">
@@ -452,7 +550,7 @@ export default function WatchdogDashboard() {
         </div>
       )}
 
-      {/* ====== ALERTS LIST ====== */}
+      {/* ====== ALERTS LIST (Cronologico, ordenado por prioridad) ====== */}
       <div className="space-y-3">
         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
           <Bell size={14} />
@@ -469,96 +567,6 @@ export default function WatchdogDashboard() {
           ))}
       </div>
 
-      {/* ====== TIMELINE / CALENDARIO ====== */}
-      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-        <button
-          onClick={() => setShowCalendario(!showCalendario)}
-          className="w-full flex items-center justify-between"
-        >
-          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-            <CalendarDays size={14} />
-            Calendario Fiscal Panama 2026
-          </h4>
-          <span className="text-xs text-slate-400">{showCalendario ? "▲" : "▼"}</span>
-        </button>
-
-        {/* Timeline de alertas activas */}
-        <div className="space-y-3 mt-3">
-          {alerts.map((alert) => (
-            <div key={`tl-${alert.id}`} className="flex items-start gap-3">
-              <div className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${
-                alert.level === "red" ? "bg-red-500"
-                  : alert.level === "yellow" ? "bg-amber-400"
-                  : "bg-emerald-500"
-              }`} />
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-700">{alert.title}</span>
-                  <span className="text-[10px] text-slate-400">{alert.deadline.toLocaleDateString("es-PA")}</span>
-                </div>
-                {alert.daysRemaining !== null && (
-                  <div className="mt-1">
-                    <div className="w-full bg-slate-200 rounded-full h-1.5">
-                      <div
-                        className={`h-1.5 rounded-full transition-all ${
-                          alert.level === "red" ? "bg-red-500"
-                            : alert.level === "yellow" ? "bg-amber-400"
-                            : "bg-emerald-500"
-                        }`}
-                        style={{
-                          width: `${Math.max(0, Math.min(100, alert.daysRemaining < 0 ? 100 : (1 - alert.daysRemaining / 365) * 100))}%`,
-                        }}
-                      />
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      {alert.daysRemaining < 0
-                        ? `Vencido hace ${Math.abs(alert.daysRemaining)} dia(s)`
-                        : `${alert.daysRemaining} dia(s) restantes`}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Calendario expandible */}
-        {showCalendario && (
-          <div className="mt-4 pt-4 border-t border-slate-200">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {OBLIGACIONES_CALENDARIO.map((item, idx) => (
-                <div
-                  key={item.mes}
-                  className={`p-2.5 rounded-lg border text-[10px] ${
-                    idx === currentMonth
-                      ? "bg-violet-50 border-violet-300 ring-2 ring-violet-200"
-                      : "bg-white border-slate-200"
-                  }`}
-                >
-                  <p className={`font-bold mb-1 ${idx === currentMonth ? "text-violet-700" : "text-slate-600"}`}>
-                    {item.mes} {idx === currentMonth && "← HOY"}
-                  </p>
-                  {item.items.map((ob, j) => (
-                    <p key={j} className="text-slate-500 leading-relaxed">• {ob}</p>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ====== SIMULADOR DE MULTAS ====== */}
-      <details className="rounded-xl border border-slate-200 overflow-hidden">
-        <summary className="px-5 py-4 cursor-pointer flex items-center gap-2 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors bg-white">
-          <AlertTriangle size={16} className="text-red-500" />
-          Simulador de Multas DGI
-        </summary>
-        <div className="px-5 pb-5 bg-white">
-          <MultasDGICalculator />
-        </div>
-      </details>
-
       {/* ====== TABLA DE IMPUESTOS ====== */}
       <details className="rounded-xl border border-slate-200 overflow-hidden">
         <summary className="px-5 py-4 cursor-pointer flex items-center gap-2 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors bg-white">
@@ -573,9 +581,11 @@ export default function WatchdogDashboard() {
       {/* ====== LEGAL FOOTER ====== */}
       <p className="text-[10px] text-slate-400 italic border-t border-slate-100 pt-3">
         Alertas basadas en: Ley 32 de 1927 (Sociedades Anonimas), Ley 129 de 2020 (Registro de
-        Beneficiarios Finales), Codigo Fiscal (ITBMS), Ley 51 de 2005 (CSS). Tasa Unica: $300/ano,
-        mora $50. ITBMS: obligatorio si ventas anuales ≥ $36,000. Planilla CSS: cuotas obrero-patronales
-        mensuales. Esta herramienta es informativa y no constituye asesoria legal.
+        Beneficiarios Finales), Codigo Fiscal (ITBMS), Ley 51 de 2005 (CSS), Acuerdo Municipal N° 40
+        de 2011 (MUPA). Tasa Unica: $300/ano, mora $50. ITBMS: obligatorio si ventas anuales ≥ $36,000.
+        Planilla CSS: cuotas obrero-patronales mensuales. MUPA: Declaracion Jurada Anual (multa $500),
+        Tasa Municipal (10% recargo), morosidad (20% + 1%/mes). Gestion detallada MUPA disponible en
+        el modulo MUPA. Esta herramienta es informativa y no constituye asesoria legal.
       </p>
     </div>
   );
@@ -592,6 +602,10 @@ const ALERT_TOOLTIP_MAP: Record<AlertType, string | undefined> = {
   agente_residente: "agente_residente",
   itbms: "itbms_obligacion",
   css_planilla: "css_planilla",
+  mupa_declaracion_jurada: undefined,
+  mupa_recargos_morosidad: undefined,
+  mupa_tasa_municipal: undefined,
+  mupa_publicidad: undefined,
 };
 
 function AlertCard({ alert }: { alert: WatchdogAlert }) {

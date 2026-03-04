@@ -11,20 +11,68 @@ import {
   Building,
   Percent,
   ShoppingCart,
+  ChevronDown,
+  ChevronUp,
+  Ruler,
+  Save,
+  X,
+  Pencil,
+  Database,
+  Clock,
 } from "lucide-react";
 import { computePricing } from "@/lib/calculations";
-import type { Ingredient, PricingResult } from "@/lib/calculations";
+import type { Ingredient, PricingResult, UnitOfMeasure, UnitCategory } from "@/lib/calculations";
+import {
+  BUILTIN_UNITS,
+  findUnit,
+  baseUnitLabel,
+  computeIngredientCost,
+  resolveIngredientCosts,
+} from "@/lib/unit-conversions";
 
 // ============================================
 // COMPONENTE PRINCIPAL
 // ============================================
 
 export default function LabPrecios() {
+  // Nombre del producto o servicio
+  const [productName, setProductName] = useState("");
+
   // Estado de ingredientes/materiales
   const [ingredientes, setIngredientes] = useState<Ingredient[]>([
-    { id: "1", nombre: "Material principal", costo: 5.0 },
-    { id: "2", nombre: "Empaque", costo: 1.5 },
+    {
+      id: "1",
+      nombre: "Material principal",
+      costoAdquisicion: 5.0,
+      cantidadCompra: 1,
+      unidadCompraId: "kg",
+      cantidadUtilizada: 1000,
+      unidadUsoId: "g",
+      costo: 5.0,
+    },
+    {
+      id: "2",
+      nombre: "Empaque",
+      costoAdquisicion: 1.5,
+      cantidadCompra: 1,
+      unidadCompraId: "kg",
+      cantidadUtilizada: 1000,
+      unidadUsoId: "g",
+      costo: 1.5,
+    },
   ]);
+
+  // Unidades personalizadas
+  const [customUnits, setCustomUnits] = useState<UnitOfMeasure[]>([]);
+  const [showCustomUnitForm, setShowCustomUnitForm] = useState(false);
+  const [newUnitName, setNewUnitName] = useState("");
+  const [newUnitCategory, setNewUnitCategory] = useState<UnitCategory>("weight");
+  const [newUnitFactor, setNewUnitFactor] = useState(0);
+
+  const allUnits = useMemo(
+    () => [...BUILTIN_UNITS, ...customUnits],
+    [customUnits]
+  );
 
   // Parametros
   const [salarioMensual, setSalarioMensual] = useState(800);
@@ -37,28 +85,55 @@ export default function LabPrecios() {
   // Tooltips
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
+  // Guardar producto
+  interface SavedProduct {
+    id: string;
+    name: string;
+    precio: number;
+    costo: number;
+    margen: number;
+    fecha: string;
+    // Datos completos para restaurar
+    ingredientes: Ingredient[];
+    salarioMensual: number;
+    minutosElaboracion: number;
+    opexMensual: number;
+    capacidadMensual: number;
+    margenDeseado: number;
+    comisionPlataforma: number;
+    customUnits: UnitOfMeasure[];
+  }
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [showCatalog, setShowCatalog] = useState(false);
+  const [savedProducts, setSavedProducts] = useState<SavedProduct[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(localStorage.getItem("midf_saved_products") || "[]");
+    } catch { return []; }
+  });
+
   // ====== CALCULO ======
-  const result: PricingResult = useMemo(
-    () =>
-      computePricing(
-        ingredientes,
-        salarioMensual,
-        minutosElaboracion,
-        opexMensual,
-        capacidadMensual,
-        margenDeseado,
-        comisionPlataforma
-      ),
-    [
-      ingredientes,
+  const result: PricingResult = useMemo(() => {
+    const resolved = resolveIngredientCosts(ingredientes, customUnits);
+    return computePricing(
+      resolved,
       salarioMensual,
       minutosElaboracion,
       opexMensual,
       capacidadMensual,
       margenDeseado,
-      comisionPlataforma,
-    ]
-  );
+      comisionPlataforma
+    );
+  }, [
+    ingredientes,
+    customUnits,
+    salarioMensual,
+    minutosElaboracion,
+    opexMensual,
+    capacidadMensual,
+    margenDeseado,
+    comisionPlataforma,
+  ]);
 
   // ====== INGREDIENT HANDLERS ======
   const addIngredient = () => {
@@ -67,6 +142,11 @@ export default function LabPrecios() {
       {
         id: Date.now().toString(),
         nombre: "",
+        costoAdquisicion: 0,
+        cantidadCompra: 1,
+        unidadCompraId: "kg",
+        cantidadUtilizada: 0,
+        unidadUsoId: "g",
         costo: 0,
       },
     ]);
@@ -79,18 +159,144 @@ export default function LabPrecios() {
 
   const updateIngredient = (
     id: string,
-    field: "nombre" | "costo",
+    field: keyof Ingredient,
     value: string | number
   ) => {
     setIngredientes(
-      ingredientes.map((i) =>
-        i.id === id ? { ...i, [field]: value } : i
-      )
+      ingredientes.map((i) => {
+        if (i.id !== id) return i;
+        const updated = { ...i, [field]: value };
+        // Si cambia la unidad de compra a otra categoria, resetear unidad de uso
+        if (field === "unidadCompraId") {
+          const newCat = findUnit(value as string, customUnits)?.category;
+          const oldCat = findUnit(i.unidadCompraId, customUnits)?.category;
+          if (newCat && oldCat && newCat !== oldCat) {
+            updated.unidadUsoId = newCat === "weight" ? "g" : "ml";
+          }
+        }
+        // Recalcular costo si cambia un campo de conversion
+        if (
+          !updated.modoSimple &&
+          (field === "costoAdquisicion" ||
+            field === "cantidadCompra" ||
+            field === "unidadCompraId" ||
+            field === "cantidadUtilizada" ||
+            field === "unidadUsoId")
+        ) {
+          updated.costo = computeIngredientCost(
+            updated.costoAdquisicion,
+            updated.unidadCompraId,
+            updated.cantidadUtilizada,
+            customUnits,
+            updated.cantidadCompra,
+            updated.unidadUsoId,
+          );
+        }
+        return updated;
+      })
+    );
+  };
+
+  // ====== CUSTOM UNIT HANDLERS ======
+  const addCustomUnit = () => {
+    if (!newUnitName.trim() || newUnitFactor <= 0) return;
+    const newUnit: UnitOfMeasure = {
+      id: `custom_${Date.now()}`,
+      label: newUnitName.trim(),
+      category: newUnitCategory,
+      conversionFactor: newUnitFactor,
+      isCustom: true,
+    };
+    setCustomUnits([...customUnits, newUnit]);
+    setNewUnitName("");
+    setNewUnitFactor(0);
+    setShowCustomUnitForm(false);
+  };
+
+  const removeCustomUnit = (unitId: string) => {
+    const remaining = customUnits.filter((u) => u.id !== unitId);
+    setCustomUnits(remaining);
+    // Si algun ingrediente usaba esta unidad (compra o uso), resetearlo
+    setIngredientes(
+      ingredientes.map((ing) => {
+        const resetCompra = ing.unidadCompraId === unitId;
+        const resetUso = ing.unidadUsoId === unitId;
+        if (!resetCompra && !resetUso) return ing;
+        const updated = { ...ing };
+        if (resetCompra) updated.unidadCompraId = "kg";
+        if (resetUso) updated.unidadUsoId = "g";
+        updated.costo = computeIngredientCost(
+          updated.costoAdquisicion,
+          updated.unidadCompraId,
+          updated.cantidadUtilizada,
+          remaining,
+          updated.cantidadCompra,
+          updated.unidadUsoId,
+        );
+        return updated;
+      })
     );
   };
 
   const toggleTooltip = (id: string) => {
     setActiveTooltip(activeTooltip === id ? null : id);
+  };
+
+  // Obtener la categoria de la unidad actual de un ingrediente
+  const getUnitCategory = (unitId: string): UnitCategory => {
+    const unit = findUnit(unitId, customUnits);
+    return unit?.category || "weight";
+  };
+
+  // ====== GUARDAR PRODUCTO ======
+  const handleSaveProduct = () => {
+    if (!productName.trim()) return;
+    setSaveStatus("saving");
+    const product: SavedProduct = {
+      id: Date.now().toString(),
+      name: productName.trim(),
+      precio: result.precio_final,
+      costo: result.costo_total_unitario,
+      margen: margenDeseado,
+      fecha: new Date().toISOString(),
+      ingredientes: [...ingredientes],
+      salarioMensual,
+      minutosElaboracion,
+      opexMensual,
+      capacidadMensual,
+      margenDeseado,
+      comisionPlataforma,
+      customUnits: [...customUnits],
+    };
+    const existing = savedProducts.filter((p) => p.name !== product.name);
+    const updated = [product, ...existing];
+    setSavedProducts(updated);
+    localStorage.setItem("midf_saved_products", JSON.stringify(updated));
+    setTimeout(() => {
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2500);
+    }, 400);
+  };
+
+  // ====== CARGAR PRODUCTO GUARDADO ======
+  const handleLoadProduct = (product: SavedProduct) => {
+    setProductName(product.name);
+    if (product.ingredientes) setIngredientes(product.ingredientes);
+    if (product.salarioMensual !== undefined) setSalarioMensual(product.salarioMensual);
+    if (product.minutosElaboracion !== undefined) setMinutosElaboracion(product.minutosElaboracion);
+    if (product.opexMensual !== undefined) setOpexMensual(product.opexMensual);
+    if (product.capacidadMensual !== undefined) setCapacidadMensual(product.capacidadMensual);
+    if (product.margenDeseado !== undefined) setMargenDeseado(product.margenDeseado);
+    if (product.comisionPlataforma !== undefined) setComisionPlataforma(product.comisionPlataforma);
+    if (product.customUnits) setCustomUnits(product.customUnits);
+    setShowCatalog(false);
+  };
+
+  // ====== ELIMINAR PRODUCTO GUARDADO ======
+  const handleDeleteProduct = (id: string) => {
+    const updated = savedProducts.filter((p) => p.id !== id);
+    setSavedProducts(updated);
+    localStorage.setItem("midf_saved_products", JSON.stringify(updated));
   };
 
   return (
@@ -106,6 +312,75 @@ export default function LabPrecios() {
         </span>
       </div>
 
+      {/* ====== PRODUCTOS GUARDADOS (CATALOGO) ====== */}
+      {savedProducts.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          <button
+            onClick={() => setShowCatalog(!showCatalog)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Database size={16} className="text-violet-500" />
+              <span className="text-sm font-bold text-slate-700">Productos Guardados</span>
+              <span className="text-[10px] bg-violet-100 text-violet-700 font-bold px-2 py-0.5 rounded-full">{savedProducts.length}</span>
+            </div>
+            {showCatalog ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+          </button>
+          {showCatalog && (
+            <div className="border-t border-slate-100 divide-y divide-slate-100 max-h-64 overflow-y-auto">
+              {savedProducts.map((p) => (
+                <div key={p.id} className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 group">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 truncate">{p.name}</p>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="text-xs font-bold text-emerald-600">${p.precio.toFixed(2)}</span>
+                      <span className="text-[10px] text-slate-400">Costo: ${p.costo.toFixed(2)}</span>
+                      <span className="text-[10px] text-slate-400">Margen: {p.margen}%</span>
+                      <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+                        <Clock size={10} />
+                        {new Date(p.fecha).toLocaleDateString("es-PA")}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 ml-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => handleLoadProduct(p)}
+                      className="p-2 rounded-lg text-violet-500 hover:bg-violet-100 hover:text-violet-700 transition-colors"
+                      title="Editar producto"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProduct(p.id)}
+                      className="p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                      title="Eliminar producto"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ====== NOMBRE DEL PRODUCTO/SERVICIO ====== */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200">
+        <label className="block text-sm font-bold text-violet-800 mb-2">
+          <FlaskConical size={14} className="inline mr-1.5 -mt-0.5" />
+          Nombre del Producto o Servicio
+        </label>
+        <input
+          type="text"
+          value={productName}
+          onChange={(e) => setProductName(e.target.value)}
+          placeholder="Ej: Pizza Margarita, Corte de Cabello, Camiseta Estampada..."
+          className="w-full px-4 py-3 rounded-xl border border-violet-300 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-violet-400 focus:border-violet-400 focus:outline-none font-medium"
+        />
+        <p className="text-[10px] text-violet-500 mt-1.5">Este nombre se usara para guardar el calculo en tu base de datos de precios.</p>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ====== COLUMNA IZQUIERDA: INPUTS ====== */}
         <div className="space-y-5">
@@ -119,7 +394,7 @@ export default function LabPrecios() {
                 </span>
                 <TooltipButton
                   id="materiales"
-                  text="Lista todo lo que necesitas para hacer UNA unidad de tu producto."
+                  text="Ingresa el costo total de compra, cantidad y unidad comprada, y cuanto usas por producto. El sistema calcula el precio unitario y costo automaticamente."
                   active={activeTooltip}
                   onToggle={toggleTooltip}
                 />
@@ -133,50 +408,296 @@ export default function LabPrecios() {
               </button>
             </div>
 
-            <div className="space-y-2">
-              {ingredientes.map((ing) => (
-                <div
-                  key={ing.id}
-                  className="flex items-center gap-2 bg-white rounded-xl p-2"
-                >
-                  <input
-                    type="text"
-                    value={ing.nombre}
-                    onChange={(e) =>
-                      updateIngredient(ing.id, "nombre", e.target.value)
-                    }
-                    placeholder="Nombre"
-                    className="flex-1 text-sm px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-2 focus:ring-purple-500/10 outline-none min-h-[44px]"
-                  />
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500 text-sm">
-                      $
-                    </span>
-                    <input
-                      type="number"
-                      value={ing.costo || ""}
-                      onChange={(e) =>
-                        updateIngredient(
-                          ing.id,
-                          "costo",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      placeholder="0.00"
-                      className="w-24 text-sm pl-7 pr-2 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-2 focus:ring-purple-500/10 outline-none min-h-[44px]"
-                      step="0.01"
-                      min="0"
-                    />
+            <div className="space-y-3">
+              {ingredientes.map((ing) => {
+                const unitCategory = getUnitCategory(ing.unidadCompraId);
+
+                return (
+                  <div
+                    key={ing.id}
+                    className="bg-white rounded-xl p-3 space-y-2 border border-purple-100"
+                  >
+                    {/* Fila 1: Nombre + Eliminar */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={ing.nombre}
+                        onChange={(e) =>
+                          updateIngredient(ing.id, "nombre", e.target.value)
+                        }
+                        placeholder="Nombre del material"
+                        className="flex-1 text-sm px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-2 focus:ring-purple-500/10 outline-none min-h-[40px]"
+                      />
+                      <button
+                        onClick={() => removeIngredient(ing.id)}
+                        className="p-2 text-slate-300 hover:text-red-500 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
+                        disabled={ingredientes.length <= 1}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+
+                    {/* Fila 2: Compra (3 campos) */}
+                    <div>
+                      <span className="text-[10px] font-semibold text-purple-400 uppercase tracking-wide">Compra</span>
+                      <div className="grid grid-cols-3 gap-2 mt-1">
+                        {/* Costo total de la compra */}
+                        <div>
+                          <label className="text-[10px] text-slate-400 mb-0.5 block">
+                            Costo total
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-emerald-500 text-xs">
+                              $
+                            </span>
+                            <input
+                              type="number"
+                              value={ing.costoAdquisicion || ""}
+                              onChange={(e) =>
+                                updateIngredient(
+                                  ing.id,
+                                  "costoAdquisicion",
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              placeholder="0.00"
+                              className="w-full text-xs pl-5 pr-1 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px]"
+                              step="0.01"
+                              min="0"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Cantidad comprada */}
+                        <div>
+                          <label className="text-[10px] text-slate-400 mb-0.5 block">
+                            Cantidad
+                          </label>
+                          <input
+                            type="number"
+                            value={ing.cantidadCompra || ""}
+                            onChange={(e) =>
+                              updateIngredient(
+                                ing.id,
+                                "cantidadCompra",
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            placeholder="1"
+                            className="w-full text-xs px-2 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px]"
+                            step="1"
+                            min="0"
+                          />
+                        </div>
+
+                        {/* Unidad de Compra */}
+                        <div>
+                          <label className="text-[10px] text-slate-400 mb-0.5 block">
+                            Unidad
+                          </label>
+                          <select
+                            value={ing.unidadCompraId}
+                            onChange={(e) =>
+                              updateIngredient(
+                                ing.id,
+                                "unidadCompraId",
+                                e.target.value
+                              )
+                            }
+                            className="w-full text-xs py-2 px-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px] cursor-pointer"
+                          >
+                            <optgroup label="Peso">
+                              {allUnits
+                                .filter((u) => u.category === "weight")
+                                .map((u) => (
+                                  <option key={u.id} value={u.id}>
+                                    {u.label}
+                                    {u.isCustom ? " *" : ""}
+                                  </option>
+                                ))}
+                            </optgroup>
+                            <optgroup label="Volumen">
+                              {allUnits
+                                .filter((u) => u.category === "volume")
+                                .map((u) => (
+                                  <option key={u.id} value={u.id}>
+                                    {u.label}
+                                    {u.isCustom ? " *" : ""}
+                                  </option>
+                                ))}
+                            </optgroup>
+                          </select>
+                        </div>
+                      </div>
+                      {/* Precio unitario calculado */}
+                      {(ing.cantidadCompra ?? 1) > 1 && ing.costoAdquisicion > 0 && (
+                        <p className="text-[10px] text-emerald-600 mt-1">
+                          Precio unitario: ${(ing.costoAdquisicion / (ing.cantidadCompra ?? 1)).toFixed(2)}/{findUnit(ing.unidadCompraId, customUnits)?.label ?? ing.unidadCompraId}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Fila 3: Uso por producto (2 campos) */}
+                    <div>
+                      <span className="text-[10px] font-semibold text-purple-400 uppercase tracking-wide">Uso por producto</span>
+                      <div className="grid grid-cols-2 gap-2 mt-1">
+                        {/* Cantidad que usas */}
+                        <div>
+                          <label className="text-[10px] text-slate-400 mb-0.5 block">
+                            Cantidad
+                          </label>
+                          <input
+                            type="number"
+                            value={ing.cantidadUtilizada || ""}
+                            onChange={(e) =>
+                              updateIngredient(
+                                ing.id,
+                                "cantidadUtilizada",
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            placeholder="0"
+                            className="w-full text-xs px-2 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px]"
+                            step="0.01"
+                            min="0"
+                          />
+                        </div>
+
+                        {/* Unidad de uso */}
+                        <div>
+                          <label className="text-[10px] text-slate-400 mb-0.5 block">
+                            Unidad
+                          </label>
+                          <select
+                            value={ing.unidadUsoId || (unitCategory === "weight" ? "g" : "ml")}
+                            onChange={(e) =>
+                              updateIngredient(
+                                ing.id,
+                                "unidadUsoId",
+                                e.target.value
+                              )
+                            }
+                            className="w-full text-xs py-2 px-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/10 outline-none min-h-[36px] cursor-pointer"
+                          >
+                            {allUnits
+                              .filter((u) => u.category === unitCategory)
+                              .map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.label}
+                                  {u.isCustom ? " *" : ""}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Fila 4: Costo calculado */}
+                    <div className="flex items-center justify-between px-2.5 py-1.5 bg-purple-50 rounded-lg border border-purple-100">
+                      <span className="text-[10px] text-purple-500 font-medium">
+                        Costo en tu producto:
+                      </span>
+                      <span className="text-xs font-bold text-purple-800">
+                        ${ing.costo.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* --- Unidades Personalizadas --- */}
+            <div className="mt-3 pt-3 border-t border-purple-200">
+              <button
+                onClick={() => setShowCustomUnitForm(!showCustomUnitForm)}
+                className="flex items-center gap-1.5 text-[11px] text-purple-500 hover:text-purple-700 font-medium transition-colors"
+              >
+                <Ruler size={12} />
+                {showCustomUnitForm ? "Cancelar" : "Crear unidad personalizada"}
+                {showCustomUnitForm ? (
+                  <ChevronUp size={12} />
+                ) : (
+                  <ChevronDown size={12} />
+                )}
+              </button>
+
+              {showCustomUnitForm && (
+                <div className="mt-2 p-3 bg-white rounded-xl border border-purple-100 space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[10px] text-slate-400 mb-0.5 block">
+                        Nombre
+                      </label>
+                      <input
+                        type="text"
+                        value={newUnitName}
+                        onChange={(e) => setNewUnitName(e.target.value)}
+                        placeholder="Ej: Saco 25kg"
+                        className="w-full text-xs px-2 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 outline-none focus:border-purple-400 min-h-[36px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 mb-0.5 block">
+                        Tipo
+                      </label>
+                      <select
+                        value={newUnitCategory}
+                        onChange={(e) =>
+                          setNewUnitCategory(e.target.value as UnitCategory)
+                        }
+                        className="w-full text-xs py-2 px-1.5 rounded-lg border border-slate-200 bg-white text-slate-800 outline-none focus:border-purple-400 min-h-[36px] cursor-pointer"
+                      >
+                        <option value="weight">Peso (g)</option>
+                        <option value="volume">Volumen (ml)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 mb-0.5 block">
+                        Equivale a ({baseUnitLabel(newUnitCategory)})
+                      </label>
+                      <input
+                        type="number"
+                        value={newUnitFactor || ""}
+                        onChange={(e) =>
+                          setNewUnitFactor(parseFloat(e.target.value) || 0)
+                        }
+                        placeholder="25000"
+                        className="w-full text-xs px-2 py-2 rounded-lg border border-slate-200 bg-white text-slate-800 placeholder:text-slate-300 outline-none focus:border-purple-400 min-h-[36px]"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
                   </div>
                   <button
-                    onClick={() => removeIngredient(ing.id)}
-                    className="p-2 text-slate-300 hover:text-red-500 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                    disabled={ingredientes.length <= 1}
+                    onClick={addCustomUnit}
+                    disabled={!newUnitName.trim() || newUnitFactor <= 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    <Trash2 size={16} />
+                    <Save size={12} />
+                    Guardar unidad
                   </button>
                 </div>
-              ))}
+              )}
+
+              {/* Lista de unidades custom */}
+              {customUnits.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {customUnits.map((u) => (
+                    <span
+                      key={u.id}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-purple-600 bg-purple-100 rounded-full"
+                    >
+                      {u.label} ({u.conversionFactor.toLocaleString()}{baseUnitLabel(u.category)})
+                      <button
+                        onClick={() => removeCustomUnit(u.id)}
+                        className="text-purple-400 hover:text-red-500 transition-colors"
+                      >
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -310,6 +831,24 @@ export default function LabPrecios() {
                 ITBMS: ${result.itbms.toFixed(2)}
               </span>
             </div>
+            {/* Boton guardar */}
+            <button
+              onClick={handleSaveProduct}
+              disabled={!productName.trim() || saveStatus === "saving"}
+              className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+                saveStatus === "saved"
+                  ? "bg-white text-emerald-700 border-2 border-emerald-300"
+                  : !productName.trim()
+                  ? "bg-emerald-900/40 text-emerald-300/60 cursor-not-allowed"
+                  : "bg-white text-emerald-700 hover:bg-emerald-50 border-2 border-emerald-300 hover:border-emerald-400"
+              }`}
+            >
+              <Save size={16} />
+              {saveStatus === "saving" ? "Guardando..." : saveStatus === "saved" ? "Guardado en Base de Datos" : "Guardar Producto"}
+            </button>
+            {!productName.trim() && (
+              <p className="text-[10px] text-emerald-200/80 text-center mt-1">Escribe un nombre arriba para poder guardar</p>
+            )}
           </div>
 
           {/* --- Desglose de Costos --- */}

@@ -12,6 +12,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Skull, TrendingUp, TrendingDown } from "lucide-react";
+import SmartTooltip from "@/components/SmartTooltip";
 
 // ============================================
 // TIPOS

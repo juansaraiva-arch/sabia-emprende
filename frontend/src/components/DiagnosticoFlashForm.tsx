@@ -103,8 +103,20 @@ function Tooltip({ text }: { text: string }) {
 }
 
 // ============================================
-// HELPER: CURRENCY INPUT
+// HELPER: CURRENCY INPUT (con formateo real-time)
 // ============================================
+
+/** Formatea parte entera con separadores de miles */
+function formatWithCommas(value: string): string {
+  const parts = value.split(".");
+  const integer = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.length > 1 ? `${integer}.${parts[1]}` : integer;
+}
+
+/** Remueve comas para obtener el string numérico puro */
+function stripCommas(value: string): string {
+  return value.replace(/,/g, "");
+}
 
 function CurrencyInput({
   label,
@@ -122,23 +134,50 @@ function CurrencyInput({
   icon?: React.ReactNode;
 }) {
   const [displayValue, setDisplayValue] = useState(
-    value > 0 ? value.toString() : ""
+    value > 0 ? formatWithCommas(value.toString()) : ""
   );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/[^0-9.]/g, "");
-    setDisplayValue(raw);
-    const num = parseFloat(raw);
+    // Strip commas first, then allow only digits and one dot
+    const raw = stripCommas(e.target.value).replace(/[^0-9.]/g, "");
+    // Prevent multiple dots
+    const dotIndex = raw.indexOf(".");
+    const sanitized = dotIndex >= 0
+      ? raw.slice(0, dotIndex + 1) + raw.slice(dotIndex + 1).replace(/\./g, "")
+      : raw;
+    // Limit decimals to 2 digits
+    const parts = sanitized.split(".");
+    const limited = parts.length > 1 ? `${parts[0]}.${parts[1].slice(0, 2)}` : sanitized;
+
+    // Format with commas for display
+    setDisplayValue(limited ? formatWithCommas(limited) : "");
+    const num = parseFloat(limited);
     onChange(isNaN(num) ? 0 : num);
   };
 
   const handleBlur = () => {
-    const num = parseFloat(displayValue);
+    const num = parseFloat(stripCommas(displayValue));
     if (isNaN(num) || num === 0) {
       setDisplayValue("");
       onChange(0);
     } else {
-      setDisplayValue(num.toString());
+      // On blur, show full format with 2 decimals
+      setDisplayValue(num.toLocaleString("es-PA", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+        useGrouping: true,
+      }).replace(/\s/g, ""));
+    }
+  };
+
+  const handleFocus = () => {
+    // On focus, show simpler format (commas but no forced decimals) for editing
+    const num = parseFloat(stripCommas(displayValue));
+    if (!isNaN(num) && num > 0) {
+      const raw = stripCommas(displayValue);
+      // Remove trailing .00 for easier editing
+      const cleaned = raw.replace(/\.00$/, "");
+      setDisplayValue(formatWithCommas(cleaned));
     }
   };
 
@@ -151,8 +190,8 @@ function CurrencyInput({
         {tooltip && !tooltipTerm && <Tooltip text={tooltip} />}
       </label>
       <div className="relative">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-emerald-500">
-          $
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-emerald-500">
+          B/.
         </span>
         <input
           type="text"
@@ -160,8 +199,9 @@ function CurrencyInput({
           value={displayValue}
           onChange={handleChange}
           onBlur={handleBlur}
+          onFocus={handleFocus}
           placeholder="0.00"
-          className="w-full pl-10 pr-4 py-4 text-lg font-bold text-slate-800 bg-white border-2 border-slate-200 rounded-xl focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition-all min-h-[56px] placeholder:text-slate-300"
+          className="w-full pl-12 pr-4 py-4 text-lg font-bold text-slate-800 bg-white border-2 border-slate-200 rounded-xl focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 outline-none transition-all min-h-[56px] placeholder:text-slate-300"
         />
       </div>
     </div>
@@ -332,7 +372,7 @@ export default function DiagnosticoFlashForm({
                     grossProfit >= 0 ? "text-emerald-600" : "text-red-600"
                   }`}
                 >
-                  ${fmt(grossProfit)}
+                  B/. {fmt(grossProfit)}
                 </p>
                 {data.revenue > 0 && (
                   <p className="text-xs text-slate-500 mt-1">
@@ -390,7 +430,7 @@ export default function DiagnosticoFlashForm({
                     ebitda >= 0 ? "text-emerald-600" : "text-red-600"
                   }`}
                 >
-                  ${fmt(ebitda)}
+                  B/. {fmt(ebitda)}
                 </p>
                 {data.revenue > 0 && (
                   <p className="text-xs text-slate-500 mt-1">
@@ -537,6 +577,7 @@ export default function DiagnosticoFlashForm({
               <h4 className="text-sm font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                 <Calculator size={16} className="text-violet-500" />
                 Estado de Resultados
+                <SmartTooltip term="estado_resultados" size={14} />
               </h4>
 
               <div className="divide-y divide-slate-200 rounded-xl border border-slate-200 overflow-hidden">
@@ -547,13 +588,13 @@ export default function DiagnosticoFlashForm({
                   bold
                 />
                 <SummaryRow
-                  label="(-) Costo de Ventas"
+                  label={<span className="flex items-center">(-) Costo de Ventas<SmartTooltip term="cogs" size={12} /></span>}
                   value={data.cogs}
                   color="text-red-600"
                   negative
                 />
                 <SummaryRow
-                  label="= Utilidad Bruta"
+                  label={<span className="flex items-center">= Utilidad Bruta<SmartTooltip term="gross_profit" size={12} /></span>}
                   value={grossProfit}
                   color={grossProfit >= 0 ? "text-emerald-600" : "text-red-600"}
                   bold
@@ -578,7 +619,7 @@ export default function DiagnosticoFlashForm({
                   negative
                 />
                 <SummaryRow
-                  label="= EBITDA"
+                  label={<span className="flex items-center">= EBITDA<SmartTooltip term="ebitda" size={12} /></span>}
                   value={ebitda}
                   color={ebitda >= 0 ? "text-emerald-600" : "text-red-600"}
                   bold
@@ -595,7 +636,7 @@ export default function DiagnosticoFlashForm({
                       negative
                     />
                     <SummaryRow
-                      label="= EBIT"
+                      label={<span className="flex items-center">= EBIT<SmartTooltip term="ebit" size={12} /></span>}
                       value={ebit}
                       color={ebit >= 0 ? "text-emerald-600" : "text-red-600"}
                       bold
@@ -608,7 +649,7 @@ export default function DiagnosticoFlashForm({
                       negative
                     />
                     <SummaryRow
-                      label="= EBT"
+                      label={<span className="flex items-center">= EBT<SmartTooltip term="ebt" size={12} /></span>}
                       value={ebt}
                       color={ebt >= 0 ? "text-emerald-600" : "text-red-600"}
                       bold
@@ -623,7 +664,7 @@ export default function DiagnosticoFlashForm({
                   </>
                 )}
                 <SummaryRow
-                  label="= Utilidad Neta"
+                  label={<span className="flex items-center">= Utilidad Neta<SmartTooltip term="net_income" size={12} /></span>}
                   value={netIncome}
                   color={netIncome >= 0 ? "text-emerald-600" : "text-red-600"}
                   bold
@@ -752,7 +793,7 @@ function SummaryRow({
   highlight = false,
   large = false,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: number;
   color: string;
   bold?: boolean;
@@ -778,7 +819,7 @@ function SummaryRow({
           bold ? "font-extrabold" : "font-bold"
         } ${color} tabular-nums`}
       >
-        {negative && value > 0 && "-"}${fmt(Math.abs(value))}
+        {negative && value > 0 && "-"}B/. {fmt(Math.abs(value))}
       </span>
     </div>
   );

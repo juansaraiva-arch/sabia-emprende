@@ -1,5 +1,5 @@
 -- ============================================================
--- SAVIA EMPRENDE / LEGADO PTY
+-- MI DIRECTOR FINANCIERO PTY
 -- Schema SQL para Supabase (PostgreSQL)
 -- Sprint 1: Tablas core + RLS + Audit Logging
 -- ============================================================

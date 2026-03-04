@@ -196,6 +196,28 @@ export const nlpApi = {
       method: "POST",
       body: JSON.stringify({ query, society_id: societyId }),
     }),
+
+  /** Chat conversacional con GPT-4o como motor inteligente */
+  chat: (
+    query: string,
+    societyId: string,
+    systemPrompt: string,
+    history: { role: string; content: string }[] = []
+  ) =>
+    apiFetch<{
+      reply: string;
+      action?: string;
+      data?: any;
+      source: string;
+    }>("/nlp/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        query,
+        society_id: societyId,
+        system_prompt: systemPrompt,
+        history,
+      }),
+    }),
 };
 
 // --- Nómina ---
@@ -492,6 +514,13 @@ export const aiApi = {
     }
     return res.json();
   },
+
+  /** Simplificar texto legal con GPT-4o */
+  simplifyLegal: (text: string, context = "contrato de sociedad anonima en Panama") =>
+    apiFetch<{ data: { simple: string; riesgo: "bajo" | "medio" | "alto"; emoji: string; tip: string } }>("/ai/simplify-legal", {
+      method: "POST",
+      body: JSON.stringify({ text, context }),
+    }),
 
   /** Data Merging: fusionar datos de factura + voz en un solo registro */
   mergeTransaction: (body: {

@@ -8,7 +8,7 @@ import { HelpCircle } from "lucide-react";
 // emprendedores panamenos
 // ============================================
 
-export const GLOSARIO: Record<string, { titulo: string; explicacion: string; ejemplo?: string }> = {
+export const GLOSARIO: Record<string, { titulo: string; explicacion: string; paraQueSirve?: string; ejemplo?: string }> = {
   // --- Estado de Resultados (P&L) ---
   revenue: {
     titulo: "Ingresos / Ventas",
@@ -17,17 +17,21 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
   },
   cogs: {
     titulo: "Costo de Ventas (COGS)",
-    explicacion: "Lo que te costo producir o comprar lo que vendiste. Es un costo variable: sube y baja con tus ventas.",
-    ejemplo: "Si cada plato usa $6 en ingredientes, tu COGS es $600 por 100 platos.",
+    explicacion: "Cost of Goods Sold — es todo lo que gastas directamente para producir o comprar lo que vendes. Materia prima, mano de obra directa, empaque. Si no vendieras nada, este costo no existiria.",
+    paraQueSirve: "Es el primer filtro de tu rentabilidad. Si tu COGS es demasiado alto respecto a tus ingresos, no importa cuanto vendas: estas regalando tu trabajo. Controlarlo es la diferencia entre un negocio que crece y uno que solo sobrevive.",
+    ejemplo: "Si vendes $10,000 y tu COGS es $6,000, te quedan $4,000 de ganancia bruta (40%). Un COGS por debajo del 60% de tus ingresos es saludable. Si supera el 70%, revisa precios o proveedores.",
   },
   gross_profit: {
     titulo: "Utilidad Bruta (U.B.)",
-    explicacion: "Lo que te queda despues de pagar lo que vendiste. Es la primera linea de ganancia. Si es negativa, pierdes dinero en cada venta.",
-    ejemplo: "Ventas $1,500 - COGS $600 = Utilidad Bruta $900.",
+    explicacion: "Es lo que te queda despues de restar el costo directo de lo que vendiste (COGS) a tus ingresos totales. Es tu primera linea de ganancia.",
+    paraQueSirve: "Te dice si tu modelo de negocio basico funciona. Si la Utilidad Bruta es baja o negativa, pierdes dinero en cada venta — no importa cuantos clientes tengas.",
+    ejemplo: "Si vendes $10,000 y tu COGS es $6,000, tu Utilidad Bruta es $4,000. Esos $4,000 son los que tienen que cubrir alquiler, nomina, marketing y dejarte ganancia.",
   },
   opex: {
     titulo: "Gastos Operativos (OPEX)",
-    explicacion: "Todos los gastos fijos del negocio que pagas sin importar cuanto vendas: alquiler, nomina, luz, agua, internet, publicidad.",
+    explicacion: "Operating Expenses — son los gastos fijos para mantener tu negocio funcionando, aunque no vendas ni una unidad. Alquiler, salarios administrativos, servicios publicos, marketing, seguros.",
+    paraQueSirve: "El OPEX es tu costo de existir. Un OPEX descontrolado es como tener una fuga de agua: no la ves, pero te esta vaciando la caja cada mes. Dominarlo te da libertad para invertir y crecer.",
+    ejemplo: "Si facturas $10,000 y tu OPEX es $3,500, representa un 35%. Si tu OPEX supera el 40-45% de tus ingresos, tu negocio esta operando pesado y necesitas optimizar.",
   },
   opex_rent: {
     titulo: "Alquiler del Local",
@@ -39,8 +43,9 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
   },
   ebitda: {
     titulo: "EBITDA",
-    explicacion: "Ganancias antes de depreciacion, intereses e impuestos. Es lo que REALMENTE genera tu operacion. Los bancos y inversionistas miran este numero.",
-    ejemplo: "Si tu Ut. Bruta es $900 y tu OPEX total es $400, tu EBITDA es $500.",
+    explicacion: "Earnings Before Interest, Taxes, Depreciation and Amortization — tu ganancia operativa pura, antes de descontar intereses bancarios, impuestos, depreciacion y amortizacion. Es el dinero que tu negocio genera por su operacion real.",
+    paraQueSirve: "Es el indicador rey para saber si tu negocio es rentable por si mismo, sin importar como lo financias o cuanto pagas de impuestos. Cuando un inversionista o comprador evalua tu empresa, lo primero que mira es el EBITDA.",
+    ejemplo: "Si tu EBITDA es positivo, tu operacion genera dinero. Si es negativo, tu negocio pierde plata operando. Margen EBITDA saludable: por encima del 15-20% de tus ingresos.",
   },
   depreciation: {
     titulo: "Depreciacion",
@@ -49,7 +54,9 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
   },
   ebit: {
     titulo: "EBIT (Utilidad Operativa)",
-    explicacion: "Lo que gana tu negocio despues de considerar el desgaste de equipos. Muestra la capacidad de generar ganancias con tus activos.",
+    explicacion: "Earnings Before Interest and Taxes — es tu EBITDA menos la depreciacion y amortizacion. Representa la ganancia real de tu operacion considerando el desgaste de tus activos (equipos, vehiculos, maquinaria).",
+    paraQueSirve: "Te muestra la rentabilidad operativa real. A diferencia del EBITDA, el EBIT reconoce que tus equipos se desgastan y eventualmente hay que reponerlos. Es una foto mas conservadora y realista.",
+    ejemplo: "Si tu EBITDA es $5,000 pero tu EBIT baja a $2,000, tienes $3,000 en depreciacion. Un EBIT positivo y estable indica que tu negocio es sostenible a largo plazo.",
   },
   interest_expense: {
     titulo: "Intereses de Prestamos",
@@ -57,7 +64,9 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
   },
   ebt: {
     titulo: "EBT (Utilidad Antes de Impuestos)",
-    explicacion: "Lo que te queda despues de pagarle al banco pero antes de impuestos. Si es positivo, tu negocio genera valor real.",
+    explicacion: "Earnings Before Taxes — es tu EBIT menos los intereses financieros (prestamos, lineas de credito). Es lo que ganas despues de pagarle al banco, pero antes de pagarle al gobierno.",
+    paraQueSirve: "Revela el impacto real de tu deuda. Si tu EBIT es bueno pero tu EBT se desploma, los intereses te estan comiendo la ganancia. Es la senal para renegociar condiciones o reducir deuda.",
+    ejemplo: "Si tu EBIT es $4,000 y tu EBT es $3,500, pagas $500 en intereses — manejable. Si cae a $1,000, estas pagando $3,000 en intereses y el banco gana mas que tu con tu propio negocio.",
   },
   tax_expense: {
     titulo: "Impuestos",
@@ -65,7 +74,9 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
   },
   net_income: {
     titulo: "Utilidad Neta (U.N.)",
-    explicacion: "La ganancia final. Lo que realmente te queda en el bolsillo despues de TODO. Si es positiva, tu negocio es rentable.",
+    explicacion: "La ganancia final despues de TODO: costos, gastos operativos, depreciacion, intereses e impuestos. Es lo que realmente queda en tu bolsillo.",
+    paraQueSirve: "Es el veredicto final. Si es positiva, tu negocio genera riqueza. Si es negativa, estas subsidiando tu negocio con tu propio dinero o con deuda. Determina si puedes reinvertir, pagar dividendos o ahorrar.",
+    ejemplo: "Si tus ingresos son $10,000 y tu Utilidad Neta es $800, tu margen neto es 8% — de cada dolar vendido, te quedan 8 centavos limpios. Para una PYME, un margen neto entre 5-10% es saludable.",
   },
 
   // --- Balance General ---
@@ -93,11 +104,15 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
   // --- Ratios y Metricas ---
   margen_bruto: {
     titulo: "Margen Bruto (%)",
-    explicacion: "Que porcentaje de cada dolar vendido te queda despues de pagar el costo del producto. Meta: >40% para servicios, >25% para retail.",
+    explicacion: "Porcentaje de cada dolar vendido que te queda despues de pagar el costo directo del producto o servicio. Se calcula: (Utilidad Bruta / Ingresos) x 100.",
+    paraQueSirve: "Es el termometro de tu poder de precios. Un margen bruto alto significa que tienes espacio para absorber gastos operativos y aun ganar. Un margen bajo te deja sin aire para operar.",
+    ejemplo: "Si tu margen bruto es 40%, de cada $100 vendidos te quedan $40 para cubrir gastos y ganar. Metas: Servicios >50%, Retail >25%, Restaurantes >60%. Si estas por debajo de tu industria, revisa precios.",
   },
   margen_ebitda: {
     titulo: "Margen EBITDA (%)",
-    explicacion: "Que porcentaje de cada dolar vendido se convierte en ganancia operativa. Es el indicador #1 de la salud de tu negocio. Meta: >15%.",
+    explicacion: "Porcentaje de cada dolar vendido que se convierte en ganancia operativa pura. Se calcula: (EBITDA / Ingresos) x 100. Es el indicador #1 que miran inversionistas y compradores.",
+    paraQueSirve: "Mide la eficiencia total de tu operacion. Un negocio con alto margen EBITDA puede resistir crisis, reinvertir y crecer. Uno con margen bajo vive al filo: cualquier baja en ventas lo pone en rojo.",
+    ejemplo: "Si tu margen EBITDA es 20%, de cada $100 vendidos generas $20 de ganancia operativa. Por encima del 15% estas en zona saludable. Por debajo del 10%, tu operacion es fragil.",
   },
   rent_ratio: {
     titulo: "Alquiler / Ventas (%)",
@@ -108,8 +123,10 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
     explicacion: "Que porcentaje de tu ganancia bruta consume la nomina incluyendo cargas patronales (CSS 12.25%, SE 1.5%, RP 1.5%, XIII Mes 8.33%, Vacaciones 4.17%, Prima 1.92%). Si pasa del 35%, necesitas mas productividad o ajustar plantilla.",
   },
   prueba_acida: {
-    titulo: "Prueba Acida",
-    explicacion: "Por cada dolar que debes a corto plazo, cuantos dolares liquidos tienes. Si es menor a 1.0, no puedes pagar tus deudas inmediatas. Meta: >1.0x.",
+    titulo: "Prueba Acida (Quick Ratio)",
+    explicacion: "Mide tu capacidad de pagar todas tus deudas a corto plazo usando solo tu efectivo y cuentas por cobrar, sin contar inventario. Es la prueba mas estricta de liquidez: puedes pagar lo que debes HOY sin vender mercancia?",
+    paraQueSirve: "Te dice si podrias sobrevivir una emergencia financiera. Si manana tus ventas se detienen, tienes suficiente efectivo para cubrir tus compromisos inmediatos? Este numero separa a los negocios solidos de los que viven al filo.",
+    ejemplo: "Se expresa en veces (x). Un resultado de 4.1x significa que tienes $4.10 en activos liquidos por cada $1.00 que debes a corto plazo — posicion excelente. Por encima de 1.0x estas cubierto. Por debajo de 1.0x: alerta roja.",
   },
   cobertura_deuda: {
     titulo: "Cobertura de Deuda",
@@ -117,7 +134,9 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
   },
   ccc: {
     titulo: "Ciclo de Conversion de Caja (CCC)",
-    explicacion: "Cuantos dias tarda tu dinero en hacer el viaje completo: compras → inventario → ventas → cobro. Menos dias = mejor flujo de caja. Meta: <30 dias.",
+    explicacion: "Cash Conversion Cycle — mide cuantos dias tarda tu dinero en hacer el viaje completo: desde que pagas a tu proveedor, pasando por inventario y venta, hasta que el cliente te paga.",
+    paraQueSirve: "Es el pulso de tu flujo de caja. Un CCC largo significa que tu dinero esta atrapado en el ciclo del negocio. Mientras mas corto sea, mas rapido recuperas tu inversion y mas oxigeno tiene tu empresa.",
+    ejemplo: "Se mide en dias. CCC de 45 dias = tardas 45 dias en recuperar cada dolar invertido. Meta: menos de 30 dias. Si es negativo (ej. -10 dias), cobras antes de pagar — posicion ideal.",
   },
   dias_calle: {
     titulo: "Dias en la Calle",
@@ -134,6 +153,26 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; eje
   dinero_atrapado: {
     titulo: "Dinero Atrapado",
     explicacion: "Suma de cuentas por cobrar + inventario. Es dinero que ya gastaste pero aun no te regresa. Si es mas del 50% de tus ventas, tienes un problema serio.",
+  },
+
+  // --- Reportes y Graficos ---
+  mandibulas: {
+    titulo: "Mandibulas: Ventas vs Costos",
+    explicacion: "Grafico que compara la tendencia de tus ventas contra la tendencia de tus costos totales a lo largo del tiempo. Cuando las lineas se separan como mandibulas abriendose, tu negocio mejora.",
+    paraQueSirve: "Te muestra si tu negocio esta ganando o perdiendo eficiencia mes a mes. Mandibulas abiertas (ventas arriba, costos abajo) = salud. Mandibulas cerrandose = peligro: tus costos crecen mas rapido que tus ventas.",
+    ejemplo: "Si las lineas se abren hacia arriba, vas bien — tu ganancia crece. Si se cierran o se cruzan, es alerta roja: tus costos estan alcanzando (o superando) tus ventas. Actua antes de que se crucen.",
+  },
+  balance_general: {
+    titulo: "Balance General",
+    explicacion: "Foto financiera de tu empresa en un momento exacto. Muestra tres cosas: lo que tienes (Activos), lo que debes (Pasivos) y lo que realmente es tuyo (Patrimonio). Siempre Activos = Pasivos + Patrimonio.",
+    paraQueSirve: "Te dice cuanto vale tu empresa en papel. Un Balance sano muestra activos creciendo, deudas controladas y patrimonio en aumento. Los bancos lo piden para aprobar prestamos.",
+    ejemplo: "Si tienes $50,000 en activos y $30,000 en deudas, tu patrimonio es $20,000 — eso es lo que realmente vale tu participacion. Si las deudas superan los activos, tu patrimonio es negativo: la empresa esta tecnicamente quebrada.",
+  },
+  estado_resultados: {
+    titulo: "Estado de Resultados (P&L)",
+    explicacion: "Reporte que muestra cuanto ganaste o perdiste en un periodo (mes, trimestre o ano). Arranca con tus ingresos y va restando costos y gastos paso a paso hasta llegar a la Utilidad Neta.",
+    paraQueSirve: "Es tu tablero de score. Te permite ver exactamente donde se va tu dinero: en costos de produccion? en nomina? en intereses? Cada linea es una oportunidad de mejora.",
+    ejemplo: "Leelo de arriba hacia abajo como una cascada. Si la Utilidad Bruta es buena pero la Neta es mala, el problema esta en tus gastos operativos o deuda. Te senala exactamente donde atacar.",
   },
 
   // --- Herramientas ---
@@ -391,6 +430,7 @@ export default function SmartTooltip({ term, text, size = 15, className = "" }: 
   const entry = term ? GLOSARIO[term] : null;
   const displayText = entry?.explicacion || text || "";
   const displayTitle = entry?.titulo || "";
+  const displayParaQueSirve = entry?.paraQueSirve || "";
   const displayEjemplo = entry?.ejemplo || "";
 
   // Ajustar posicion si no cabe arriba
@@ -429,7 +469,7 @@ export default function SmartTooltip({ term, text, size = 15, className = "" }: 
       {open && (
         <div
           ref={tooltipRef}
-          className={`absolute z-50 w-64 sm:w-72 p-3.5 bg-white border border-slate-200 rounded-xl shadow-xl ${
+          className={`absolute z-50 w-72 sm:w-80 p-3.5 bg-white border border-slate-200 rounded-xl shadow-xl ${
             position === "top"
               ? "bottom-full mb-2 left-1/2 -translate-x-1/2"
               : "top-full mt-2 left-1/2 -translate-x-1/2"
@@ -440,12 +480,21 @@ export default function SmartTooltip({ term, text, size = 15, className = "" }: 
               {displayTitle}
             </p>
           )}
+          {/* Seccion 1: Que es */}
           <p className="text-xs text-slate-600 leading-relaxed">
             {displayText}
           </p>
+          {/* Seccion 2: Para que sirve */}
+          {displayParaQueSirve && (
+            <div className="mt-2 pt-2 border-t border-slate-100">
+              <p className="text-[10px] font-bold text-amber-600 mb-0.5">Para que sirve:</p>
+              <p className="text-xs text-slate-600 leading-relaxed">{displayParaQueSirve}</p>
+            </div>
+          )}
+          {/* Seccion 3: Como leerlo */}
           {displayEjemplo && (
             <div className="mt-2 p-2 rounded-lg bg-violet-50 border border-violet-100">
-              <p className="text-[10px] font-bold text-violet-500 mb-0.5">Ejemplo:</p>
+              <p className="text-[10px] font-bold text-violet-500 mb-0.5">{displayParaQueSirve ? "Como leerlo:" : "Ejemplo:"}</p>
               <p className="text-[11px] text-violet-700 leading-relaxed">{displayEjemplo}</p>
             </div>
           )}

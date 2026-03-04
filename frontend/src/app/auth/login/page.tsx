@@ -5,7 +5,7 @@
  */
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import SabiaLogo from "@/components/SabiaLogo";
+import MidfLogo from "@/components/MidfLogo";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -45,7 +45,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <SabiaLogo size={64} />
+            <MidfLogo size={64} />
           </div>
           <h1 className="font-heading text-3xl font-bold text-emerald-900">
             Mi Director Financiero PTY

@@ -33,7 +33,7 @@ def _get_demo_user() -> AuthenticatedUser:
     """Retorna el usuario demo hardcodeado para desarrollo."""
     return AuthenticatedUser(
         id="demo-user-001",
-        email="demo@sabia.local",
+        email="demo@midf.local",
         role="owner",
     )
 
@@ -63,7 +63,7 @@ async def get_current_user(
         # Buscar header legacy x-user-id
         legacy_id = request.headers.get("x-user-id")
         if legacy_id:
-            return AuthenticatedUser(id=legacy_id, email="legacy@sabia.local")
+            return AuthenticatedUser(id=legacy_id, email="legacy@midf.local")
         return _get_demo_user()
 
     # Produccion sin token = no autorizado

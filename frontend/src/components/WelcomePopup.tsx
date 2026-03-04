@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { BarChart3, FileText, Shield, ArrowRight, X } from "lucide-react";
-import SabiaLogo from "@/components/SabiaLogo";
+import MidfLogo from "@/components/MidfLogo";
 
 interface WelcomePopupProps {
   onDismiss: () => void;
@@ -24,7 +24,7 @@ export default function WelcomePopup({ onDismiss, onStart }: WelcomePopupProps) 
         {/* Header gradient */}
         <div className="bg-gradient-to-br from-slate-800 to-slate-900 px-6 py-8 text-center">
           <div className="flex items-center justify-center mx-auto mb-4">
-            <SabiaLogo size={80} iconOnly />
+            <MidfLogo size={80} iconOnly />
           </div>
           <h2 className="text-2xl font-extrabold text-white font-heading mb-1">
             Mi Director Financiero PTY

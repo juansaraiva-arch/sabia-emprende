@@ -1,11 +1,11 @@
 @echo off
 chcp 65001 >nul
-title SABIA EMPRENDE - Instalador Demo
+title MI DIRECTOR FINANCIERO PTY - Instalador Demo
 color 0A
 
 echo.
 echo  ============================================
-echo       SABIA EMPRENDE - Demo Interactiva
+echo       MI DIRECTOR FINANCIERO PTY - Demo Interactiva
 echo       Tu Aliado Estratégico para Panama
 echo  ============================================
 echo.
@@ -50,7 +50,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo         Dependencias instaladas OK
 
 :: ---- Lanzar app ----
-echo  [4/4] Abriendo SABIA EMPRENDE en tu navegador...
+echo  [4/4] Abriendo MI DIRECTOR FINANCIERO PTY en tu navegador...
 echo.
 echo  ============================================
 echo    La app se abrira en: http://localhost:8501

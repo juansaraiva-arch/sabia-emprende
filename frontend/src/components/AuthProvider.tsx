@@ -4,7 +4,7 @@
  * Provee user, session, loading, signOut, isDemoMode a toda la app.
  */
 import { createContext, useContext, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
 type AuthContextType = {
@@ -29,21 +29,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
   const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  const configured = isSupabaseConfigured();
 
   useEffect(() => {
-    // Obtener sesion inicial
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Si Supabase no está configurado, skip auth
+    if (!configured) {
       setLoading(false);
-    });
+      return;
+    }
+
+    // Obtener sesion inicial
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: s } }) => {
+        setSession(s);
+        setUser(s?.user ?? null);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
 
     // Escuchar cambios de auth (login, logout, token refresh)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      setUser(s?.user ?? null);
       setLoading(false);
     });
 
@@ -52,7 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    if (configured) {
+      await supabase.auth.signOut();
+    }
     window.location.href = "/";
   };
 

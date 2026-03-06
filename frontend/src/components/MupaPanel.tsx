@@ -11,6 +11,12 @@ import {
   FastForward,
   RotateCcw,
   Clock,
+  Plus,
+  Trash2,
+  Calendar,
+  CheckCircle,
+  Circle,
+  Tag,
 } from "lucide-react";
 import {
   MATRIZ_SANCIONES,
@@ -18,38 +24,56 @@ import {
   calcularRecargoTasaAnual,
   getSemaforoDeclaracion,
   getSemaforoImpuestoMensual,
+  calcularImpuestoMensual,
+  CATEGORIAS_ACTIVIDAD_MUPA,
+  getSemaforoDJAnual,
+  calcularCostoRotulo,
+  getSemaforoRotulo,
+  calcularResumenRotulos,
+  getDJAnualState,
+  saveDJAnualState,
+  getRotulosState,
+  saveRotulosState,
+  getCategoriaActividad,
+  saveCategoriaActividad,
+  getImpuestoIngresos,
+  saveImpuestoIngresos,
 } from "@/lib/mupaEngine";
-import type { SemaforoItem } from "@/lib/mupaEngine";
+import type { SemaforoItem, DJAnualState, DJAnualStatus, Rotulo, RotulosState } from "@/lib/mupaEngine";
+import { formatBalboas } from "@/lib/currency";
 import { getDocSyncEvents } from "@/lib/formalizacion";
 
 // ============================================
+// TIPOS
+// ============================================
+
+type MupaSubTab = "inteligencia" | "impuesto" | "declaracion" | "rotulos";
+
+// ============================================
 // COMPONENTE PRINCIPAL — MUPA Panel
-// Acuerdo Municipal N° 40 de 2011
 // ============================================
 
 export default function MupaPanel() {
-  // Selector de publicidad
+  const [activeTab, setActiveTab] = useState<MupaSubTab>("inteligencia");
+
+  // Publicidad (existente)
   const [hasPublicidad, setHasPublicidad] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("midf_has_publicidad") === "true";
     return false;
   });
-
   const handlePublicidadChange = (val: boolean) => {
     setHasPublicidad(val);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("midf_has_publicidad", val ? "true" : "false");
-    }
+    if (typeof window !== "undefined") localStorage.setItem("midf_has_publicidad", val ? "true" : "false");
   };
 
-  // Simulador de recargos
+  // Simulador de recargos (existente)
   const [simMontoBase, setSimMontoBase] = useState(0);
   const [simMesesMora, setSimMesesMora] = useState(1);
   const [simTasaAnual, setSimTasaAnual] = useState(0);
   const [simTasaTarde, setSimTasaTarde] = useState(false);
 
-  // Verificar si Declaracion Jurada existe en Boveda KYC
+  // Boveda KYC check (existente)
   const [declaracionEnBoveda, setDeclaracionEnBoveda] = useState(false);
-
   useEffect(() => {
     const checkBoveda = () => {
       const events = getDocSyncEvents();
@@ -59,11 +83,8 @@ export default function MupaPanel() {
         if (stepDocs) {
           try {
             const parsed = JSON.parse(stepDocs);
-            if (parsed["inscripcion_municipal"]) {
-              setDeclaracionEnBoveda(true);
-              return;
-            }
-          } catch {}
+            if (parsed["inscripcion_municipal"]) { setDeclaracionEnBoveda(true); return; }
+          } catch { /* ignore */ }
         }
       }
       setDeclaracionEnBoveda(hasDeclaracion);
@@ -76,144 +97,99 @@ export default function MupaPanel() {
   // Simulador de tiempo (dev)
   const [timeOffsetMonths, setTimeOffsetMonths] = useState(0);
   const [timeOffsetDays, setTimeOffsetDays] = useState(0);
-
   const simulatedNow = useMemo(() => {
     const d = new Date();
     d.setMonth(d.getMonth() + timeOffsetMonths);
     d.setDate(d.getDate() + timeOffsetDays);
     return d;
   }, [timeOffsetMonths, timeOffsetDays]);
-
-  const resetTime = () => {
-    setTimeOffsetMonths(0);
-    setTimeOffsetDays(0);
-  };
-
+  const resetTime = () => { setTimeOffsetMonths(0); setTimeOffsetDays(0); };
   const isDev = process.env.NODE_ENV === "development";
 
   return (
-    <div className="space-y-6">
-      {/* ====== HEADER ====== */}
+    <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-r from-red-50 to-amber-50 border border-red-200">
         <div className="p-2.5 bg-red-100 rounded-xl flex-shrink-0">
           <Landmark size={20} className="text-red-600" />
         </div>
         <div>
-          <h3 className="text-sm font-bold text-red-800">
-            Inteligencia Fiscal MUPA
-          </h3>
+          <h3 className="text-sm font-bold text-red-800">Inteligencia Fiscal MUPA</h3>
           <p className="text-xs text-red-600 mt-0.5">
-            Municipio de Panama — Acuerdo Municipal N° 40 de 2011. Gestiona tus obligaciones municipales, calcula recargos y consulta la matriz de sanciones.
+            Municipio de Panama — Acuerdo Municipal N° 40 de 2011
           </p>
         </div>
       </div>
 
-      {/* ====== SIMULADOR DE RECARGOS ====== */}
-      <SimuladorRecargos
-        montoBase={simMontoBase}
-        setMontoBase={setSimMontoBase}
-        mesesMora={simMesesMora}
-        setMesesMora={setSimMesesMora}
-        tasaAnual={simTasaAnual}
-        setTasaAnual={setSimTasaAnual}
-        tasaTarde={simTasaTarde}
-        setTasaTarde={setSimTasaTarde}
-      />
-
-      {/* ====== MATRIZ MAESTRA DE SANCIONES ====== */}
-      <MatrizSanciones hasPublicidad={hasPublicidad} />
-
-      {/* ====== SEMAFORO DE SUPERVIVENCIA ====== */}
-      <SemaforoPanel simulatedNow={simulatedNow} declaracionEnBoveda={declaracionEnBoveda} />
-
-      {/* ====== SELECTOR DE PUBLICIDAD ====== */}
-      <details className="rounded-xl border border-amber-200 overflow-hidden" open>
-        <summary className="px-4 py-3 cursor-pointer flex items-center gap-2 text-xs font-bold text-amber-700 hover:bg-amber-50 transition-colors bg-amber-50/50">
-          <AlertTriangle size={14} className="text-amber-500" />
-          Diagnostico: Publicidad y Rotulos
-        </summary>
-        <div className="p-4 bg-white space-y-3">
-          <label className="flex items-start gap-3 cursor-pointer group">
-            <input
-              type="checkbox"
-              checked={hasPublicidad}
-              onChange={(e) => handlePublicidadChange(e.target.checked)}
-              className="mt-1 w-4 h-4 rounded border-2 border-amber-400 accent-amber-500 flex-shrink-0"
-            />
-            <div>
-              <span className="text-xs font-bold text-amber-800 group-hover:text-amber-900 transition-colors">
-                Posee letreros o flota vehicular rotulada?
-              </span>
-              <p className="text-[10px] text-amber-600 mt-0.5">
-                Si tu negocio tiene rotulacion exterior, vallas o vehiculos con publicidad, necesitas un permiso del MUPA. Al marcar esta casilla activaras alertas de precaucion.
-              </p>
-            </div>
-          </label>
-          {hasPublicidad && (
-            <div className="p-2.5 rounded-lg bg-red-50 border border-red-200">
-              <div className="flex items-center gap-2">
-                <AlertTriangle size={14} className="text-red-500" />
-                <span className="text-[11px] font-bold text-red-700">Alerta de Precaucion</span>
-              </div>
-              <p className="text-[10px] text-red-600 mt-1">
-                Riesgo de sanciones: Publicidad no declarada ($10 a $500 + remocion), rotulos en servidumbre publica ($50 a $1,000). Verifica tu permiso en la Boveda KYC.
-              </p>
-            </div>
-          )}
-        </div>
-      </details>
-
-      {/* ====== PUENTES DE ACCION ====== */}
-      <div className="flex flex-wrap gap-2 justify-center">
-        <a
-          href="https://mupa.gob.pa/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors"
-        >
-          <ExternalLink size={14} />
-          Tramites MUPA
-        </a>
-        <a
-          href="https://mupa.gob.pa/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors"
-        >
-          <Receipt size={14} />
-          Pagar Impuestos Municipales
-        </a>
-        <a
-          href="https://mupa.gob.pa/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors"
-        >
-          <FileText size={14} />
-          Autorizacion Municipal
-        </a>
+      {/* Sub-tabs */}
+      <div className="flex gap-1 bg-slate-100 rounded-xl p-1 overflow-x-auto">
+        {([
+          { key: "inteligencia" as MupaSubTab, label: "Inteligencia", icon: <Siren size={14} /> },
+          { key: "impuesto" as MupaSubTab, label: "Impuesto Mensual", icon: <Receipt size={14} /> },
+          { key: "declaracion" as MupaSubTab, label: "DJ Anual", icon: <FileText size={14} /> },
+          { key: "rotulos" as MupaSubTab, label: "Rotulos", icon: <Tag size={14} /> },
+        ]).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+              activeTab === t.key
+                ? "bg-white text-red-700 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            {t.icon}
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* ====== DEV TIME CONTROLS ====== */}
+      {/* ====== TAB: INTELIGENCIA (contenido existente) ====== */}
+      {activeTab === "inteligencia" && (
+        <div className="space-y-6">
+          <SimuladorRecargos
+            montoBase={simMontoBase} setMontoBase={setSimMontoBase}
+            mesesMora={simMesesMora} setMesesMora={setSimMesesMora}
+            tasaAnual={simTasaAnual} setTasaAnual={setSimTasaAnual}
+            tasaTarde={simTasaTarde} setTasaTarde={setSimTasaTarde}
+          />
+          <MatrizSanciones hasPublicidad={hasPublicidad} />
+          <SemaforoPanel simulatedNow={simulatedNow} declaracionEnBoveda={declaracionEnBoveda} />
+          <DiagnosticoPublicidad hasPublicidad={hasPublicidad} onChange={handlePublicidadChange} />
+          <PuentesDeAccion />
+        </div>
+      )}
+
+      {/* ====== TAB: IMPUESTO MENSUAL ====== */}
+      {activeTab === "impuesto" && (
+        <ImpuestoMensualTab simulatedNow={simulatedNow} />
+      )}
+
+      {/* ====== TAB: DJ ANUAL ====== */}
+      {activeTab === "declaracion" && (
+        <DJAnualTab simulatedNow={simulatedNow} />
+      )}
+
+      {/* ====== TAB: ROTULOS ====== */}
+      {activeTab === "rotulos" && (
+        <RotulosTab simulatedNow={simulatedNow} />
+      )}
+
+      {/* Dev Time Controls (siempre visible) */}
       {isDev && (
         <div className="p-4 rounded-xl bg-violet-50 border border-violet-200">
           <div className="flex items-center gap-2 mb-3">
             <FastForward size={16} className="text-violet-600" />
-            <span className="text-xs font-bold text-violet-700 uppercase tracking-wider">
-              Simulador de Tiempo (Dev Only)
-            </span>
+            <span className="text-xs font-bold text-violet-700 uppercase tracking-wider">Simulador de Tiempo (Dev)</span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button onClick={() => setTimeOffsetMonths((p) => p + 1)}
-              className="px-3 py-1.5 bg-violet-600 text-white text-xs font-bold rounded-lg hover:bg-violet-700 transition-all flex items-center gap-1">
+            <button onClick={() => setTimeOffsetMonths((p) => p + 1)} className="px-3 py-1.5 bg-violet-600 text-white text-xs font-bold rounded-lg hover:bg-violet-700 flex items-center gap-1">
               <FastForward size={12} /> +1 Mes
             </button>
-            <button onClick={() => setTimeOffsetDays((p) => p + 10)}
-              className="px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 transition-all flex items-center gap-1">
+            <button onClick={() => setTimeOffsetDays((p) => p + 10)} className="px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 flex items-center gap-1">
               <FastForward size={12} /> +10 Dias
             </button>
-            <button onClick={resetTime}
-              className="px-3 py-1.5 bg-slate-600 text-white text-xs font-bold rounded-lg hover:bg-slate-700 transition-all flex items-center gap-1">
+            <button onClick={resetTime} className="px-3 py-1.5 bg-slate-600 text-white text-xs font-bold rounded-lg hover:bg-slate-700 flex items-center gap-1">
               <RotateCcw size={12} /> Reset
             </button>
           </div>
@@ -229,25 +205,439 @@ export default function MupaPanel() {
         </div>
       )}
 
-      {/* ====== LEGAL FOOTER ====== */}
+      {/* Legal Footer */}
       <p className="text-[10px] text-slate-400 italic border-t border-slate-100 pt-3">
         Obligaciones basadas en el Acuerdo Municipal N° 40 de 2011 del Municipio de Panama.
-        Declaracion Jurada Anual: multa $500 si no se presenta antes del 31 de marzo.
-        Tasa Unica Municipal: 10% recargo si se paga tarde.
-        Morosidad mensual: 20% recargo + 1% interes por mes adicional.
       </p>
     </div>
   );
 }
 
 // ============================================
-// SEMAFORO DE SUPERVIVENCIA
+// TAB: IMPUESTO MUNICIPAL MENSUAL (GAP #3)
 // ============================================
+
+function ImpuestoMensualTab({ simulatedNow }: { simulatedNow: Date }) {
+  const [ingresosBrutos, setIngresosBrutos] = useState(() => getImpuestoIngresos());
+  const [categoriaId, setCategoriaId] = useState(() => getCategoriaActividad());
+
+  const result = useMemo(
+    () => calcularImpuestoMensual(ingresosBrutos, categoriaId, simulatedNow.getMonth(), simulatedNow.getFullYear()),
+    [ingresosBrutos, categoriaId, simulatedNow]
+  );
+
+  const cat = CATEGORIAS_ACTIVIDAD_MUPA.find((c) => c.id === categoriaId) || CATEGORIAS_ACTIVIDAD_MUPA[0];
+
+  useEffect(() => { saveImpuestoIngresos(ingresosBrutos); }, [ingresosBrutos]);
+  useEffect(() => { saveCategoriaActividad(categoriaId); }, [categoriaId]);
+
+  return (
+    <div className="space-y-4">
+      {/* Info */}
+      <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
+        <p className="text-xs text-blue-700">
+          El impuesto municipal mensual se calcula sobre los <strong>ingresos brutos</strong> del mes. La tarifa estandar es <strong>1%</strong> para comercio y servicios. Fecha limite: ultimo dia del mes siguiente.
+        </p>
+      </div>
+
+      {/* Formulario */}
+      <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+        <h4 className="text-sm font-bold text-slate-700">Calcula tu Impuesto</h4>
+        <div>
+          <label className="text-[10px] font-bold text-slate-500 block mb-1">Categoria de Actividad</label>
+          <select
+            value={categoriaId}
+            onChange={(e) => setCategoriaId(e.target.value)}
+            className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30"
+          >
+            {CATEGORIAS_ACTIVIDAD_MUPA.map((c) => (
+              <option key={c.id} value={c.id}>{c.label} — {c.tarifa}%</option>
+            ))}
+          </select>
+          <p className="text-[10px] text-slate-400 mt-0.5">{cat.descripcion}</p>
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-slate-500 block mb-1">Ingresos Brutos del Mes (B/.)</label>
+          <input
+            type="number"
+            value={ingresosBrutos || ""}
+            onChange={(e) => setIngresosBrutos(parseFloat(e.target.value) || 0)}
+            className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30"
+            placeholder="Ej: 15,000.00"
+          />
+        </div>
+      </div>
+
+      {/* Resultado */}
+      {ingresosBrutos > 0 && (
+        <div className="bg-white rounded-xl border-2 border-red-200 p-4 space-y-2">
+          <h4 className="text-sm font-bold text-red-700">Resultado</h4>
+          <div className="space-y-1.5">
+            <DetailRow label="Ingresos Brutos" value={formatBalboas(result.ingresosBrutos)} />
+            <DetailRow label={`Tarifa MUPA (${result.tarifa}%)`} value={`${result.tarifa}%`} />
+            <div className="pt-2 border-t border-red-100">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-red-800">Impuesto a Pagar</span>
+                <span className="text-lg font-extrabold text-red-700">{formatBalboas(result.montoImpuesto)}</span>
+              </div>
+            </div>
+            <div className="flex justify-between items-center pt-1">
+              <span className="text-[10px] text-slate-500 flex items-center gap-1"><Calendar size={10} /> Fecha Limite</span>
+              <span className="text-xs font-bold text-slate-700">{result.fechaLimite}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Calculo anual estimado */}
+      {ingresosBrutos > 0 && (
+        <div className="bg-amber-50 rounded-xl border border-amber-200 p-3">
+          <p className="text-xs text-amber-700">
+            <strong>Estimado anual:</strong> Si mantienes B/.{ingresosBrutos.toLocaleString("es-PA")} mensuales, pagaras ~{formatBalboas(result.montoImpuesto * 12)} al ano en impuesto municipal.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// TAB: DJ ANUAL (GAP #3)
+// ============================================
+
+function DJAnualTab({ simulatedNow }: { simulatedNow: Date }) {
+  const [djState, setDjState] = useState<DJAnualState | null>(() => getDJAnualState());
+  const anioFiscalVigente = simulatedNow.getFullYear() - 1;
+
+  const semaforoResult = useMemo(
+    () => getSemaforoDJAnual(simulatedNow, djState),
+    [simulatedNow, djState]
+  );
+
+  const updateStatus = (newStatus: DJAnualStatus) => {
+    const now = new Date().toISOString();
+    const updated: DJAnualState = {
+      anioFiscal: anioFiscalVigente,
+      status: newStatus,
+      ...(djState?.montoDeclarado ? { montoDeclarado: djState.montoDeclarado } : {}),
+      ...(newStatus === "presentada" ? { fechaPresentacion: now } : {}),
+      ...(newStatus === "pagada" ? { fechaPresentacion: djState?.fechaPresentacion || now, fechaPago: now } : {}),
+    };
+    setDjState(updated);
+    saveDJAnualState(updated);
+  };
+
+  const resetDJ = () => {
+    setDjState(null);
+    if (typeof window !== "undefined") localStorage.removeItem("midf_mupa_dj_anual");
+  };
+
+  const semaforoColors = {
+    verde: { bg: "bg-emerald-50", border: "border-emerald-200", dot: "bg-emerald-500", text: "text-emerald-700" },
+    amarillo: { bg: "bg-amber-50", border: "border-amber-200", dot: "bg-amber-500", text: "text-amber-700" },
+    rojo: { bg: "bg-red-50", border: "border-red-200", dot: "bg-red-500 animate-pulse", text: "text-red-700" },
+  };
+  const sc = semaforoColors[semaforoResult.semaforo];
+
+  const steps: { key: DJAnualStatus; label: string }[] = [
+    { key: "pendiente", label: "Pendiente" },
+    { key: "presentada", label: "Presentada" },
+    { key: "pagada", label: "Pagada" },
+  ];
+  const stepIndex = steps.findIndex((s) => s.key === semaforoResult.status);
+
+  return (
+    <div className="space-y-4">
+      {/* Semaforo */}
+      <div className={`rounded-xl border p-3 flex items-start gap-3 ${sc.bg} ${sc.border}`}>
+        <div className={`w-3 h-3 rounded-full mt-0.5 shrink-0 ${sc.dot}`} />
+        <div>
+          <p className={`text-sm font-bold ${sc.text}`}>DJ Anual Municipal {anioFiscalVigente}</p>
+          <p className="text-xs text-slate-600 mt-0.5">{semaforoResult.message}</p>
+          {semaforoResult.multa && <p className="text-[10px] font-bold text-red-600 mt-0.5">Multa: {semaforoResult.multa}</p>}
+        </div>
+      </div>
+
+      {/* Tracker visual */}
+      <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <h4 className="text-sm font-bold text-slate-700 mb-4">Estado de la Declaracion</h4>
+        <div className="flex items-center justify-between relative px-4">
+          {/* Linea conectora */}
+          <div className="absolute top-4 left-8 right-8 h-0.5 bg-slate-200 z-0" />
+          <div className="absolute top-4 left-8 h-0.5 bg-emerald-500 z-0 transition-all" style={{ width: `${stepIndex * 50}%` }} />
+
+          {steps.map((step, i) => {
+            const isComplete = i < stepIndex || (i === stepIndex && step.key === "pagada" && semaforoResult.status === "pagada");
+            const isCurrent = i === stepIndex && !isComplete;
+            return (
+              <div key={step.key} className="flex flex-col items-center z-10">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  isComplete ? "bg-emerald-500 border-emerald-500" : isCurrent ? "bg-white border-amber-500" : "bg-white border-slate-300"
+                }`}>
+                  {isComplete ? <CheckCircle size={16} className="text-white" /> : <Circle size={16} className={isCurrent ? "text-amber-500" : "text-slate-300"} />}
+                </div>
+                <span className={`text-[10px] font-bold mt-1 ${isComplete ? "text-emerald-600" : isCurrent ? "text-amber-600" : "text-slate-400"}`}>
+                  {step.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Botones de accion */}
+      <div className="flex flex-wrap gap-2">
+        {semaforoResult.status === "pendiente" && (
+          <button onClick={() => updateStatus("presentada")} className="flex-1 px-4 py-2.5 bg-amber-500 text-white text-xs font-bold rounded-xl hover:bg-amber-600 transition-colors flex items-center justify-center gap-2">
+            <FileText size={14} /> Marcar como Presentada
+          </button>
+        )}
+        {semaforoResult.status === "presentada" && (
+          <button onClick={() => updateStatus("pagada")} className="flex-1 px-4 py-2.5 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2">
+            <CheckCircle size={14} /> Marcar como Pagada
+          </button>
+        )}
+        {djState && (
+          <button onClick={resetDJ} className="px-3 py-2.5 bg-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-300 transition-colors">
+            <RotateCcw size={14} />
+          </button>
+        )}
+      </div>
+
+      {/* Info: cuando presentar */}
+      <div className="bg-slate-50 rounded-xl border border-slate-200 p-3">
+        <p className="text-xs text-slate-600">
+          <strong>Obligacion:</strong> La Declaracion Jurada Anual Municipal se presenta en <strong>enero</strong> del ano siguiente al ejercicio fiscal ante el Municipio de Panama. Si no se presenta, multa de <strong>$500.00</strong>.
+        </p>
+      </div>
+
+      {/* Detalle si hay estado */}
+      {djState && (
+        <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-2">
+          <h4 className="text-xs font-bold text-slate-600">Detalle</h4>
+          <DetailRow label="Ano Fiscal" value={String(djState.anioFiscal)} />
+          <DetailRow label="Estado" value={djState.status.charAt(0).toUpperCase() + djState.status.slice(1)} />
+          {djState.fechaPresentacion && <DetailRow label="Fecha Presentacion" value={new Date(djState.fechaPresentacion).toLocaleDateString("es-PA")} />}
+          {djState.fechaPago && <DetailRow label="Fecha Pago" value={new Date(djState.fechaPago).toLocaleDateString("es-PA")} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// TAB: ROTULOS Y AVISOS (GAP #3)
+// ============================================
+
+function RotulosTab({ simulatedNow }: { simulatedNow: Date }) {
+  const [rotulosState, setRotulosState] = useState<RotulosState>(() => {
+    const saved = getRotulosState();
+    return saved || { rotulos: [], lastUpdated: new Date().toISOString() };
+  });
+
+  // Form para agregar
+  const [formDesc, setFormDesc] = useState("");
+  const [formAncho, setFormAncho] = useState(0);
+  const [formAlto, setFormAlto] = useState(0);
+  const [formFecha, setFormFecha] = useState("");
+
+  const formArea = formAncho * formAlto;
+  const formCosto = calcularCostoRotulo(formArea);
+
+  const resumen = useMemo(
+    () => calcularResumenRotulos(rotulosState.rotulos, simulatedNow),
+    [rotulosState.rotulos, simulatedNow]
+  );
+
+  const saveState = (rotulos: Rotulo[]) => {
+    const newState: RotulosState = { rotulos, lastUpdated: new Date().toISOString() };
+    setRotulosState(newState);
+    saveRotulosState(newState);
+  };
+
+  const addRotulo = () => {
+    if (!formDesc || formAncho <= 0 || formAlto <= 0 || !formFecha) return;
+    const newRotulo: Rotulo = {
+      id: Math.random().toString(36).substring(2, 15),
+      descripcion: formDesc,
+      anchoM: formAncho,
+      altoM: formAlto,
+      areaM2: formArea,
+      fechaVencimiento: formFecha,
+      costoAnual: formCosto,
+    };
+    saveState([...rotulosState.rotulos, newRotulo]);
+    setFormDesc(""); setFormAncho(0); setFormAlto(0); setFormFecha("");
+  };
+
+  const removeRotulo = (id: string) => {
+    saveState(rotulosState.rotulos.filter((r) => r.id !== id));
+  };
+
+  const semaforoDot = (level: string) => level === "verde" ? "bg-emerald-500" : level === "amarillo" ? "bg-amber-500" : "bg-red-500";
+  const semaforoBg = (level: string) => level === "verde" ? "border-emerald-200" : level === "amarillo" ? "border-amber-200" : "border-red-300";
+
+  return (
+    <div className="space-y-4">
+      {/* Resumen */}
+      {rotulosState.rotulos.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <h4 className="text-sm font-bold text-slate-700 mb-2">Resumen de Rotulos</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <MiniStat label="Total" value={String(resumen.totalRotulos)} color="text-slate-700" />
+            <MiniStat label="Costo Anual" value={formatBalboas(resumen.costoAnualTotal)} color="text-slate-700" />
+            <MiniStat label="Vigentes" value={String(resumen.vigentes)} color="text-emerald-600" />
+            {resumen.vencidos > 0 && <MiniStat label="Vencidos" value={String(resumen.vencidos)} color="text-red-600" />}
+            {resumen.porVencer30d > 0 && <MiniStat label="Por Vencer" value={String(resumen.porVencer30d)} color="text-amber-600" />}
+          </div>
+        </div>
+      )}
+
+      {/* Formulario agregar */}
+      <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">
+        <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+          <Plus size={14} /> Agregar Rotulo
+        </h4>
+        <div>
+          <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Descripcion</label>
+          <input type="text" value={formDesc} onChange={(e) => setFormDesc(e.target.value)}
+            className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30"
+            placeholder="Ej: Letrero fachada principal" />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Ancho (m)</label>
+            <input type="number" min={0} step={0.1} value={formAncho || ""} onChange={(e) => setFormAncho(parseFloat(e.target.value) || 0)}
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Alto (m)</label>
+            <input type="number" min={0} step={0.1} value={formAlto || ""} onChange={(e) => setFormAlto(parseFloat(e.target.value) || 0)}
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Vencimiento</label>
+            <input type="date" value={formFecha} onChange={(e) => setFormFecha(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30" />
+          </div>
+        </div>
+        {formAncho > 0 && formAlto > 0 && (
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-slate-500">Area: <strong>{formArea.toFixed(1)} m²</strong></span>
+            <span className="text-slate-500">Costo Anual: <strong className="text-red-600">{formatBalboas(formCosto)}</strong></span>
+            <span className="text-[10px] text-slate-400">(B/.5.00/m², min B/.20.00)</span>
+          </div>
+        )}
+        <button onClick={addRotulo} disabled={!formDesc || formAncho <= 0 || formAlto <= 0 || !formFecha}
+          className="w-full px-4 py-2.5 bg-red-600 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          <Plus size={14} /> Agregar Rotulo
+        </button>
+      </div>
+
+      {/* Lista de rotulos */}
+      {rotulosState.rotulos.length === 0 ? (
+        <div className="text-center py-8 text-slate-400 text-sm">
+          No tienes rotulos registrados. Agrega uno arriba.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {rotulosState.rotulos.map((rotulo) => {
+            const sem = getSemaforoRotulo(simulatedNow, rotulo);
+            return (
+              <div key={rotulo.id} className={`bg-white rounded-xl border ${semaforoBg(sem.semaforo)} p-3`}>
+                <div className="flex items-start gap-3">
+                  <div className={`w-3 h-3 rounded-full mt-1 shrink-0 ${semaforoDot(sem.semaforo)}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-700">{rotulo.descripcion}</p>
+                    <div className="flex flex-wrap gap-3 mt-1">
+                      <span className="text-[10px] text-slate-500">{rotulo.anchoM}m × {rotulo.altoM}m = {rotulo.areaM2.toFixed(1)} m²</span>
+                      <span className="text-[10px] font-bold text-red-600">{formatBalboas(rotulo.costoAnual)}/ano</span>
+                      <span className="text-[10px] text-slate-500 flex items-center gap-0.5"><Calendar size={9} /> {new Date(rotulo.fechaVencimiento).toLocaleDateString("es-PA")}</span>
+                    </div>
+                    <p className={`text-[10px] mt-1 ${sem.semaforo === "rojo" ? "text-red-600 font-bold" : sem.semaforo === "amarillo" ? "text-amber-600" : "text-emerald-600"}`}>
+                      {sem.message}
+                    </p>
+                  </div>
+                  <button onClick={() => removeRotulo(rotulo.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Info tarifa */}
+      <div className="bg-slate-50 rounded-xl border border-slate-200 p-3">
+        <p className="text-xs text-slate-600">
+          <strong>Tarifa:</strong> B/.5.00 por m² de rotulo, minimo B/.20.00 por rotulo. Patente municipal vence anualmente. Multa por publicidad no declarada: $10 a $500 + remocion.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// SUB-COMPONENTES EXISTENTES (refactoreados)
+// ============================================
+
+function DiagnosticoPublicidad({ hasPublicidad, onChange }: { hasPublicidad: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <details className="rounded-xl border border-amber-200 overflow-hidden" open>
+      <summary className="px-4 py-3 cursor-pointer flex items-center gap-2 text-xs font-bold text-amber-700 hover:bg-amber-50 transition-colors bg-amber-50/50">
+        <AlertTriangle size={14} className="text-amber-500" />
+        Diagnostico: Publicidad y Rotulos
+      </summary>
+      <div className="p-4 bg-white space-y-3">
+        <label className="flex items-start gap-3 cursor-pointer group">
+          <input type="checkbox" checked={hasPublicidad} onChange={(e) => onChange(e.target.checked)}
+            className="mt-1 w-4 h-4 rounded border-2 border-amber-400 accent-amber-500 flex-shrink-0" />
+          <div>
+            <span className="text-xs font-bold text-amber-800">Posee letreros o flota vehicular rotulada?</span>
+            <p className="text-[10px] text-amber-600 mt-0.5">
+              Si tu negocio tiene rotulacion exterior, vallas o vehiculos con publicidad, necesitas un permiso del MUPA.
+            </p>
+          </div>
+        </label>
+        {hasPublicidad && (
+          <div className="p-2.5 rounded-lg bg-red-50 border border-red-200">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={14} className="text-red-500" />
+              <span className="text-[11px] font-bold text-red-700">Alerta de Precaucion</span>
+            </div>
+            <p className="text-[10px] text-red-600 mt-1">
+              Publicidad no declarada: $10 a $500 + remocion. Rotulos en servidumbre publica: $50 a $1,000. Usa la pestana &quot;Rotulos&quot; para registrar y monitorear tus permisos.
+            </p>
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
+
+function PuentesDeAccion() {
+  return (
+    <div className="flex flex-wrap gap-2 justify-center">
+      <a href="https://mupa.gob.pa/" target="_blank" rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors">
+        <ExternalLink size={14} /> Tramites MUPA
+      </a>
+      <a href="https://mupa.gob.pa/" target="_blank" rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors">
+        <Receipt size={14} /> Pagar Impuestos
+      </a>
+      <a href="https://mupa.gob.pa/" target="_blank" rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors">
+        <FileText size={14} /> Autorizacion Municipal
+      </a>
+    </div>
+  );
+}
 
 function SemaforoPanel({ simulatedNow, declaracionEnBoveda }: { simulatedNow: Date; declaracionEnBoveda: boolean }) {
   const declaracionSemaforo = getSemaforoDeclaracion(simulatedNow, declaracionEnBoveda);
   const impuestoSemaforo = getSemaforoImpuestoMensual(simulatedNow, false);
-
   const items: SemaforoItem[] = [declaracionSemaforo, impuestoSemaforo];
 
   const levelColors = {
@@ -269,18 +659,10 @@ function SemaforoPanel({ simulatedNow, declaracionEnBoveda }: { simulatedNow: Da
             <div className="flex items-center gap-2 mb-1">
               <div className={`w-3 h-3 rounded-full flex-shrink-0 ${c.dot}`} />
               <span className={`text-xs font-bold ${c.text}`}>{item.label}</span>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${c.bg} ${c.text} border ${c.border}`}>
-                {c.label}
-              </span>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${c.bg} ${c.text} border ${c.border}`}>{c.label}</span>
             </div>
-            <p className={`text-[11px] leading-relaxed pl-5 ${item.level === "rojo" ? "font-bold text-red-700" : "text-slate-600"}`}>
-              {item.message}
-            </p>
-            {item.multa && (
-              <p className="text-[10px] font-bold text-red-600 pl-5 mt-1">
-                Multa: {item.multa}
-              </p>
-            )}
+            <p className={`text-[11px] leading-relaxed pl-5 ${item.level === "rojo" ? "font-bold text-red-700" : "text-slate-600"}`}>{item.message}</p>
+            {item.multa && <p className="text-[10px] font-bold text-red-600 pl-5 mt-1">Multa: {item.multa}</p>}
           </div>
         );
       })}
@@ -288,15 +670,8 @@ function SemaforoPanel({ simulatedNow, declaracionEnBoveda }: { simulatedNow: Da
   );
 }
 
-// ============================================
-// SIMULADOR DE RECARGOS MUPA
-// ============================================
-
 function SimuladorRecargos({
-  montoBase, setMontoBase,
-  mesesMora, setMesesMora,
-  tasaAnual, setTasaAnual,
-  tasaTarde, setTasaTarde,
+  montoBase, setMontoBase, mesesMora, setMesesMora, tasaAnual, setTasaAnual, tasaTarde, setTasaTarde,
 }: {
   montoBase: number; setMontoBase: (v: number) => void;
   mesesMora: number; setMesesMora: (v: number) => void;
@@ -305,118 +680,58 @@ function SimuladorRecargos({
 }) {
   const recargo = calcularRecargos(montoBase, mesesMora);
   const tasa = calcularRecargoTasaAnual(tasaAnual, tasaTarde);
-
   const fmt = (n: number) => n.toLocaleString("es-PA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <details className="rounded-xl border border-slate-200 overflow-hidden">
       <summary className="px-4 py-3 cursor-pointer flex items-center gap-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors bg-white">
-        <Receipt size={14} className="text-amber-500" />
-        Simulador de Recargos por Morosidad
+        <Receipt size={14} className="text-amber-500" /> Simulador de Recargos por Morosidad
       </summary>
       <div className="p-4 bg-white space-y-4">
-        {/* Impuesto Mensual */}
         <div className="space-y-3">
           <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Impuesto Municipal Mensual</h5>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[10px] font-medium text-slate-500 block mb-1">Monto Base ($)</label>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={montoBase || ""}
-                onChange={(e) => setMontoBase(parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border-amber-400 outline-none"
-                placeholder="Ej: 150.00"
-              />
+              <input type="number" min={0} step={0.01} value={montoBase || ""} onChange={(e) => setMontoBase(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border-amber-400 outline-none" placeholder="Ej: 150.00" />
             </div>
             <div>
               <label className="text-[10px] font-medium text-slate-500 block mb-1">Meses de Mora</label>
-              <input
-                type="number"
-                min={1}
-                max={36}
-                value={mesesMora}
-                onChange={(e) => setMesesMora(parseInt(e.target.value) || 1)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border-amber-400 outline-none"
-              />
+              <input type="number" min={1} max={36} value={mesesMora} onChange={(e) => setMesesMora(parseInt(e.target.value) || 1)}
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border-amber-400 outline-none" />
             </div>
           </div>
-
           {montoBase > 0 && (
             <div className="p-3 rounded-xl bg-red-50 border border-red-200 space-y-1.5">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-slate-600">Monto base:</span>
-                <span className="font-bold text-slate-700">${fmt(recargo.montoBase)}</span>
-              </div>
-              <div className="flex justify-between text-[11px]">
-                <span className="text-red-600">Recargo 20%:</span>
-                <span className="font-bold text-red-700">+${fmt(recargo.recargo20)}</span>
-              </div>
-              <div className="flex justify-between text-[11px]">
-                <span className="text-red-600">Interes {mesesMora} mes(es) x 1%:</span>
-                <span className="font-bold text-red-700">+${fmt(recargo.totalIntereses)}</span>
-              </div>
-              <div className="flex justify-between text-xs pt-1.5 border-t border-red-200">
-                <span className="font-bold text-red-800">TOTAL ADEUDADO:</span>
-                <span className="font-extrabold text-red-800">${fmt(recargo.totalAdeudado)}</span>
-              </div>
-              <p className="text-[9px] text-red-500 mt-1">
-                Tu flujo de caja esta perdiendo ${fmt(recargo.recargo20 + recargo.totalIntereses)} en recargos ahora mismo.
-              </p>
+              <div className="flex justify-between text-[11px]"><span className="text-slate-600">Monto base:</span><span className="font-bold text-slate-700">${fmt(recargo.montoBase)}</span></div>
+              <div className="flex justify-between text-[11px]"><span className="text-red-600">Recargo 20%:</span><span className="font-bold text-red-700">+${fmt(recargo.recargo20)}</span></div>
+              <div className="flex justify-between text-[11px]"><span className="text-red-600">Interes {mesesMora} mes(es) x 1%:</span><span className="font-bold text-red-700">+${fmt(recargo.totalIntereses)}</span></div>
+              <div className="flex justify-between text-xs pt-1.5 border-t border-red-200"><span className="font-bold text-red-800">TOTAL ADEUDADO:</span><span className="font-extrabold text-red-800">${fmt(recargo.totalAdeudado)}</span></div>
             </div>
           )}
         </div>
-
-        {/* Separador */}
         <div className="border-t border-slate-100" />
-
-        {/* Tasa Unica Municipal */}
         <div className="space-y-3">
           <h5 className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Tasa Unica Municipal Anual</h5>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[10px] font-medium text-slate-500 block mb-1">Monto de la Tasa ($)</label>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={tasaAnual || ""}
-                onChange={(e) => setTasaAnual(parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border-amber-400 outline-none"
-                placeholder="Ej: 300.00"
-              />
+              <input type="number" min={0} step={0.01} value={tasaAnual || ""} onChange={(e) => setTasaAnual(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-300 focus:border-amber-400 outline-none" placeholder="Ej: 300.00" />
             </div>
             <div className="flex items-end pb-1">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={tasaTarde}
-                  onChange={(e) => setTasaTarde(e.target.checked)}
-                  className="w-4 h-4 rounded border-2 border-amber-400 accent-amber-500"
-                />
+                <input type="checkbox" checked={tasaTarde} onChange={(e) => setTasaTarde(e.target.checked)} className="w-4 h-4 rounded border-2 border-amber-400 accent-amber-500" />
                 <span className="text-[10px] font-medium text-slate-600">Pagada despues del 31 de marzo</span>
               </label>
             </div>
           </div>
-
           {tasaAnual > 0 && (
             <div className={`p-3 rounded-xl border space-y-1.5 ${tasaTarde ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200"}`}>
-              <div className="flex justify-between text-[11px]">
-                <span className="text-slate-600">Monto tasa:</span>
-                <span className="font-bold text-slate-700">${fmt(tasa.montoBase)}</span>
-              </div>
-              {tasaTarde && (
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-red-600">Recargo 10%:</span>
-                  <span className="font-bold text-red-700">+${fmt(tasa.recargo10)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-xs pt-1.5 border-t border-slate-200">
-                <span className={`font-bold ${tasaTarde ? "text-red-800" : "text-emerald-800"}`}>TOTAL:</span>
-                <span className={`font-extrabold ${tasaTarde ? "text-red-800" : "text-emerald-800"}`}>${fmt(tasa.total)}</span>
-              </div>
+              <div className="flex justify-between text-[11px]"><span className="text-slate-600">Monto tasa:</span><span className="font-bold text-slate-700">${fmt(tasa.montoBase)}</span></div>
+              {tasaTarde && <div className="flex justify-between text-[11px]"><span className="text-red-600">Recargo 10%:</span><span className="font-bold text-red-700">+${fmt(tasa.recargo10)}</span></div>}
+              <div className="flex justify-between text-xs pt-1.5 border-t border-slate-200"><span className={`font-bold ${tasaTarde ? "text-red-800" : "text-emerald-800"}`}>TOTAL:</span><span className={`font-extrabold ${tasaTarde ? "text-red-800" : "text-emerald-800"}`}>${fmt(tasa.total)}</span></div>
             </div>
           )}
         </div>
@@ -425,51 +740,25 @@ function SimuladorRecargos({
   );
 }
 
-// ============================================
-// MATRIZ MAESTRA DE SANCIONES
-// ============================================
-
 function MatrizSanciones({ hasPublicidad }: { hasPublicidad: boolean }) {
   return (
     <details className="rounded-xl border border-slate-200 overflow-hidden">
       <summary className="px-4 py-3 cursor-pointer flex items-center gap-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors bg-white">
-        <Scale size={14} className="text-red-500" />
-        Matriz Maestra de Sanciones y Multas MUPA
+        <Scale size={14} className="text-red-500" /> Matriz Maestra de Sanciones y Multas MUPA
       </summary>
       <div className="p-4 bg-white space-y-4">
         {MATRIZ_SANCIONES.map((cat) => {
           const isHighlighted = cat.id === "publicidad" && hasPublicidad;
           return (
-            <div
-              key={cat.id}
-              className={`rounded-xl border overflow-hidden ${
-                isHighlighted ? "border-red-300 ring-2 ring-red-200" : "border-slate-200"
-              }`}
-            >
-              <div className={`px-4 py-2.5 flex items-center gap-2 ${
-                isHighlighted ? "bg-red-50" : "bg-slate-50"
-              }`}>
+            <div key={cat.id} className={`rounded-xl border overflow-hidden ${isHighlighted ? "border-red-300 ring-2 ring-red-200" : "border-slate-200"}`}>
+              <div className={`px-4 py-2.5 flex items-center gap-2 ${isHighlighted ? "bg-red-50" : "bg-slate-50"}`}>
                 <span className="text-sm">{cat.icon}</span>
-                <span className={`text-[11px] font-bold uppercase tracking-wider ${
-                  isHighlighted ? "text-red-700" : "text-slate-600"
-                }`}>
-                  {cat.title}
-                </span>
-                {isHighlighted && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 animate-pulse">
-                    RIESGO ACTIVO
-                  </span>
-                )}
+                <span className={`text-[11px] font-bold uppercase tracking-wider ${isHighlighted ? "text-red-700" : "text-slate-600"}`}>{cat.title}</span>
+                {isHighlighted && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 animate-pulse">RIESGO ACTIVO</span>}
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="px-3 py-2 text-left font-bold text-slate-500 w-[40%]">Infraccion</th>
-                      <th className="px-3 py-2 text-left font-bold text-red-500 w-[25%]">Sancion</th>
-                      <th className="px-3 py-2 text-left font-bold text-emerald-500 w-[35%]">Mitigacion</th>
-                    </tr>
-                  </thead>
+                  <thead><tr className="bg-slate-50 border-b border-slate-200"><th className="px-3 py-2 text-left font-bold text-slate-500 w-[40%]">Infraccion</th><th className="px-3 py-2 text-left font-bold text-red-500 w-[25%]">Sancion</th><th className="px-3 py-2 text-left font-bold text-emerald-500 w-[35%]">Mitigacion</th></tr></thead>
                   <tbody>
                     {cat.rows.map((row, i) => (
                       <tr key={i} className={`border-b border-slate-100 ${i % 2 === 1 ? "bg-slate-50/50" : ""}`}>
@@ -486,5 +775,27 @@ function MatrizSanciones({ hasPublicidad }: { hasPublicidad: boolean }) {
         })}
       </div>
     </details>
+  );
+}
+
+// ============================================
+// HELPERS
+// ============================================
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-center">
+      <span className="text-xs text-slate-500">{label}</span>
+      <span className="text-xs font-bold text-slate-700">{value}</span>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div className="text-center">
+      <p className={`text-sm font-extrabold ${color}`}>{value}</p>
+      <p className="text-[10px] text-slate-500">{label}</p>
+    </div>
   );
 }

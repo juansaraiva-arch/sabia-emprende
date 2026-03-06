@@ -463,8 +463,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             </p>
           </div>
 
-          <NameInput />
-          <LogoUpload />
+          {NameInput()}
+          {LogoUpload()}
 
           {/* Tipo de actividad */}
           <div className="space-y-2">
@@ -658,7 +658,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             </p>
           </div>
 
-          <NameInput />
+          {NameInput()}
 
           {/* Formalization question */}
           <div className="space-y-3">
@@ -719,7 +719,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             </p>
           </div>
 
-          <NameInput />
+          {NameInput()}
 
           {/* What do you sell - simplified */}
           <div className="space-y-3">
@@ -744,7 +744,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             </div>
           </div>
 
-          <LogoUpload />
+          {LogoUpload()}
 
           <ActionButtons onNext={() => setStep(2)} onBack={() => setStep(0)} />
         </div>
@@ -753,7 +753,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
     // Step 2: Summary (simplified for Silver Economy — no step 3)
     if (step === 2) {
-      if (isFinishing) return <FinishingAnimation />;
+      if (isFinishing) return FinishingAnimation();
 
       return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -903,7 +903,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             </p>
           </div>
 
-          <NameInput />
+          {NameInput()}
 
           {/* Basic glossary */}
           <div className="space-y-2">
@@ -947,7 +947,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   // ════════════════════════════════════════════════════════════════
 
   const renderSummary = () => {
-    if (isFinishing) return <FinishingAnimation />;
+    if (isFinishing) return FinishingAnimation();
 
     // Build summary items based on profile
     const summaryItems: { label: string; value: string; color: string }[] = [];
@@ -1082,7 +1082,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         </div>
 
         {/* Step indicator (only after profile selection) */}
-        {step > 0 && <StepIndicator />}
+        {step > 0 && StepIndicator()}
 
         {/* Step content */}
         {renderCurrentStep()}

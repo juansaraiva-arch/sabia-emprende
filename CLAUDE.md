@@ -230,6 +230,36 @@ demo/
 - `components/BottomNavBar.tsx` — +silverMode prop, silverLabels, WhatsApp FAB
 - `dashboard/page.tsx` — +userProfile state, isSilverMode, props BottomNavBar
 
+### 2026-03-06 — GAP #6: Ruta S.E. Ampliada
+
+**Commit:** `88df725`
+
+#### Tabla comparativa SA vs SRL vs EIRL vs SEP
+- 4 cards resumen con costo, tiempo y si requiere abogado
+- Tabla HTML con 6 columnas: socios, capital, costo, tiempo, abogado, responsabilidad
+- Ventajas/desventajas (3 principales) por cada forma juridica
+- Seccion "¿Cual te conviene?" con casos de uso recomendados
+
+#### Detalle por tipo (sub-tab)
+- Selector de pills para cambiar entre SA/SRL/EIRL/SEP
+- Header card con estadisticas rapidas (socios, tiempo, abogado, capital)
+- Lista expandible de pasos con costo individual y enlace a entidad
+- Resumen de costo total min-max y tiempo total
+- Ventajas/desventajas completas
+
+#### Datos de cada forma juridica
+- **S.E.P.** (Ley 186 de 2020): B/.0–150, 2-5 socios, sin abogado, 2-4 semanas
+- **S.A.** (Ley 32 de 1927): B/.500–1,500, 2+ socios ilimitado, con abogado, 3-6 semanas
+- **S.R.L.** (Codigo Comercio): B/.400–1,200, 2-20 socios, con abogado, 3-5 semanas
+- **E.I.R.L.** (Ley 24 de 1966): B/.400–1,000, 1 socio, con abogado, 3-5 semanas
+
+**Archivos creados:**
+- `lib/rutaSE.ts` (~200 lineas) — datos, tipos y helpers comparativos
+- `components/ComparativoSociedades.tsx` (~330 lineas) — UI con 2 sub-tabs
+
+**Archivos modificados:**
+- `dashboard/page.tsx` — import, LegalTab type, card grid, tab pill, rendering
+
 ---
 
 ## Estado del Roadmap (actualizado 2026-03-06)
@@ -239,7 +269,7 @@ demo/
 | #1 | Proyecciones Financieras | ✅ Completo | `6c710ea` |
 | #3 | MUPA Completo | ✅ Completo | `bcae986` |
 | #4 | Onboarding Diferenciado | ✅ Completo | `3f5266b` |
-| #6 | Ruta S.E. Ampliada (SA/SRL/EIRL vs SEP) | ❌ Pendiente | — |
+| #6 | Ruta S.E. Ampliada | ✅ Completo | `88df725` |
 | — | NPS (Delighted) | ❌ Pendiente | — |
 | — | Analytics (PostHog) | ❌ Pendiente | — |
 

@@ -39,6 +39,7 @@ const CATEGORY_ICONS: Record<AlertCategory, React.ReactNode> = {
   liquidez: <Droplets size={14} />,
   rentabilidad: <TrendingDown size={14} />,
   legal: <FileText size={14} />,
+  inventario: <Droplets size={14} />,
 };
 
 const CATEGORY_LABELS: Record<AlertCategory, string> = {
@@ -47,6 +48,7 @@ const CATEGORY_LABELS: Record<AlertCategory, string> = {
   liquidez: "Liquidez",
   rentabilidad: "Rentabilidad",
   legal: "Legal",
+  inventario: "Inventario",
 };
 
 const PRIORITY_STYLES: Record<AlertPriority, {
@@ -120,7 +122,7 @@ export default function AlertsSidebar({ alerts, isOpen, onClose }: AlertsSidebar
       acc[alert.category].push(alert);
       return acc;
     },
-    { dgi: [], capital_humano: [], liquidez: [], rentabilidad: [], legal: [] }
+    { dgi: [], capital_humano: [], liquidez: [], rentabilidad: [], legal: [], inventario: [] }
   );
 
   const activeCategories = (Object.keys(grouped) as AlertCategory[]).filter(

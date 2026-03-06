@@ -12,7 +12,7 @@ import { computeCascada, computeOxigeno } from "@/lib/calculations";
 // ============================================
 
 export type AlertPriority = "red" | "orange" | "yellow" | "green";
-export type AlertCategory = "dgi" | "capital_humano" | "liquidez" | "rentabilidad" | "legal";
+export type AlertCategory = "dgi" | "capital_humano" | "liquidez" | "rentabilidad" | "legal" | "inventario";
 
 export interface StrategicAlert {
   id: string;
@@ -312,6 +312,7 @@ export function countByCategory(alerts: StrategicAlert[]): Record<AlertCategory,
     liquidez: 0,
     rentabilidad: 0,
     legal: 0,
+    inventario: 0,
   };
   for (const a of alerts) {
     counts[a.category]++;

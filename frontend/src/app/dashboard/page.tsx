@@ -79,6 +79,7 @@ import BudgetEntryForm from "@/components/BudgetEntryForm";
 import ReportGenerator from "@/components/ReportGenerator";
 import MiAsistente from "@/components/MiAsistente";
 import EspejoDGI from "@/components/EspejoDGI";
+import ProyeccionesFinancieras from "@/components/ProyeccionesFinancieras";
 import ModuleCardGrid from "@/components/ModuleCardGrid";
 import type { CardGridSection } from "@/components/ModuleCardGrid";
 import FabricaEmpresa from "@/components/FabricaEmpresa";
@@ -121,7 +122,8 @@ type NegocioTab =
   | "tendencias"
   | "comparativo"
   | "presupuesto"
-  | "reportes";
+  | "reportes"
+  | "proyecciones";
 type LegalTab = "boveda" | "vigilante" | "auditoria" | "libro_actas" | "fabrica_empresa" | "mupa";
 
 // View: "hub" = main dashboard with 3 module cards, "module" = inside a module
@@ -1545,6 +1547,7 @@ export default function Dashboard() {
         { key: "lab", label: "Laboratorio de Precios", icon: <FlaskConical size={22} />, tooltip: "Optimiza tu estrategia de precios", color: "bg-fuchsia-600" },
         { key: "tendencias", label: "Analisis de Tendencia", icon: <TrendingUp size={22} />, tooltip: "Tendencias multi-periodo con forecast", color: "bg-teal-600" },
         { key: "presupuesto", label: "Presupuesto Maestro", icon: <Target size={22} />, tooltip: "Presupuesto vs Real con tracking", color: "bg-yellow-500" },
+        { key: "proyecciones", label: "Proyecciones Financieras", icon: <TrendingUp size={22} />, tooltip: "Flujo de caja 90d, escenarios y proyeccion fiscal", color: "bg-emerald-600" },
       ],
     },
   ];
@@ -1996,6 +1999,8 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
+
+              {activeNegocioTab === "proyecciones" && (hasData ? <ProyeccionesFinancieras record={currentRecord!} /> : <EmptyState text="Ingresa datos en 'Mi Contabilidad' para ver las Proyecciones Financieras." />)}
 
               {activeNegocioTab === "reportes" && (
                 <div className="space-y-4">

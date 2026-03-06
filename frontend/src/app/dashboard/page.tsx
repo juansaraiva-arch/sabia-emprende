@@ -1299,6 +1299,13 @@ export default function Dashboard() {
 
   const societyId = "demo-society-001";
 
+  // User profile (GAP #4 — Onboarding Diferenciado)
+  const [userProfile] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("midf_user_profile") || "";
+    return "";
+  });
+  const isSilverMode = userProfile === "C";
+
   // White-label branding (empresa del usuario) — reused from HubView
   const [companyLogo, setCompanyLogo] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("midf_company_logo") || "";
@@ -1688,7 +1695,7 @@ export default function Dashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto p-4 lg:p-6 space-y-4 lg:space-y-6">
-        <BottomNavBar active={activeSection} onNavigate={setActiveSection} />
+        <BottomNavBar active={activeSection} onNavigate={setActiveSection} silverMode={isSilverMode} />
 
         {/* SECCION 1: MI CONTABILIDAD */}
         {activeSection === "datos" && (
@@ -2062,7 +2069,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      <BottomNavBar active={activeSection} onNavigate={setActiveSection} />
+      <BottomNavBar active={activeSection} onNavigate={setActiveSection} silverMode={isSilverMode} />
 
       {/* Panel de Alertas Estrategicas (sidebar derecho) */}
       <AlertsSidebar

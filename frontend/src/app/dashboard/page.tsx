@@ -39,6 +39,7 @@ import {
   Activity,
   Check,
   Landmark,
+  Users,
 } from "lucide-react";
 import type { FinancialRecord } from "@/lib/calculations";
 import MidfLogo from "@/components/MidfLogo";
@@ -85,6 +86,7 @@ import type { CardGridSection } from "@/components/ModuleCardGrid";
 import FabricaEmpresa from "@/components/FabricaEmpresa";
 import ComparativoSociedades from "@/components/ComparativoSociedades";
 import MupaPanel from "@/components/MupaPanel";
+import MiRRHH from "@/components/rrhh/MiRRHH";
 import { trackModuleOpened, trackTabChanged, trackDataSaved, trackSetupCompleted } from "@/lib/analytics";
 import { DOC_CATEGORY_TO_STEP, updateStepStatus, checkFormalizationStatus, pushDocSyncEvent } from "@/lib/formalizacion";
 import { computeAlerts, computeComplianceAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
@@ -125,7 +127,8 @@ type NegocioTab =
   | "comparativo"
   | "presupuesto"
   | "reportes"
-  | "proyecciones";
+  | "proyecciones"
+  | "rrhh";
 type LegalTab = "boveda" | "vigilante" | "auditoria" | "libro_actas" | "fabrica_empresa" | "comparativo_legal" | "mupa";
 
 // View: "hub" = main dashboard with 3 module cards, "module" = inside a module
@@ -1521,6 +1524,7 @@ export default function Dashboard() {
     { key: "lab", label: "Estrategia de Precios", icon: <FlaskConical size={14} /> },
     { key: "valoracion", label: "Valor del Negocio", icon: <Gem size={14} /> },
     { key: "nomina", label: "Costo Real de Personal", icon: <DollarSign size={14} /> },
+    { key: "rrhh", label: "Mi RRHH", icon: <Users size={14} /> },
     { key: "tendencias", label: "Tendencias", icon: <TrendingUp size={14} /> },
     { key: "comparativo", label: "Comparativo", icon: <ArrowLeftRight size={14} /> },
     { key: "presupuesto", label: "Presupuesto", icon: <Target size={14} /> },
@@ -1546,6 +1550,7 @@ export default function Dashboard() {
         { key: "oxigeno", label: "Indicador de Liquidez", icon: <Wind size={22} />, tooltip: "Analisis de oxigeno financiero", color: "bg-cyan-600" },
         { key: "equilibrio", label: "Punto de Equilibrio", icon: <Scale size={22} />, tooltip: "Ventas minimas para no perder", color: "bg-emerald-600" },
         { key: "nomina", label: "Planilla (Costo Real)", icon: <DollarSign size={22} />, tooltip: "Costo total empleados con CSS y prestaciones", color: "bg-violet-600" },
+        { key: "rrhh", label: "Mi RRHH (Completo)", icon: <Users size={22} />, tooltip: "Registro, planilla, horas extras, bonos, prestamos, contratos y asistencia", color: "bg-teal-600" },
         { key: "valoracion", label: "Valor del Negocio", icon: <Gem size={22} />, tooltip: "Valoracion por multiplos y DCF", color: "bg-pink-600" },
         { key: "comparativo", label: "Comparativo", icon: <ArrowLeftRight size={22} />, tooltip: "Compara dos periodos lado a lado", color: "bg-indigo-600" },
         { key: "reportes", label: "Reporte", icon: <FileBarChart size={22} />, tooltip: "Genera reportes PDF ejecutivos", color: "bg-slate-700" },
@@ -1924,6 +1929,8 @@ export default function Dashboard() {
               {activeNegocioTab === "lab" && <LabPrecios />}
               {activeNegocioTab === "valoracion" && (hasData ? <ValoracionTab record={currentRecord!} /> : <EmptyState text="Ingresa datos en 'Mi Contabilidad' para ver la Valoracion de tu Negocio." />)}
               {activeNegocioTab === "nomina" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Costo Real de Personal — Panama 2026</h2><PayrollEngine societyId={societyId} /></div>)}
+
+              {activeNegocioTab === "rrhh" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Mi RRHH — Gestion de Personal Completa</h2><MiRRHH societyId={societyId} /></div>)}
 
               {activeNegocioTab === "tendencias" && (
                 <div className="space-y-4">

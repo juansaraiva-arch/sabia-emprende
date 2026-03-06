@@ -272,11 +272,12 @@ demo/
 - Graceful degradation: si `NEXT_PUBLIC_POSTHOG_KEY` no esta configurado, analytics desactivado silenciosamente
 - Respeta Do Not Track del navegador
 
-#### Delighted NPS
-- Carga snippet JS oficial de Delighted dinamicamente
+#### Delighted NPS — ⚠️ PENDIENTE DE ACTIVAR
+- Codigo listo: carga snippet JS oficial de Delighted dinamicamente
 - Disparo condicional: primera encuesta a los 7 dias de uso, despues cada 30 dias
 - Persistencia via `midf_first_use_date` y `midf_last_nps_shown`
 - Graceful degradation: si `NEXT_PUBLIC_DELIGHTED_KEY` no esta configurado, NPS desactivado
+- **PENDIENTE:** delighted.com esta en mantenimiento (2026-03-06). Crear cuenta y obtener key cuando vuelva online. Luego agregar `NEXT_PUBLIC_DELIGHTED_KEY` en Vercel env vars y re-deploy
 
 #### Integracion en la app
 - `layout.tsx` — AnalyticsProvider envuelve AuthProvider
@@ -300,7 +301,7 @@ demo/
 | #3 | MUPA Completo | ✅ Completo | `bcae986` |
 | #4 | Onboarding Diferenciado | ✅ Completo | `3f5266b` |
 | #6 | Ruta S.E. Ampliada | ✅ Completo | `88df725` |
-| — | NPS (Delighted) | ✅ Integrado | `53e91aa` |
+| — | NPS (Delighted) | ⚠️ Codigo listo, cuenta pendiente (sitio en mantenimiento) | `53e91aa` |
 | — | Analytics (PostHog) | ✅ Integrado | `53e91aa` |
 
 ### localStorage keys (registro completo)

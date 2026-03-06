@@ -291,6 +291,59 @@ demo/
 3. Agregar env vars en Vercel (Settings → Environment Variables)
 4. Re-deploy: `cd frontend && npx vercel --prod`
 
+### 2026-03-06 — Expansion Mi RRHH: Paridad con Practisoft
+
+**Commit:** `7aad04e`
+
+#### Fase 0: MiRRHH montado en dashboard
+- MiRRHH.tsx (2,220 lineas) montado como tab "rrhh" en dashboard junto a PayrollEngine "nomina"
+- 8 sub-tabs: Registro, Planilla, Freelancers, Horas Extras, Bonos, Prestamos, Contratos, Asistencia
+
+#### Expansion #1: Frecuencias de planilla
+- FormaPago: mensual, quincenal, bisemanal, semanal
+- `FREQUENCY_CONFIGS` con periodsPerYear, divisor, ISR exempt limits
+- `calcularISRMensual()` acepta `periodsPerYear` (default 12) — anualiza y de-anualiza correctamente
+
+#### Expansion #2: Horas extras (Ley 44 de 1995)
+- 5 tipos: diurna +25%, nocturna +50%, descanso +50%, nocturna descanso +75%, feriado +150%
+- Tarifa base = salario/240, auto-calculo de montos
+- Alerta legal: maximo 3h/dia, 9h/semana (~36/mes)
+
+#### Expansion #3: Bonificaciones
+- Gravables (productividad, antiguedad, representacion, comisiones, navidad) se suman al devengado bruto
+- No gravables (transporte, alimentacion) se suman al neto
+- Nota legal: transporte/alimentacion no gravable hasta B/.100/mes
+
+#### Expansion #4: Prestamos a empleados
+- CRUD prestamos con monto, cuotas, fecha desembolso
+- Cuota mensual = monto/cuotas (descuento automatico del neto)
+- Estados: activo, congelado, pagado — con barra de progreso
+- Historial de pagos (nomina o manual)
+
+#### Expansion #5: Control de asistencia
+- Calendario mensual interactivo con 8 tipos de asistencia
+- Colores por tipo: P (presente), T (tardanza), FI/FJ (faltas), IC, V, PE, FE
+- Llenado rapido ("Llenar Presente" para todos los dias laborables)
+- Exportacion CSV por empleado/mes
+
+#### Expansion #6: Contratos digitales
+- 4 tipos: indefinido, temporal, por obra, prueba
+- Semaforo automatico: vigente (verde), por vencer 30d (amarillo), vencido (rojo), terminado (gris)
+- `computeEstadoContrato()` recalcula estado en tiempo real
+- Alertas globales de contratos por vencer
+
+**Archivos creados:**
+- `components/rrhh/HorasExtrasTab.tsx` (~314 lineas)
+- `components/rrhh/BonificacionesTab.tsx` (~227 lineas)
+- `components/rrhh/PrestamosTab.tsx` (~399 lineas)
+- `components/rrhh/ContratosTab.tsx` (~375 lineas)
+- `components/rrhh/AsistenciaTab.tsx` (~366 lineas)
+- `lib/rrhh-types.ts` (~730 lineas) — tipos + CRUD para todas las expansiones
+
+**Archivos modificados:**
+- `components/rrhh/MiRRHH.tsx` — +5 imports, TabKey expandido, 5 render cases
+- `dashboard/page.tsx` — +import MiRRHH, +Users icon, +"rrhh" tab
+
 ---
 
 ## Estado del Roadmap (actualizado 2026-03-06)
@@ -303,6 +356,7 @@ demo/
 | #6 | Ruta S.E. Ampliada | ✅ Completo | `88df725` |
 | — | NPS (Delighted) | ⚠️ Codigo listo, cuenta pendiente (sitio en mantenimiento) | `53e91aa` |
 | — | Analytics (PostHog) | ✅ Integrado | `53e91aa` |
+| — | RRHH Expansion (6 modulos) | ✅ Completo — Paridad Practisoft | `7aad04e` |
 
 ### localStorage keys (registro completo)
 
@@ -326,3 +380,11 @@ demo/
 | `midf_mupa_impuesto_ingresos` | number | GAP #3 |
 | `midf_first_use_date` | ISO date | NPS Delighted |
 | `midf_last_nps_shown` | ISO date | NPS Delighted |
+| `midf_rrhh_personal` | JSON | RRHH — Registro de personal |
+| `midf_rrhh_planillas` | JSON | RRHH — Planillas mensuales |
+| `midf_rrhh_pagos_freelancers` | JSON | RRHH — Pagos a freelancers |
+| `midf_rrhh_horas_extras` | JSON | RRHH — Horas extras |
+| `midf_rrhh_bonificaciones` | JSON | RRHH — Bonificaciones |
+| `midf_rrhh_prestamos` | JSON | RRHH — Prestamos a empleados |
+| `midf_rrhh_contratos` | JSON | RRHH — Contratos laborales |
+| `midf_rrhh_asistencia` | JSON | RRHH — Control de asistencia |

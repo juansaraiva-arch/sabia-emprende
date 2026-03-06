@@ -83,6 +83,7 @@ import ProyeccionesFinancieras from "@/components/ProyeccionesFinancieras";
 import ModuleCardGrid from "@/components/ModuleCardGrid";
 import type { CardGridSection } from "@/components/ModuleCardGrid";
 import FabricaEmpresa from "@/components/FabricaEmpresa";
+import ComparativoSociedades from "@/components/ComparativoSociedades";
 import MupaPanel from "@/components/MupaPanel";
 import { DOC_CATEGORY_TO_STEP, updateStepStatus, checkFormalizationStatus, pushDocSyncEvent } from "@/lib/formalizacion";
 import { computeAlerts, computeComplianceAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
@@ -124,7 +125,7 @@ type NegocioTab =
   | "presupuesto"
   | "reportes"
   | "proyecciones";
-type LegalTab = "boveda" | "vigilante" | "auditoria" | "libro_actas" | "fabrica_empresa" | "mupa";
+type LegalTab = "boveda" | "vigilante" | "auditoria" | "libro_actas" | "fabrica_empresa" | "comparativo_legal" | "mupa";
 
 // View: "hub" = main dashboard with 3 module cards, "module" = inside a module
 type DashboardView = "hub" | "module";
@@ -1564,6 +1565,7 @@ export default function Dashboard() {
       title: "Ruta de Formalizacion",
       cards: [
         { key: "fabrica_empresa", label: "Constitucion de mi Empresa", icon: <Rocket size={22} />, tooltip: "Ruta paso a paso para constituir tu Sociedad de Emprendimiento", color: "bg-emerald-600" },
+        { key: "comparativo_legal", label: "Comparativo S.A. vs S.R.L. vs E.I.R.L. vs S.E.P.", icon: <ArrowLeftRight size={22} />, tooltip: "Tabla comparativa de formas juridicas con costos y pasos", color: "bg-blue-600" },
         { key: "boveda", label: "Boveda KYC (Debida Diligencia)", icon: <Shield size={22} />, tooltip: "Almacenamiento permanente de documentos legales", color: "bg-violet-600" },
       ],
     },
@@ -2028,6 +2030,7 @@ export default function Dashboard() {
             <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 overflow-x-auto">
               {([
                 { key: "fabrica_empresa" as LegalTab, label: "Constitucion", icon: <Rocket size={14} />, activeColor: "bg-emerald-600 text-white" },
+                { key: "comparativo_legal" as LegalTab, label: "Comparativo", icon: <ArrowLeftRight size={14} />, activeColor: "bg-blue-600 text-white" },
                 { key: "boveda" as LegalTab, label: "Boveda KYC", icon: <Shield size={14} />, activeColor: "bg-violet-600 text-white" },
                 { key: "mupa" as LegalTab, label: "MUPA", icon: <Landmark size={14} />, activeColor: "bg-red-600 text-white" },
                 { key: "vigilante" as LegalTab, label: "Vigilante", icon: <Scale size={14} />, activeColor: "bg-amber-600 text-white" },
@@ -2051,6 +2054,7 @@ export default function Dashboard() {
 
             <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6 min-h-[400px]">
               {activeLegalTab === "fabrica_empresa" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Constitucion de mi Empresa — Ruta S.E.</h2><FabricaEmpresa onDocumentUploaded={handleDocumentUploaded} onFileUpload={handleFabricaFileUpload} showWelcome={showFabricaWelcome} /></div>)}
+              {activeLegalTab === "comparativo_legal" && (<div><h2 className="text-lg lg:text-xl font-bold text-blue-800 mb-4">Comparativo de Formas Juridicas — SA vs SRL vs EIRL vs SEP</h2><ComparativoSociedades /></div>)}
               {activeLegalTab === "boveda" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Boveda KYC — Debida Diligencia</h2><LegalVault onDocumentUploaded={handleDocumentUploaded} /></div>)}
               {activeLegalTab === "mupa" && (<div><h2 className="text-lg lg:text-xl font-bold text-red-800 mb-4">MUPA — Inteligencia Fiscal Municipal</h2><MupaPanel /></div>)}
               {activeLegalTab === "vigilante" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Vigilante Legal: Alertas de Cumplimiento</h2><WatchdogDashboard /></div>)}

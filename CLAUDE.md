@@ -260,6 +260,36 @@ demo/
 **Archivos modificados:**
 - `dashboard/page.tsx` — import, LegalTab type, card grid, tab pill, rendering
 
+### 2026-03-06 — Integraciones: PostHog Analytics + Delighted NPS
+
+**Commit:** `53e91aa`
+
+#### PostHog Analytics (SDK posthog-js)
+- Instalacion `posthog-js` como dependencia
+- `lib/analytics.ts` (~170 lineas): wrapper con funciones tipadas para todos los eventos
+- `components/AnalyticsProvider.tsx`: inicializa PostHog + Delighted en mount, track pageviews en cambio de ruta
+- Eventos capturados: login, modulo_abierto, tab_cambiado, dato_guardado, formulario_completado, onboarding_perfil_seleccionado, onboarding_completado, setup_completado, proyeccion_ejecutada, mupa_accion, comparativo_sociedades_visto, asistente_mensaje_enviado
+- Graceful degradation: si `NEXT_PUBLIC_POSTHOG_KEY` no esta configurado, analytics desactivado silenciosamente
+- Respeta Do Not Track del navegador
+
+#### Delighted NPS
+- Carga snippet JS oficial de Delighted dinamicamente
+- Disparo condicional: primera encuesta a los 7 dias de uso, despues cada 30 dias
+- Persistencia via `midf_first_use_date` y `midf_last_nps_shown`
+- Graceful degradation: si `NEXT_PUBLIC_DELIGHTED_KEY` no esta configurado, NPS desactivado
+
+#### Integracion en la app
+- `layout.tsx` — AnalyticsProvider envuelve AuthProvider
+- `dashboard/page.tsx` — trackModuleOpened, trackDataSaved, trackSetupCompleted
+- `SetupWizard.tsx` — trackOnboardingProfile, trackOnboardingCompleted
+- `.env.example` — documentadas las 3 nuevas env vars
+
+#### Para activar
+1. Crear cuenta PostHog → copiar Project API Key → `NEXT_PUBLIC_POSTHOG_KEY`
+2. Crear cuenta Delighted → copiar Key → `NEXT_PUBLIC_DELIGHTED_KEY`
+3. Agregar env vars en Vercel (Settings → Environment Variables)
+4. Re-deploy: `cd frontend && npx vercel --prod`
+
 ---
 
 ## Estado del Roadmap (actualizado 2026-03-06)
@@ -270,8 +300,8 @@ demo/
 | #3 | MUPA Completo | ✅ Completo | `bcae986` |
 | #4 | Onboarding Diferenciado | ✅ Completo | `3f5266b` |
 | #6 | Ruta S.E. Ampliada | ✅ Completo | `88df725` |
-| — | NPS (Delighted) | ❌ Pendiente | — |
-| — | Analytics (PostHog) | ❌ Pendiente | — |
+| — | NPS (Delighted) | ✅ Integrado | `53e91aa` |
+| — | Analytics (PostHog) | ✅ Integrado | `53e91aa` |
 
 ### localStorage keys (registro completo)
 
@@ -293,3 +323,5 @@ demo/
 | `midf_mupa_rotulos` | JSON | GAP #3 |
 | `midf_mupa_categoria_actividad` | string | GAP #3 |
 | `midf_mupa_impuesto_ingresos` | number | GAP #3 |
+| `midf_first_use_date` | ISO date | NPS Delighted |
+| `midf_last_nps_shown` | ISO date | NPS Delighted |

@@ -85,6 +85,7 @@ import type { CardGridSection } from "@/components/ModuleCardGrid";
 import FabricaEmpresa from "@/components/FabricaEmpresa";
 import ComparativoSociedades from "@/components/ComparativoSociedades";
 import MupaPanel from "@/components/MupaPanel";
+import { trackModuleOpened, trackTabChanged, trackDataSaved, trackSetupCompleted } from "@/lib/analytics";
 import { DOC_CATEGORY_TO_STEP, updateStepStatus, checkFormalizationStatus, pushDocSyncEvent } from "@/lib/formalizacion";
 import { computeAlerts, computeComplianceAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
 import { playAlertSound, isSoundEnabled } from "@/lib/sounds";
@@ -1331,6 +1332,7 @@ export default function Dashboard() {
   const handleSelectModule = (section: Section) => {
     setActiveSection(section);
     setDashboardView("module");
+    trackModuleOpened(section);
     // Reset grids to show card grid on entry
     setShowFinanzasGrid(true);
     setShowLegalGrid(true);
@@ -1385,6 +1387,7 @@ export default function Dashboard() {
     setDiagnosis(computeMockDiagnosis(record));
     setBreakeven(computeMockBreakeven(record));
     setActiveSection("negocio");
+    trackDataSaved("financial_record", { autoJournal: !!autoJournal });
     if (autoJournal) {
       console.log("[MiDF] Auto-journal solicitado — se generaran asientos al conectar con backend");
     }
@@ -1603,6 +1606,7 @@ export default function Dashboard() {
       <SetupWizard
         onComplete={(routeTo) => {
           setSetupComplete(true);
+          trackSetupCompleted();
           if (routeTo === "fabrica_empresa") {
             // Smart Routing: NO tiene empresa → Mi Empresa → Constitucion de mi Empresa con welcome popup
             setActiveSection("legal");

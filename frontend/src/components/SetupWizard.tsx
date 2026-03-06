@@ -26,6 +26,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import MidfLogo from "@/components/MidfLogo";
+import { trackOnboardingProfile, trackOnboardingCompleted } from "@/lib/analytics";
 
 const GOLD = "#C5A059";
 const NAVY = "#1A242F";
@@ -179,6 +180,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       if (rucStatus) localStorage.setItem("midf_ruc_status", rucStatus);
       if (rucStatus === "si") localStorage.setItem("midf_has_ruc", "true");
     }
+
+    // Track onboarding completion
+    if (profile) trackOnboardingCompleted(profile);
 
     // Mark wizard complete
     localStorage.setItem("midf_welcomed", "true");
@@ -439,7 +443,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       </div>
 
       <ActionButtons
-        onNext={() => setStep(1)}
+        onNext={() => { if (profile) trackOnboardingProfile(profile); setStep(1); }}
         nextDisabled={!profile}
         nextLabel="Comenzar"
         showSkip

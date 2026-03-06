@@ -3,6 +3,7 @@ import { Montserrat, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { AccessGate } from "@/components/AccessGate";
+import AnalyticsProvider from "@/components/AnalyticsProvider";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -34,7 +35,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AccessGate>
-          <AuthProvider>{children}</AuthProvider>
+          <AnalyticsProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </AnalyticsProvider>
         </AccessGate>
       </body>
     </html>

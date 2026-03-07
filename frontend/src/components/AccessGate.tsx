@@ -5,12 +5,17 @@
  * La clave se guarda en sessionStorage para no pedirla cada vez.
  */
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 const ACCESS_PASSWORD = process.env.NEXT_PUBLIC_ACCESS_PASSWORD || "";
 const STORAGE_KEY = "midf_access_granted";
 
+/** Rutas publicas que no requieren la clave de acceso */
+const PUBLIC_PATHS = ["/beta-evaluacion"];
+
 export function AccessGate({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [granted, setGranted] = useState(false);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
@@ -18,6 +23,12 @@ export function AccessGate({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
+    // Rutas publicas — siempre dejar pasar
+    if (PUBLIC_PATHS.some((p) => pathname?.startsWith(p))) {
+      setGranted(true);
+      setChecking(false);
+      return;
+    }
     // Si no hay password configurado, dejar pasar
     if (!ACCESS_PASSWORD) {
       setGranted(true);
@@ -30,7 +41,7 @@ export function AccessGate({ children }: { children: React.ReactNode }) {
       setGranted(true);
     }
     setChecking(false);
-  }, []);
+  }, [pathname]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

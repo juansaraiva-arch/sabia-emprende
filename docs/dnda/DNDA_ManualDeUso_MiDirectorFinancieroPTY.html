@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Manual de Uso - Mi Director Financiero PTY</title>
+<style>
+  @page {
+    size: letter;
+    margin: 2.5cm 2cm 3cm 2cm;
+    @bottom-center {
+      content: "Pagina " counter(page) " de " counter(pages);
+      font-size: 9pt;
+      color: #666;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #222;
+  }
+  .page-break { page-break-after: always; }
+  .no-break { page-break-inside: avoid; }
+
+  /* PORTADA */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 92vh;
+    padding: 3cm 2cm;
+  }
+  .cover .doc-type {
+    font-size: 14pt;
+    font-weight: bold;
+    letter-spacing: 4pt;
+    text-transform: uppercase;
+    color: #1A242F;
+    border: 3px double #1A242F;
+    padding: 12px 40px;
+    margin-bottom: 40px;
+  }
+  .cover .app-name {
+    font-size: 22pt;
+    font-weight: bold;
+    color: #1A242F;
+    margin-bottom: 8px;
+  }
+  .cover .subtitle {
+    font-size: 12pt;
+    color: #555;
+    font-style: italic;
+    margin-bottom: 50px;
+  }
+  .cover .meta-table {
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  .cover .meta-table td {
+    padding: 6px 20px;
+    font-size: 10pt;
+    text-align: left;
+  }
+  .cover .meta-table td:first-child {
+    font-weight: bold;
+    color: #1A242F;
+    text-align: right;
+  }
+  .cover .legal-text {
+    margin-top: 50px;
+    font-size: 8pt;
+    color: #888;
+    max-width: 400px;
+    line-height: 1.4;
+  }
+
+  /* SECCIONES */
+  h1 {
+    font-size: 16pt;
+    color: #1A242F;
+    border-bottom: 2px solid #C5A059;
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+    margin-top: 24px;
+  }
+  h2 {
+    font-size: 13pt;
+    color: #1A242F;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    border-left: 4px solid #C5A059;
+    padding-left: 10px;
+  }
+  h3 {
+    font-size: 11pt;
+    color: #333;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    font-style: italic;
+  }
+  p {
+    margin-bottom: 8px;
+    text-align: justify;
+  }
+  ul, ol {
+    margin-left: 24px;
+    margin-bottom: 10px;
+  }
+  li { margin-bottom: 4px; }
+
+  /* TABLAS */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 10pt;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    text-align: left;
+  }
+  th {
+    background: #1A242F;
+    color: white;
+    font-weight: bold;
+  }
+  tr:nth-child(even) { background: #f8f8f8; }
+
+  /* CAJAS INFORMATIVAS */
+  .tip {
+    background: #f0f8ff;
+    border-left: 4px solid #3b82f6;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 10pt;
+  }
+  .tip strong { color: #1e40af; }
+
+  .warning {
+    background: #fff7ed;
+    border-left: 4px solid #f59e0b;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 10pt;
+  }
+  .warning strong { color: #b45309; }
+
+  .step {
+    background: #f0fdf4;
+    border-left: 4px solid #22c55e;
+    padding: 8px 14px;
+    margin: 8px 0;
+    font-size: 10pt;
+  }
+  .step strong { color: #166534; }
+
+  /* INDICE */
+  .toc {
+    font-size: 10.5pt;
+    line-height: 1.8;
+  }
+  .toc a {
+    text-decoration: none;
+    color: #1A242F;
+  }
+  .toc .toc-chapter {
+    font-weight: bold;
+    margin-top: 6px;
+  }
+  .toc .toc-section {
+    margin-left: 20px;
+  }
+
+  /* CAMPO EXPLICADO */
+  .field-table td:first-child {
+    font-weight: bold;
+    width: 35%;
+    color: #1A242F;
+  }
+
+  /* FIGURAS */
+  .figure-container {
+    text-align: center;
+    margin: 16px 0;
+    page-break-inside: avoid;
+  }
+  .figure-container img {
+    max-width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  .figure-container .caption {
+    font-style: italic;
+    color: #555;
+    font-size: 9pt;
+    margin-top: 6px;
+  }
+  /* FORMULAS */
+  .formula-block {
+    font-family: 'Courier New', monospace;
+    font-size: 9.5pt;
+    line-height: 1.5;
+    background: #faf8f5;
+    border-left: 3px solid #C5A059;
+    padding: 10px 14px;
+    margin: 12px 0;
+    page-break-inside: avoid;
+  }
+  .formula-block .formula-title {
+    font-family: 'Georgia', serif;
+    font-weight: bold;
+    font-size: 10pt;
+    color: #1A242F;
+    margin-bottom: 6px;
+  }
+  /* FOOTER */
+  .legal-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid #ccc;
+    font-size: 8pt;
+    color: #888;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PORTADA                                                       -->
+<!-- ============================================================ -->
+
+<div class="cover">
+  <div class="doc-type">MANUAL DE USO</div>
+  <div class="app-name">Mi Director Financiero PTY</div>
+  <div class="subtitle">Plataforma de Alta Direccion Financiera y Legal<br>para Emprendedores Panamenos</div>
+
+  <table class="meta-table">
+    <tr><td>Obra:</td><td>Programa de Computadora (Software)</td></tr>
+    <tr><td>Version:</td><td>0.1.0</td></tr>
+    <tr><td>Autora:</td><td>Soraya Dayan Gutierrez Perez</td></tr>
+    <tr><td>Titular:</td><td>Soraya Dayan Gutierrez Perez (Persona Natural)</td></tr>
+    <tr><td>Fecha:</td><td>Marzo 2026</td></tr>
+  </table>
+
+  <p class="legal-text">
+    Documento presentado ante la Direccion Nacional de Derecho de Autor (DNDA)
+    del Ministerio de Comercio e Industrias de la Republica de Panama,
+    para efectos del registro de derechos de autor sobre obra literaria
+    tipo programa de computadora.
+  </p>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- TABLA DE CONTENIDO                                            -->
+<!-- ============================================================ -->
+
+<h1>Tabla de Contenido</h1>
+
+<div class="toc">
+  <div class="toc-chapter">1. Introduccion</div>
+  <div class="toc-section">1.1 Que es Mi Director Financiero PTY</div>
+  <div class="toc-section">1.2 Requisitos del Sistema</div>
+  <div class="toc-section">1.3 Acceso a la Plataforma</div>
+
+  <div class="toc-chapter">2. Pantalla Principal (Hub)</div>
+  <div class="toc-section">2.1 Organigrama Interactivo</div>
+  <div class="toc-section">2.2 Configuracion de Empresa</div>
+  <div class="toc-section">2.3 Navegacion entre Modulos</div>
+
+  <div class="toc-chapter">3. Mi Contabilidad (Modulo Datos)</div>
+  <div class="toc-section">3.1 Diagnostico Flash</div>
+  <div class="toc-section">3.2 Contabilidad Formal</div>
+  <div class="toc-section">3.3 Espejo de Formularios DGI</div>
+  <div class="toc-section">3.4 Mi RRHH</div>
+  <div class="toc-section">3.5 Mi Inventario</div>
+
+  <div class="toc-chapter">4. Mis Finanzas (Modulo Negocio)</div>
+  <div class="toc-section">4.1 Cascada de Rentabilidad</div>
+  <div class="toc-section">4.2 Semaforo de Eficiencia</div>
+  <div class="toc-section">4.3 Indicador de Liquidez (Oxigeno)</div>
+  <div class="toc-section">4.4 Punto de Equilibrio</div>
+  <div class="toc-section">4.5 Simulador Estrategico</div>
+  <div class="toc-section">4.6 Laboratorio de Precios</div>
+  <div class="toc-section">4.7 Valoracion de Empresa</div>
+  <div class="toc-section">4.8 Calculadora de Nomina</div>
+  <div class="toc-section">4.9 Tendencias y Comparativo</div>
+  <div class="toc-section">4.10 Presupuesto Maestro</div>
+
+  <div class="toc-chapter">5. Mi Empresa - Doc Legales (Modulo Legal)</div>
+  <div class="toc-section">5.1 Constitucion de Empresa</div>
+  <div class="toc-section">5.2 Boveda KYC</div>
+  <div class="toc-section">5.3 MUPA — Inteligencia Municipal</div>
+  <div class="toc-section">5.4 Vigilante Legal</div>
+  <div class="toc-section">5.5 Auditoria y DGI</div>
+  <div class="toc-section">5.6 Libro de Actas y Socios</div>
+
+  <div class="toc-chapter">6. Mi Asistente (Inteligencia Artificial)</div>
+
+  <div class="toc-chapter">7. Sistema de Alertas Estrategicas</div>
+
+  <div class="toc-chapter">8. Glosario de Terminos Financieros</div>
+
+  <div class="toc-chapter">9. Preguntas Frecuentes</div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- CAPITULO 1: INTRODUCCION                                      -->
+<!-- ============================================================ -->
+
+<h1>1. Introduccion</h1>
+
+<h2>1.1 Que es Mi Director Financiero PTY</h2>
+
+<p><b>Mi Director Financiero PTY</b> es una plataforma web de alta direccion financiera
+y legal disenada exclusivamente para emprendedores panamenos. La aplicacion integra
+en un solo lugar todas las herramientas que un emprendedor necesita para tomar
+decisiones informadas sobre su negocio: desde la contabilidad formal hasta la
+proyeccion estrategica, pasando por el cumplimiento fiscal con la DGI y la gestion
+de recursos humanos bajo la legislacion laboral panamena.</p>
+
+<p>La plataforma opera con el concepto de "Tu Aliado Estrategico": no solo registra
+numeros, sino que los interpreta, genera alertas proactivas y ofrece recomendaciones
+accionables a traves de un asistente de inteligencia artificial.</p>
+
+<p><b>Principales capacidades:</b></p>
+<ul>
+  <li>Motor de analisis financiero completo (Cascada P&amp;L, ratios, punto de equilibrio)</li>
+  <li>Contabilidad formal con libros legales (Diario, Mayor, Balance de Comprobacion)</li>
+  <li>Espejo de formularios DGI (F2 V10, Form 03, Form 430, Form 20, Planilla CSS)</li>
+  <li>Calculadora de nomina Panama (Ley 462 de 2025) con carga patronal real</li>
+  <li>Gestion de inventario con alertas de punto de reorden (ROP)</li>
+  <li>Sistema de alertas estrategicas centralizado (financieras, fiscales, laborales)</li>
+  <li>Laboratorio de precios con costeo unitario y conversiones de unidades</li>
+  <li>Valoracion de empresa por multiplos de EBITDA</li>
+  <li>Presupuesto maestro con analisis de varianza</li>
+  <li>Monitor de Ley 186 para Sociedades de Emprendimiento</li>
+  <li>Asistente de IA conversacional (GPT-4o)</li>
+</ul>
+
+<h2>1.2 Requisitos del Sistema</h2>
+
+<table>
+  <tr><th>Requisito</th><th>Especificacion</th></tr>
+  <tr><td>Navegador web</td><td>Google Chrome 90+, Firefox 90+, Safari 15+, Edge 90+</td></tr>
+  <tr><td>Conexion a internet</td><td>Requerida para acceso inicial; datos se almacenan localmente</td></tr>
+  <tr><td>Dispositivo</td><td>Computadora, tablet o telefono celular (diseno responsivo)</td></tr>
+  <tr><td>Resolucion minima</td><td>375px de ancho (compatible con iPhone SE)</td></tr>
+  <tr><td>Sistema operativo</td><td>Cualquiera (Windows, macOS, Linux, iOS, Android)</td></tr>
+</table>
+
+<div class="tip">
+  <strong>Consejo:</strong> Para la mejor experiencia, utilice Google Chrome en una
+  computadora con pantalla de al menos 1280px de ancho. En dispositivos moviles,
+  la aplicacion se adapta automaticamente con una barra de navegacion inferior.
+</div>
+
+<h2>1.3 Acceso a la Plataforma</h2>
+
+<ol>
+  <li>Abra su navegador web y visite la URL proporcionada por el administrador.</li>
+  <li>Si la plataforma tiene clave de acceso configurada, ingrese la clave del equipo
+  en el campo correspondiente y presione "Entrar".</li>
+  <li>La clave se guarda en su sesion del navegador para no pedirla cada vez que
+  abra la aplicacion (se borra al cerrar el navegador).</li>
+  <li>Una vez autenticado, sera dirigido al Hub principal.</li>
+</ol>
+
+<div class="warning">
+  <strong>Importante:</strong> La clave de acceso no es una contrasena personal.
+  Es una clave compartida del equipo para restringir el acceso durante la fase
+  de desarrollo. En produccion, el sistema utiliza autenticacion individual
+  con Supabase Auth.
+</div>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- CAPITULO 2: PANTALLA PRINCIPAL                                -->
+<!-- ============================================================ -->
+
+<h1>2. Pantalla Principal (Hub)</h1>
+
+<h2>2.1 Organigrama Interactivo</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_01_hub.png" alt="Hub Principal">
+  <p class="caption">Figura 1. Hub Principal &mdash; Organigrama interactivo con resumen ejecutivo, nombre de empresa y acceso a los tres modulos.</p>
+</div>
+
+<p>Al ingresar a la aplicacion, se presenta un organigrama interactivo que
+muestra la estructura completa de Mi Director Financiero PTY. Este organigrama
+funciona como un mapa visual de todas las funcionalidades disponibles.</p>
+
+<p><b>Elementos del organigrama:</b></p>
+<ul>
+  <li><b>Nodo superior:</b> Nombre de la empresa (editable), logo y rubro/industria.</li>
+  <li><b>Nodo central:</b> "Mi Director Financiero PTY" con el logo de brujula dorada.</li>
+  <li><b>Tres nodos inferiores:</b> Los tres modulos principales de la plataforma.</li>
+  <li><b>Nodo lateral:</b> "Mi Asistente" — el chatbot de inteligencia artificial.</li>
+</ul>
+
+<h2>2.2 Configuracion de Empresa</h2>
+
+<p>Desde el Hub puede configurar la informacion basica de su empresa:</p>
+
+<table class="field-table">
+  <tr><th>Campo</th><th>Descripcion</th></tr>
+  <tr><td>Nombre de la empresa</td><td>Nombre comercial o razon social. Haga clic en el campo para editarlo directamente.</td></tr>
+  <tr><td>Logo</td><td>Suba una imagen (PNG, JPG) de su logo. Haga clic en el icono de camara para seleccionar un archivo.</td></tr>
+  <tr><td>Rubro / Industria</td><td>Seleccione su tipo de negocio del menu desplegable (13 opciones: Restaurante, Comercio, Tecnologia, Servicios Profesionales, etc.).</td></tr>
+</table>
+
+<h2>2.3 Navegacion entre Modulos</h2>
+
+<p>La aplicacion se organiza en tres grandes modulos, cada uno representado por
+una tarjeta de color distintivo:</p>
+
+<table>
+  <tr><th>Modulo</th><th>Color</th><th>Descripcion</th></tr>
+  <tr><td><b>Mi Contabilidad</b></td><td>Esmeralda (verde)</td><td>Contabilidad formal, impuestos, RRHH e inventario.</td></tr>
+  <tr><td><b>Mis Finanzas</b></td><td>Dorado (#C5A059)</td><td>Analisis financiero, simuladores, precios y valoracion.</td></tr>
+  <tr><td><b>Mi Empresa - Doc Legales</b></td><td>Violeta</td><td>Documentos legales, compliance, constitucion y KYC.</td></tr>
+</table>
+
+<p><b>En computadora:</b> Haga clic en cualquier tarjeta del organigrama para
+navegar al modulo correspondiente. Use el boton "Volver al Hub" (flecha izquierda)
+en la esquina superior para regresar.</p>
+
+<p><b>En celular:</b> Use la barra de navegacion inferior con tres botones
+(Mi Contabilidad, Mis Finanzas, Doc Legales) para cambiar entre modulos.</p>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- CAPITULO 3: MI CONTABILIDAD                                   -->
+<!-- ============================================================ -->
+
+<h1>3. Mi Contabilidad (Modulo Datos)</h1>
+
+<p>Este modulo contiene cinco sub-pestanas accesibles desde la barra horizontal superior:</p>
+
+<table>
+  <tr><th>Pestana</th><th>Icono</th><th>Color</th><th>Funcion</th></tr>
+  <tr><td>Diagnostico Flash</td><td>Rayo</td><td>Violeta</td><td>Entrada rapida de datos financieros</td></tr>
+  <tr><td>Contabilidad</td><td>Libro</td><td>Azul</td><td>Libros contables formales</td></tr>
+  <tr><td>Espejo DGI</td><td>Escudo</td><td>Indigo</td><td>Formularios fiscales pre-llenados</td></tr>
+  <tr><td>Mi RRHH</td><td>Personas</td><td>Teal</td><td>Gestion de personal y planillas</td></tr>
+  <tr><td>Mi Inventario</td><td>Cajas</td><td>Ambar</td><td>Control de productos y stock</td></tr>
+</table>
+
+<h2>3.1 Diagnostico Flash</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_02_datos_flash.png" alt="Diagnostico Flash">
+  <p class="caption">Figura 2. Diagnostico Flash &mdash; Formulario de entrada rapida de datos financieros con campos por categoria.</p>
+</div>
+
+<p>El Diagnostico Flash permite ingresar datos financieros de manera rapida
+utilizando multiples metodos de entrada:</p>
+
+<h3>Metodos de entrada disponibles</h3>
+<ul>
+  <li><b>Texto / Lenguaje natural:</b> Escriba sus datos financieros en lenguaje coloquial
+  (ej: "Vendi $5,000 este mes y pague $2,000 de materiales"). El asistente de IA
+  interpreta y clasifica automaticamente.</li>
+  <li><b>Voz:</b> Presione el icono de microfono y dicte sus datos. La plataforma
+  transcribe y procesa automaticamente.</li>
+  <li><b>Foto / Camara:</b> Tome una foto de su factura o recibo. El sistema
+  extrae los datos relevantes.</li>
+  <li><b>CSV:</b> Cargue un archivo CSV con multiples transacciones simultaneamente.</li>
+  <li><b>Formulario manual:</b> Complete los campos del formulario financiero directamente.</li>
+</ul>
+
+<h3>Campos del formulario financiero</h3>
+
+<table class="field-table">
+  <tr><th>Campo</th><th>Descripcion</th></tr>
+  <tr><td>Ventas (Revenue)</td><td>Total de ingresos por ventas y servicios del mes.</td></tr>
+  <tr><td>Costo de Ventas (COGS)</td><td>Costo directo de producir o comprar lo vendido.</td></tr>
+  <tr><td>Alquiler</td><td>Renta mensual del local comercial.</td></tr>
+  <tr><td>Nomina</td><td>Total de salarios pagados en el mes.</td></tr>
+  <tr><td>Otros Gastos</td><td>Marketing, servicios publicos, seguros, etc.</td></tr>
+  <tr><td>Depreciacion</td><td>Desgaste mensual de equipos y maquinaria.</td></tr>
+  <tr><td>Intereses</td><td>Pago de intereses de prestamos bancarios.</td></tr>
+  <tr><td>Impuestos</td><td>ITBMS y otros impuestos estimados del mes.</td></tr>
+  <tr><td>Efectivo en banco</td><td>Saldo actual en cuentas bancarias.</td></tr>
+  <tr><td>Cuentas por cobrar</td><td>Dinero que le deben los clientes.</td></tr>
+  <tr><td>Inventario</td><td>Valor de la mercancia almacenada.</td></tr>
+  <tr><td>Cuentas por pagar</td><td>Dinero que usted debe a proveedores.</td></tr>
+  <tr><td>Deuda bancaria</td><td>Saldo total de prestamos financieros.</td></tr>
+</table>
+
+<div class="step">
+  <strong>Paso a paso:</strong> (1) Seleccione el metodo de entrada preferido.
+  (2) Ingrese o confirme los datos. (3) Presione "Guardar". (4) El sistema
+  calcula automaticamente la cascada de rentabilidad y genera alertas.
+</div>
+
+<h2>3.2 Contabilidad Formal</h2>
+
+<p>La pestana de Contabilidad Formal ofrece seis sub-modulos que cumplen
+con los requisitos legales de contabilidad en Panama:</p>
+
+<div class="figure-container">
+  <img src="screenshots/fig_16_plan_cuentas.png" alt="Plan de Cuentas">
+  <p class="caption">Figura 3. Plan de Cuentas &mdash; Catalogo jerarquico contable con 62+ cuentas predeterminadas, adaptado a Panama.</p>
+</div>
+
+<h3>3.2.1 Plan de Cuentas</h3>
+<p>Catalogo de cuentas contables basado en el estandar panameno con codigos
+decimales (1.0 Activos, 2.0 Pasivos, 3.0 Patrimonio, 4.0 Ingresos, 5.0 Gastos).
+Permite visualizar la estructura completa y agregar cuentas personalizadas.</p>
+
+<h3>3.2.2 Libro Diario</h3>
+<p>Registro cronologico de todas las operaciones comerciales. Cada asiento
+contable contiene fecha, descripcion, y movimientos DEBE y HABER que siempre
+deben ser iguales (principio de Partida Doble). Los asientos pueden crearse
+manualmente o generarse automaticamente desde el Diagnostico Flash.</p>
+
+<h3>3.2.3 Libro Mayor</h3>
+<p>Vision por cuenta individual. Muestra todos los movimientos de una cuenta
+especifica con su saldo acumulado. Util para verificar el estado de
+cuentas como Banco, Ventas o Proveedores.</p>
+
+<h3>3.2.4 Balance de Comprobacion</h3>
+<p>Reporte de verificacion que confirma que la suma de todos los debitos
+es igual a la suma de todos los creditos. Si no cuadra, indica un error
+en los registros contables.</p>
+
+<h3>3.2.5 Libro de Inventarios</h3>
+<p>Libro contable de inventarios que registra los valores de bienes
+del negocio segun la normativa fiscal panamena.</p>
+
+<h3>3.2.6 Cierre de Periodo</h3>
+<p>Proceso mensual donde se congelan los numeros del periodo para que
+los libros contables sean legales y esten listos para revision de la DGI.</p>
+
+<div class="tip">
+  <strong>Consejo:</strong> Cada termino financiero tiene un icono de signo de
+  interrogacion (?) junto a el. Haga clic para ver una explicacion detallada
+  en lenguaje sencillo a traves del Glosario Inteligente.
+</div>
+
+<h2>3.3 Espejo de Formularios DGI</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_18_espejo_dgi.png" alt="Espejo DGI">
+  <p class="caption">Figura 4. Espejo de Formularios DGI &mdash; Pre-llenado automatico de formularios fiscales oficiales con mapeo de casillas e-Tax 2.0.</p>
+</div>
+
+<p>El Espejo DGI pre-llena los formularios oficiales de la Direccion General
+de Ingresos de Panama con sus datos financieros. <b>No realiza la declaracion
+automaticamente</b>; usted transcribe los valores a e-Tax 2.0.</p>
+
+<h3>Formularios disponibles</h3>
+
+<table>
+  <tr><th>Formulario</th><th>Nombre</th><th>Frecuencia</th></tr>
+  <tr><td>F2 V10</td><td>Declaracion Jurada S.E.P. (Sociedad de Emprendimiento)</td><td>Anual</td></tr>
+  <tr><td>Form 03</td><td>Declaracion Jurada de Renta</td><td>Anual</td></tr>
+  <tr><td>Form 430</td><td>Declaracion Jurada del ITBMS</td><td>Trimestral/Mensual</td></tr>
+  <tr><td>Form 20</td><td>Declaracion de Pagos a Terceros</td><td>Anual</td></tr>
+  <tr><td>Planilla CSS</td><td>Planilla Obrero-Patronal de la CSS</td><td>Mensual</td></tr>
+</table>
+
+<p>Cada formulario muestra los numeros de casilla exactos como aparecen en e-Tax 2.0,
+con explicaciones de cada campo y validaciones automaticas.</p>
+
+<h3>Calendario DGI</h3>
+<p>La sub-pestana "Calendario DGI" muestra todas las fechas limite del ano
+fiscal con semaforo de prioridad (rojo = urgente, amarillo = proximo,
+verde = en orden).</p>
+
+<h2>3.4 Mi RRHH</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_19_mi_rrhh.png" alt="Mi RRHH">
+  <p class="caption">Figura 5. Mi RRHH &mdash; Gestion integral de recursos humanos con registro de personal, planilla mensual y pagos a freelancers.</p>
+</div>
+
+<p>Modulo completo de Recursos Humanos que sirve como fuente unica de datos
+de personal para todos los formularios fiscales.</p>
+
+<h3>Funcionalidades principales</h3>
+<ul>
+  <li><b>Registro de Personal:</b> Datos completos de empleados y freelancers
+  (cedula, CSS, fecha de ingreso, salario, tipo de contrato).</li>
+  <li><b>Planilla Mensual:</b> Calculo automatico de devengados, deducciones
+  (CSS 9.75%, SE 1.25%, ISR), aportes patronales (CSS 13.25%, SE 1.5%,
+  Riesgos 1.5%), XIII Mes y vacaciones.</li>
+  <li><b>Pagos a Freelancers:</b> Registro de honorarios con retencion ISR 10%.</li>
+  <li><b>Acumulados Anuales:</b> Totalizacion automatica para alimentar Form 20 y Form 03.</li>
+</ul>
+
+<div class="warning">
+  <strong>Importante:</strong> Los datos ingresados en Mi RRHH alimentan automaticamente
+  el Form 20 (Pagos a Terceros), la Planilla CSS y el Form 03 (Renta). Asegurese
+  de mantener los registros actualizados.
+</div>
+
+<h2>3.5 Mi Inventario</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_20_mi_inventario.png" alt="Mi Inventario">
+  <p class="caption">Figura 6. Mi Inventario &mdash; Dashboard con metricas, alertas de reorden, graficos de valor y tabla de movimientos.</p>
+</div>
+
+<p>Modulo de gestion de inventario con tres sub-pestanas internas:</p>
+
+<h3>3.5.1 Dashboard de Inventario</h3>
+<p>Vista resumen con cuatro tarjetas de metricas:</p>
+<ul>
+  <li><b>Items Activos:</b> Total de productos en el catalogo.</li>
+  <li><b>Valor Total:</b> Dinero inmovilizado en inventario (cantidad x costo).</li>
+  <li><b>En Punto Critico:</b> Productos que han alcanzado su punto de reorden (ROP).</li>
+  <li><b>Agotados:</b> Productos con stock en cero.</li>
+</ul>
+<p>Incluye una tabla de alertas de reorden con boton "Comprar" para registro rapido,
+un grafico de barras con los 10 items de mayor valor, y un grafico de
+movimientos por mes.</p>
+
+<h3>3.5.2 Catalogo de Productos</h3>
+
+<p>CRUD completo de productos con los siguientes campos:</p>
+
+<table class="field-table">
+  <tr><th>Campo</th><th>Descripcion</th></tr>
+  <tr><td>SKU</td><td>Codigo unico generado automaticamente segun categoria (MP-001, EMP-001, PT-001, etc.).</td></tr>
+  <tr><td>Nombre</td><td>Nombre del producto o material.</td></tr>
+  <tr><td>Categoria</td><td>Materia Prima, Empaque, Producto Terminado, Insumo, Repuesto u Otro. Se pueden agregar categorias personalizadas.</td></tr>
+  <tr><td>Cantidad actual</td><td>Stock actual en la unidad de medida seleccionada.</td></tr>
+  <tr><td>Unidad de medida</td><td>Unidades, Kilos, Gramos, Libras, Litros, Mililitros, Metros, Pies, Galones, Cajas, Paquetes.</td></tr>
+  <tr><td>Costo unitario</td><td>Costo de adquisicion por unidad (se actualiza con costo promedio ponderado).</td></tr>
+  <tr><td>Precio de venta</td><td>Precio al que se vende al cliente. El sistema calcula el margen automaticamente.</td></tr>
+  <tr><td>Punto de Reorden (ROP)</td><td>Nivel minimo de stock que dispara alerta de compra. Puede ser manual o calculado automaticamente con la formula: (Lead Time x Consumo Diario) + Safety Stock.</td></tr>
+  <tr><td>Proveedor principal</td><td>Nombre del proveedor habitual.</td></tr>
+  <tr><td>Estado</td><td>Activo o Descontinuado.</td></tr>
+</table>
+
+<p>El catalogo ofrece dos vistas (tabla y tarjetas), busqueda por SKU/nombre/proveedor,
+filtros por categoria y estado, y exportacion a CSV.</p>
+
+<h3>3.5.3 Movimientos de Inventario</h3>
+
+<p>Registro inmutable de todos los movimientos de stock. Hay 9 tipos:</p>
+
+<table>
+  <tr><th>Tipo</th><th>Efecto</th><th>Ejemplo</th></tr>
+  <tr><td>Entrada - Compra</td><td>+Stock</td><td>Recepcion de mercancia del proveedor</td></tr>
+  <tr><td>Entrada - Produccion</td><td>+Stock</td><td>Producto terminado ingresa al inventario</td></tr>
+  <tr><td>Entrada - Devolucion Cliente</td><td>+Stock</td><td>Cliente devuelve producto</td></tr>
+  <tr><td>Entrada - Ajuste Positivo</td><td>+Stock</td><td>Correccion por conteo fisico (sobrante)</td></tr>
+  <tr><td>Salida - Venta</td><td>-Stock</td><td>Producto vendido al cliente</td></tr>
+  <tr><td>Salida - Consumo/Produccion</td><td>-Stock</td><td>Materia prima usada en produccion</td></tr>
+  <tr><td>Salida - Merma/Perdida</td><td>-Stock</td><td>Producto danado, vencido o robado</td></tr>
+  <tr><td>Salida - Devolucion Proveedor</td><td>-Stock</td><td>Devolucion de mercancia defectuosa</td></tr>
+  <tr><td>Salida - Ajuste Negativo</td><td>-Stock</td><td>Correccion por conteo fisico (faltante)</td></tr>
+</table>
+
+<div class="step">
+  <strong>Registro de compra:</strong> (1) Vaya a la pestana Movimientos.
+  (2) Presione "+ Movimiento". (3) Seleccione tipo "Entrada - Compra".
+  (4) Busque y seleccione el item. (5) Ingrese cantidad y costo unitario.
+  (6) El sistema le preguntara si desea actualizar el costo promedio ponderado.
+  (7) Confirme. El stock se actualiza automaticamente.
+</div>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- CAPITULO 4: MIS FINANZAS                                      -->
+<!-- ============================================================ -->
+
+<h1>4. Mis Finanzas (Modulo Negocio)</h1>
+
+<p>Este modulo presenta 13 herramientas de analisis financiero organizadas
+en una grilla de tarjetas. Al hacer clic en cualquier tarjeta, se abre
+la vista detallada de esa herramienta.</p>
+
+<h2>4.1 Cascada de Rentabilidad</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_03_cascada.png" alt="Cascada Financiera">
+  <p class="caption">Figura 7. Cascada de Rentabilidad &mdash; Desglose visual del estado de resultados desde ingresos hasta utilidad neta.</p>
+</div>
+
+<p>La herramienta central del modulo. Muestra el camino del dinero desde
+las ventas hasta la utilidad neta en formato de cascada (waterfall chart):</p>
+
+<ol>
+  <li><b>Ventas</b> (ingresos totales)</li>
+  <li><b>(-) Costo de Ventas</b> = <b>Utilidad Bruta</b></li>
+  <li><b>(-) Gastos Operativos</b> (alquiler + nomina + otros) = <b>EBITDA</b></li>
+  <li><b>(-) Depreciacion</b> = <b>EBIT</b></li>
+  <li><b>(-) Intereses</b> = <b>EBT</b></li>
+  <li><b>(-) Impuestos</b> = <b>Utilidad Neta</b></li>
+</ol>
+
+<div class="formula-block">
+<div class="formula-title">Formulas utilizadas por la Cascada:</div>
+Utilidad Bruta    = Ventas &minus; Costo de Ventas
+EBITDA            = Utilidad Bruta &minus; OPEX (alquiler + nomina + otros)
+EBIT              = EBITDA &minus; Depreciacion
+EBT               = EBIT &minus; Intereses
+Utilidad Neta     = EBT &minus; Impuestos
+</div>
+
+<p>Debajo del grafico se muestran tres indicadores clave:</p>
+<ul>
+  <li><b>Margen Bruto:</b> Porcentaje de ganancia despues de costos directos.</li>
+  <li><b>Margen EBITDA:</b> Eficiencia operativa pura (meta: mayor a 15%).</li>
+  <li><b>Margen Neto:</b> Ganancia final por cada dolar vendido.</li>
+</ul>
+
+<p>Tambien se presenta un resumen del Balance General con activos, pasivos
+y patrimonio neto.</p>
+
+<h2>4.2 Semaforo de Eficiencia</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_05_semaforo.png" alt="Semaforo Financiero">
+  <p class="caption">Figura 8. Semaforo de Eficiencia &mdash; KPIs financieros con indicadores de color (verde/amarillo/rojo).</p>
+</div>
+
+<p>Presenta los ratios financieros mas importantes con indicadores de color
+tipo semaforo (verde = saludable, amarillo = precaucion, rojo = peligro).
+Los ratios incluyen margenes de rentabilidad, eficiencia operativa y
+cobertura de deuda.</p>
+
+<h2>4.3 Indicador de Liquidez (Oxigeno)</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_07_oxigeno.png" alt="Oxigeno Empresarial">
+  <p class="caption">Figura 9. Indicador de Liquidez (Oxigeno) &mdash; Prueba Acida, CCC, dinero atrapado y cobertura bancaria.</p>
+</div>
+
+<p>Analiza la salud del flujo de caja con las siguientes metricas:</p>
+
+<table class="field-table">
+  <tr><th>Metrica</th><th>Que mide</th></tr>
+  <tr><td>Prueba Acida</td><td>Capacidad de pagar deudas a corto plazo sin vender inventario. Meta: mayor a 1.0x.</td></tr>
+  <tr><td>Dias en la Calle</td><td>Cuanto tardan los clientes en pagar. Meta: menos de 15 dias.</td></tr>
+  <tr><td>Dias de Inventario</td><td>Tiempo que la mercancia esta almacenada sin venderse.</td></tr>
+  <tr><td>Dias Proveedor</td><td>Cuanto tarda en pagar a proveedores.</td></tr>
+  <tr><td>Ciclo de Caja (CCC)</td><td>Dias totales que tarda el dinero en regresar. Meta: menos de 30 dias.</td></tr>
+  <tr><td>Dinero Atrapado</td><td>Capital inmovilizado en cuentas por cobrar e inventario.</td></tr>
+  <tr><td>Cobertura Bancaria</td><td>Veces que el EBITDA cubre los intereses de deuda. Meta: mayor a 1.5x.</td></tr>
+</table>
+
+<h2>4.4 Punto de Equilibrio</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_06_equilibrio.png" alt="Punto de Equilibrio">
+  <p class="caption">Figura 10. Punto de Equilibrio &mdash; Calculo del break-even con zona de perdida (rojo) y zona de ganancia (verde).</p>
+</div>
+
+<p>Calcula las ventas minimas necesarias para cubrir todos los costos
+(fijos y variables). Muestra un grafico con la zona de perdida (rojo)
+y la zona de ganancia (verde), junto con el margen de seguridad actual.</p>
+
+<div class="formula-block">
+<div class="formula-title">Formula del Punto de Equilibrio:</div>
+Break-Even Revenue = Costos Fijos / (1 &minus; COGS / Revenue)
+Break-Even Unidades = Break-Even Revenue / Precio por Unidad
+</div>
+
+<h2>4.5 Simulador Estrategico ("Que Pasa Si")</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_08_simulador.png" alt="Simulador Estrategico">
+  <p class="caption">Figura 11. Simulador Estrategico &mdash; Modelado de escenarios what-if con sliders de precio, costo y volumen.</p>
+</div>
+
+<p>Permite modelar escenarios hipoteticos moviendo tres palancas:</p>
+<ul>
+  <li><b>Cambio de Precio:</b> Que pasa si subo/bajo precios X%.</li>
+  <li><b>Reduccion de Costos:</b> Que pasa si reduzco costos X%.</li>
+  <li><b>Cambio de Volumen:</b> Que pasa si vendo X% mas/menos.</li>
+</ul>
+<p>El sistema calcula en tiempo real el impacto en el EBITDA y el margen,
+comparando el escenario original contra el simulado.</p>
+
+<p>Incluye el <b>Escudo Contra el Miedo</b>: si sube precios X%, puede perder
+hasta Y% de clientes y aun ganar lo mismo. Util para vencer el temor
+a subir precios.</p>
+
+<h2>4.6 Laboratorio de Precios</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_09_lab_precios.png" alt="Lab de Precios">
+  <p class="caption">Figura 12. Laboratorio de Precios &mdash; Motor de costeo unitario con desglose de ingredientes, mano de obra y ITBMS.</p>
+</div>
+
+<p>Herramienta de costeo unitario que calcula el precio optimo de venta
+para cada producto o servicio.</p>
+
+<h3>Estructura del calculo</h3>
+<ol>
+  <li><b>Costo de materiales:</b> Suma de todos los ingredientes/materiales
+  con sistema de conversion de unidades (quintal a gramos, galon a ml, etc.).</li>
+  <li><b>Costo de mano de obra:</b> Salario mensual / 11,520 minutos x minutos de elaboracion.</li>
+  <li><b>Costo fijo unitario:</b> Gastos operativos mensuales / capacidad de produccion mensual.</li>
+  <li><b>Costo total unitario:</b> Suma de los tres anteriores.</li>
+  <li><b>Precio sin ITBMS:</b> Costo total / (1 - margen% - comision%).</li>
+  <li><b>ITBMS (7%):</b> Calculado automaticamente sobre el precio.</li>
+  <li><b>Precio final:</b> Precio + ITBMS.</li>
+</ol>
+
+<p>Los productos calculados pueden guardarse en un inventario de precios
+para referencia futura y comparacion historica.</p>
+
+<div class="tip">
+  <strong>Consejo:</strong> El sistema de unidades permite conversiones automaticas.
+  Si compra un quintal de harina a $500 y su receta usa 1,000 gramos,
+  el sistema calcula: ($500 / 45,359 gramos) x 1,000 = $11.02 por receta.
+</div>
+
+<h2>4.7 Valoracion de Empresa</h2>
+
+<p>Estima cuanto vale su negocio si lo vendiera hoy, usando el metodo de
+multiplos de EBITDA:</p>
+
+<p><b>Formula:</b> Valor = EBITDA Anual x Multiplo de la Industria</p>
+
+<p>Multiplos tipicos: Restaurantes 2-3x, Servicios 3-5x, Tecnologia 5-10x.
+Si es dueno del local, se separa el valor operativo (OpCo) del valor
+del inmueble (PropCo).</p>
+
+<h2>4.8 Calculadora de Nomina</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_11_nomina.png" alt="Calculadora de Nomina">
+  <p class="caption">Figura 13. Calculadora de Nomina &mdash; Desglose de deducciones ISR, CSS, cargas patronales y factor 1.36&times;.</p>
+</div>
+
+<p>Calcula el costo real de cada empleado bajo la legislacion laboral
+panamena (Ley 462 de 2025). Muestra el desglose completo:</p>
+
+<table>
+  <tr><th>Concepto</th><th>Tasa</th><th>Paga</th></tr>
+  <tr><td>CSS Patronal</td><td>13.25%</td><td>Empresa</td></tr>
+  <tr><td>Seguro Educativo Patronal</td><td>1.50%</td><td>Empresa</td></tr>
+  <tr><td>Riesgos Profesionales</td><td>1.50%</td><td>Empresa</td></tr>
+  <tr><td>Provision XIII Mes</td><td>8.33%</td><td>Empresa</td></tr>
+  <tr><td>Provision Vacaciones</td><td>9.09%</td><td>Empresa</td></tr>
+  <tr><td>Fondo de Cesantia</td><td>2.25%</td><td>Empresa</td></tr>
+  <tr><td>Prima de Antiguedad</td><td>Variable</td><td>Empresa</td></tr>
+  <tr><td>CSS Empleado</td><td>9.75%</td><td>Empleado</td></tr>
+  <tr><td>Seguro Educativo Empleado</td><td>1.25%</td><td>Empleado</td></tr>
+  <tr><td>ISR (Tabla DGI)</td><td>0-25%</td><td>Empleado</td></tr>
+</table>
+
+<p>Resultado clave: el <b>Factor de Costo Real es 1.36x</b>. Por cada dolar
+de salario, la empresa paga en realidad $1.36 cuando se incluyen todas
+las cargas sociales y provisiones.</p>
+
+<div class="formula-block">
+<div class="formula-title">Tabla ISR Panama (tramos quincenales):</div>
+B/.0.00 &ndash; B/.846.15       &rarr; 0% (exento)
+B/.846.16 &ndash; B/.1,538.46   &rarr; 15%
+Mayor a B/.1,538.46         &rarr; 25%
+
+Neto = Bruto &minus; ISR &minus; CSS(9.75%) &minus; SE(1.25%) &minus; SIACAP(B/.5.00)
+Costo Empleador = Bruto &times; 1.36
+</div>
+
+<h2>4.9 Tendencias y Comparativo</h2>
+
+<p><b>Tendencias:</b> Muestra graficos de linea multi-periodo con promedios
+moviles y tasas de crecimiento. Incluye proyecciones basadas en datos historicos.</p>
+
+<p><b>Comparativo:</b> Compara dos periodos lado a lado (ej: Enero 2026 vs Febrero 2026)
+mostrando las variaciones absolutas y porcentuales de cada metrica.</p>
+
+<h2>4.10 Presupuesto Maestro</h2>
+
+<p>Permite definir metas presupuestarias por periodo y compararlas
+contra los resultados reales. Muestra varianzas favorables (verde)
+y desfavorables (rojo) con un puntaje general de cumplimiento.</p>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- CAPITULO 5: MI EMPRESA - DOC LEGALES                          -->
+<!-- ============================================================ -->
+
+<h1>5. Mi Empresa - Doc Legales (Modulo Legal)</h1>
+
+<p>Este modulo agrupa todas las herramientas de cumplimiento legal
+y formalizacion empresarial.</p>
+
+<h2>5.1 Constitucion de Empresa (Fabrica Empresa)</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_23_fabrica.png" alt="Fabrica de Empresa">
+  <p class="caption">Figura 14. Fabrica de Empresa &mdash; Tracker de 6 pasos para la formalizacion de una S.E.P. en Panama.</p>
+</div>
+
+<p>Asistente paso a paso para la constitucion de una Sociedad de
+Emprendimiento (S.E.P.) bajo la Ley 186 de 2023 de Panama. Guia al
+usuario a traves de los requisitos, documentos necesarios y el proceso
+de inscripcion en el Registro Publico.</p>
+
+<h2>5.2 Boveda KYC (Debida Diligencia)</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_21_boveda.png" alt="Boveda Legal">
+  <p class="caption">Figura 15. Boveda Legal &mdash; Repositorio seguro de documentos con categorizacion y estado de seguimiento.</p>
+</div>
+
+<p>Almacen seguro de documentos legales permanentes. Permite cargar
+y organizar por categoria los documentos de la empresa, socios y
+beneficiarios finales, cumpliendo con la Ley 23 de 2015 sobre
+prevencion de lavado de dinero.</p>
+
+<p>Categorias de documentos: acta constitutiva, identificaciones,
+certificados, permisos, contratos, estados financieros, entre otros.</p>
+
+<h2>5.3 MUPA — Inteligencia Municipal</h2>
+
+<p>Panel de inteligencia sobre obligaciones municipales. Muestra alertas
+sobre renovacion del Aviso de Operaciones, multas municipales pendientes,
+y recargos por mora.</p>
+
+<h2>5.4 Vigilante Legal</h2>
+
+<div class="figure-container">
+  <img src="screenshots/fig_22_vigilante.png" alt="Vigilante Legal">
+  <p class="caption">Figura 16. Vigilante Legal &mdash; Monitor de 18 obligaciones regulatorias con semaforo de cumplimiento.</p>
+</div>
+
+<p>Dashboard centralizado de cumplimiento legal que monitorea todas
+las obligaciones de la empresa y genera alertas proactivas cuando
+se acercan fechas limite.</p>
+
+<h2>5.5 Auditoria y DGI</h2>
+
+<p>Herramienta de preparacion para auditorias fiscales. Incluye:</p>
+<ul>
+  <li>Calendario fiscal con todas las fechas de la DGI.</li>
+  <li>Checklist de cumplimiento organizado por obligacion.</li>
+  <li>Linea de tiempo de eventos de auditoria.</li>
+  <li>Simulador de multas DGI para calcular impacto de incumplimiento.</li>
+</ul>
+
+<h2>5.6 Libro de Actas y Socios</h2>
+
+<p><b>Libro de Actas:</b> Registro digital de reuniones de junta directiva
+y resoluciones corporativas.</p>
+
+<p><b>Socios:</b> Gestion de la estructura de propiedad, datos de socios
+y ejecutivos de la empresa.</p>
+
+<p><b>Configuracion:</b> Parametros fiscales y de configuracion general
+de la empresa.</p>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- CAPITULO 6: MI ASISTENTE                                      -->
+<!-- ============================================================ -->
+
+<h1>6. Mi Asistente (Inteligencia Artificial)</h1>
+
+<div class="figure-container">
+  <img src="screenshots/fig_24_asistente.png" alt="Mi Asistente IA">
+  <p class="caption">Figura 17. Mi Asistente &mdash; Chatbot conversacional con GPT-4o que actua como Director Financiero virtual.</p>
+</div>
+
+<p>Mi Asistente es un chatbot conversacional impulsado por GPT-4o
+(OpenAI) que esta disponible en toda la aplicacion. Puede responder
+preguntas financieras, legales y contables en lenguaje natural.</p>
+
+<h3>Como acceder</h3>
+<ul>
+  <li>Desde el Hub: haga clic en el nodo "Mi Asistente" del organigrama.</li>
+  <li>Desde cualquier modulo: haga clic en el boton flotante de chat
+  en la esquina inferior.</li>
+</ul>
+
+<h3>Capacidades</h3>
+<ul>
+  <li>Responder preguntas financieras: "Que es el EBITDA?", "Como calculo mi punto de equilibrio?"</li>
+  <li>Analizar datos del negocio: "Como esta mi liquidez este mes?"</li>
+  <li>Asesorar sobre cumplimiento fiscal: "Cuando debo declarar ITBMS?"</li>
+  <li>Crear asientos contables a partir de descripciones en lenguaje natural.</li>
+  <li>Explicar terminos legales en lenguaje sencillo.</li>
+</ul>
+
+<div class="tip">
+  <strong>Consejo:</strong> El Asistente conoce el contexto de su negocio.
+  Las alertas activas se incluyen como contexto en cada consulta, permitiendo
+  respuestas personalizadas como: "Tu margen EBITDA es 8%, necesitas subir
+  precios o reducir costos operativos."
+</div>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- CAPITULO 7: ALERTAS                                           -->
+<!-- ============================================================ -->
+
+<h1>7. Sistema de Alertas Estrategicas</h1>
+
+<div class="figure-container">
+  <img src="screenshots/fig_25_alertas.png" alt="Panel de Alertas">
+  <p class="caption">Figura 18. Panel de Alertas &mdash; Sidebar con alertas organizadas por categoria, nivel de prioridad y acciones recomendadas.</p>
+</div>
+
+<p>La aplicacion cuenta con un motor de alertas centralizado que genera
+notificaciones proactivas basadas en los datos del negocio. Las alertas
+se muestran en un panel lateral (sidebar) accesible desde el icono de
+campana en la esquina superior derecha.</p>
+
+<h2>Categorias de alertas</h2>
+
+<table>
+  <tr><th>Categoria</th><th>Icono</th><th>Ejemplos</th></tr>
+  <tr><td>DGI / Fiscal</td><td>Documento</td><td>ITBMS obligatorio, tope Ley 186, renta anual pendiente</td></tr>
+  <tr><td>Capital Humano</td><td>Personas</td><td>Sobrecosto laboral, feriado proximo, cuota CSS pendiente</td></tr>
+  <tr><td>Liquidez</td><td>Gotas</td><td>Asfixia de liquidez, caja atrapada, deuda insostenible</td></tr>
+  <tr><td>Rentabilidad</td><td>Tendencia</td><td>Perdida neta, EBITDA negativo, alquiler excesivo</td></tr>
+  <tr><td>Legal</td><td>Documento</td><td>Aviso de operaciones, tasa unica, agente residente</td></tr>
+  <tr><td>Inventario</td><td>Caja</td><td>Producto agotado, punto de reorden, items sin rotacion</td></tr>
+</table>
+
+<h2>Niveles de prioridad</h2>
+
+<table>
+  <tr><th>Nivel</th><th>Color</th><th>Significado</th></tr>
+  <tr><td>Critico</td><td>Rojo</td><td>Requiere accion inmediata. Riesgo para la operacion.</td></tr>
+  <tr><td>Alerta</td><td>Naranja</td><td>Situacion que necesita atencion pronta.</td></tr>
+  <tr><td>Precaucion</td><td>Amarillo</td><td>Indicador en zona de riesgo. Monitorear.</td></tr>
+  <tr><td>OK</td><td>Verde</td><td>Todo en orden. Indicadores saludables.</td></tr>
+</table>
+
+<p>Las alertas se actualizan automaticamente cada vez que se ingresan
+o modifican datos financieros. Si hay alertas criticas (rojas), el icono
+de campana muestra una animacion de rebote para llamar la atencion.</p>
+
+<p>El sistema tambien produce sonidos de alerta configurables (activar/desactivar
+desde el panel de alertas) utilizando Web Audio API nativo del navegador.</p>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- CAPITULO 8: GLOSARIO                                          -->
+<!-- ============================================================ -->
+
+<h1>8. Glosario de Terminos Financieros</h1>
+
+<p>La aplicacion incluye un glosario inteligente con mas de 100 terminos
+financieros, contables y legales explicados en lenguaje sencillo para
+emprendedores panamenos. A continuacion se presentan los terminos principales:</p>
+
+<table>
+  <tr><th>Termino</th><th>Definicion</th></tr>
+  <tr><td>COGS</td><td>Cost of Goods Sold. Todo lo que gastas directamente para producir o comprar lo que vendes.</td></tr>
+  <tr><td>Utilidad Bruta</td><td>Lo que queda despues de restar COGS a los ingresos. Tu primera linea de ganancia.</td></tr>
+  <tr><td>OPEX</td><td>Operating Expenses. Gastos fijos para mantener el negocio funcionando (alquiler, salarios, etc.).</td></tr>
+  <tr><td>EBITDA</td><td>Earnings Before Interest, Taxes, Depreciation and Amortization. Tu ganancia operativa pura.</td></tr>
+  <tr><td>EBIT</td><td>EBITDA menos depreciacion. Ganancia operativa real considerando desgaste de activos.</td></tr>
+  <tr><td>EBT</td><td>EBIT menos intereses financieros. Lo que ganas antes de impuestos.</td></tr>
+  <tr><td>Utilidad Neta</td><td>La ganancia final despues de todo: costos, gastos, depreciacion, intereses e impuestos.</td></tr>
+  <tr><td>Prueba Acida</td><td>Mide tu capacidad de pagar deudas a corto plazo sin contar inventario. Meta: mayor a 1.0x.</td></tr>
+  <tr><td>CCC</td><td>Cash Conversion Cycle. Dias que tarda tu dinero en hacer el viaje completo de pago a cobro.</td></tr>
+  <tr><td>ITBMS</td><td>Impuesto de Transferencia de Bienes y Servicios (7%). Obligatorio si ventas superan $36,000/ano.</td></tr>
+  <tr><td>CSS Patronal</td><td>Cuota que la empresa paga a la Caja de Seguro Social (13.25% del salario bruto).</td></tr>
+  <tr><td>XIII Mes</td><td>Bonificacion obligatoria pagada en 3 partidas: abril, agosto y diciembre (8.33% mensual).</td></tr>
+  <tr><td>Factor 1.36x</td><td>Factor de costo real patronal. Por cada $1 de salario, la empresa paga $1.36 en total.</td></tr>
+  <tr><td>Ley 186</td><td>Ley de Sociedades de Emprendimiento. Exoneracion fiscal por 24 meses (tope $75,000).</td></tr>
+  <tr><td>ROP</td><td>Reorder Point. Nivel minimo de stock para disparar alerta de compra.</td></tr>
+  <tr><td>SKU</td><td>Stock Keeping Unit. Codigo unico de identificacion de cada producto en inventario.</td></tr>
+</table>
+
+<div class="tip">
+  <strong>Consejo:</strong> En cualquier parte de la aplicacion, busque el icono (?)
+  junto a un termino financiero. Al hacer clic, se despliega una explicacion
+  con tres secciones: "Que es", "Para que sirve" y "Como leerlo", con
+  ejemplos practicos relevantes a Panama.
+</div>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- CAPITULO 9: FAQ                                               -->
+<!-- ============================================================ -->
+
+<h1>9. Preguntas Frecuentes</h1>
+
+<p><b>P: Donde se guardan mis datos?</b></p>
+<p>R: Los datos se almacenan localmente en su navegador (localStorage) y, cuando
+hay conexion, se sincronizan con la base de datos en la nube (Supabase).
+Los datos locales persisten entre sesiones del navegador.</p>
+
+<p><b>P: Que pasa si borro los datos de mi navegador?</b></p>
+<p>R: Si limpia el cache o localStorage de su navegador, los datos locales
+se perderan. Si tiene conexion al backend, los datos se recuperaran de
+la nube al volver a iniciar sesion.</p>
+
+<p><b>P: La aplicacion realiza declaraciones ante la DGI?</b></p>
+<p>R: No. Mi Director Financiero PTY es una herramienta de preparacion fiscal.
+Los formularios (F2 V10, Form 03, Form 430, etc.) se pre-llenan con sus datos,
+pero usted debe transcribir los valores manualmente a e-Tax 2.0.</p>
+
+<p><b>P: Las tasas y porcentajes estan actualizados?</b></p>
+<p>R: Si. Las tasas de CSS patronal (13.25%), ISR, y demas calculos laborales
+reflejan la Ley 462 de 2025 y la normativa fiscal vigente a marzo 2026.</p>
+
+<p><b>P: Puedo usar la aplicacion en mi celular?</b></p>
+<p>R: Si. La aplicacion tiene diseno responsivo completo. En celular se muestra
+una barra de navegacion inferior y las tarjetas se apilan verticalmente para
+facilitar el uso con una sola mano.</p>
+
+<p><b>P: El Asistente de IA puede ver mis datos financieros?</b></p>
+<p>R: El Asistente recibe como contexto las alertas activas y el nombre de
+su empresa, permitiendo respuestas personalizadas. Los datos financieros
+detallados solo se procesan localmente en el navegador.</p>
+
+<p><b>P: Como exporto mis datos?</b></p>
+<p>R: Varios modulos ofrecen boton de exportacion CSV (nomina, inventario,
+catalogo). Los reportes ejecutivos pueden generarse como PDF desde el
+modulo Mis Finanzas > Reportes Ejecutivos.</p>
+
+<div class="page-break"></div>
+
+<!-- ============================================================ -->
+<!-- FOOTER LEGAL                                                  -->
+<!-- ============================================================ -->
+
+<div class="legal-footer">
+  <p><b>Mi Director Financiero PTY</b> &mdash; Version 0.1.0 &mdash; Marzo 2026</p>
+  <p>Autora: Soraya Dayan Gutierrez Perez</p>
+  <p>Documento presentado ante la Direccion Nacional de Derecho de Autor (DNDA),
+  Ministerio de Comercio e Industrias, Republica de Panama.</p>
+  <p>Todos los derechos reservados. Queda prohibida la reproduccion total o parcial
+  de esta obra sin autorizacion expresa de la titular.</p>
+</div>
+
+</body>
+</html>

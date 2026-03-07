@@ -40,6 +40,7 @@ import {
   Check,
   Landmark,
   Users,
+  Receipt,
 } from "lucide-react";
 import type { FinancialRecord } from "@/lib/calculations";
 import MidfLogo from "@/components/MidfLogo";
@@ -84,13 +85,20 @@ import ProyeccionesFinancieras from "@/components/ProyeccionesFinancieras";
 import ModuleCardGrid from "@/components/ModuleCardGrid";
 import type { CardGridSection } from "@/components/ModuleCardGrid";
 import FabricaEmpresa from "@/components/FabricaEmpresa";
+import TraductorLegal from "@/components/herramientas/TraductorLegal";
 import ComparativoSociedades from "@/components/ComparativoSociedades";
 import MupaPanel from "@/components/MupaPanel";
+import LibroVentas from "@/components/ventas/LibroVentas";
+import ForecastPL from "@/components/forecast/ForecastPL";
+import ListaReportes from "@/components/reportes/ListaReportes";
 import MiRRHH from "@/components/rrhh/MiRRHH";
+import Widget6CausasCB from "@/components/dashboard/Widget6CausasCB";
+import WidgetBetaNPS from "@/components/dashboard/WidgetBetaNPS";
 import { trackModuleOpened, trackTabChanged, trackDataSaved, trackSetupCompleted } from "@/lib/analytics";
 import { DOC_CATEGORY_TO_STEP, updateStepStatus, checkFormalizationStatus, pushDocSyncEvent } from "@/lib/formalizacion";
 import { computeAlerts, computeComplianceAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
 import { playAlertSound, isSoundEnabled } from "@/lib/sounds";
+import OnboardingProvider from "@/components/onboarding/OnboardingProvider";
 import { periodLabel, getPresetRange } from "@/lib/calculations";
 import type { PeriodKey, PeriodPreset } from "@/lib/calculations";
 import {
@@ -111,7 +119,7 @@ import {
 // ============================================
 
 type Section = "datos" | "negocio" | "legal";
-type DatosMode = "flash" | "contabilidad" | "espejo_dgi";
+type DatosMode = "flash" | "contabilidad" | "espejo_dgi" | "ventas" | "forecast" | "reportes";
 type ContabilidadTab = "plan_cuentas" | "libro_diario" | "libro_mayor" | "balance_comprobacion" | "libro_inventarios" | "cierre_periodo";
 type NegocioTab =
   | "cascada"
@@ -129,7 +137,7 @@ type NegocioTab =
   | "reportes"
   | "proyecciones"
   | "rrhh";
-type LegalTab = "boveda" | "vigilante" | "auditoria" | "libro_actas" | "fabrica_empresa" | "comparativo_legal" | "mupa";
+type LegalTab = "boveda" | "vigilante" | "auditoria" | "libro_actas" | "fabrica_empresa" | "comparativo_legal" | "mupa" | "traductor";
 
 // View: "hub" = main dashboard with 3 module cards, "module" = inside a module
 type DashboardView = "hub" | "module";
@@ -704,7 +712,7 @@ function FormalizacionProgressWidget({ onNavigate }: { onNavigate: () => void })
 // HUB VIEW — Organigrama Empresarial (Light Theme)
 // ============================================
 
-function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onSelectModule: (section: Section) => void; onOpenAsistente: () => void; onNavigateToFabrica: () => void; }) {
+function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica, currentRecord }: { onSelectModule: (section: Section) => void; onOpenAsistente: () => void; onNavigateToFabrica: () => void; currentRecord: FinancialRecord | null; }) {
   // Company info (localStorage temporal, luego Supabase)
   const [companyName, setCompanyName] = React.useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("midf_company_name") || "";
@@ -1255,6 +1263,12 @@ function HubView({ onSelectModule, onOpenAsistente, onNavigateToFabrica }: { onS
           </div>
         </div>
 
+        {/* ===== WIDGETS DE INSIGHTS ===== */}
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <Widget6CausasCB record={currentRecord} />
+          <WidgetBetaNPS />
+        </div>
+
         {/* Footer */}
         <p className="mt-10 text-xs text-center text-slate-400">
           Mi Director Financiero PTY v1.0 &mdash; Plataforma de Alta Direcci&oacute;n para PYMEs paname&ntilde;as
@@ -1516,7 +1530,7 @@ export default function Dashboard() {
 
   const negocioTabs: { key: NegocioTab; label: string; icon: React.ReactNode }[] = [
     { key: "cascada", label: "Cascada", icon: <BarChart3 size={14} /> },
-    { key: "mandibulas", label: "Mandibulas", icon: <Skull size={14} /> },
+    { key: "mandibulas", label: "Brecha", icon: <Skull size={14} /> },
     { key: "semaforo", label: "Semaforo", icon: <AlertTriangle size={14} /> },
     { key: "equilibrio", label: "Supervivencia", icon: <TrendingUp size={14} /> },
     { key: "oxigeno", label: "Oxigeno", icon: <Wind size={14} /> },
@@ -1544,8 +1558,8 @@ export default function Dashboard() {
     {
       title: "Diagnostico",
       cards: [
-        { key: "cascada", label: "Cascada de Potencia de Rentabilidad", icon: <BarChart3 size={22} />, tooltip: "Grafico cascada de ingresos a utilidad neta", color: "bg-blue-600" },
-        { key: "mandibulas", label: "Mandibulas", icon: <Skull size={22} />, tooltip: "Ventas vs Costos: detecta zona de mordida", color: "bg-red-600" },
+        { key: "cascada", label: "Cascada de Potencia de Rentabilidad", icon: <BarChart3 size={22} />, tooltip: "Grafico cascada de ingresos a utilidad neta", color: "bg-blue-600", dataTooltipId: "cascada" },
+        { key: "mandibulas", label: "Brecha de Rentabilidad", icon: <Skull size={22} />, tooltip: "Ventas vs Costos: detecta zona de mordida", color: "bg-red-600" },
         { key: "semaforo", label: "Semaforo de Eficiencia", icon: <AlertTriangle size={22} />, tooltip: "Ratios financieros con codigo de colores", color: "bg-amber-500" },
         { key: "oxigeno", label: "Indicador de Liquidez", icon: <Wind size={22} />, tooltip: "Analisis de oxigeno financiero", color: "bg-cyan-600" },
         { key: "equilibrio", label: "Punto de Equilibrio", icon: <Scale size={22} />, tooltip: "Ventas minimas para no perder", color: "bg-emerald-600" },
@@ -1581,7 +1595,7 @@ export default function Dashboard() {
       title: "Herramientas Legales",
       cards: [
         { key: "mupa", label: "MUPA — Inteligencia Municipal", icon: <Landmark size={22} />, tooltip: "Semaforo, sanciones, recargos y obligaciones municipales", color: "bg-red-600" },
-        { key: "vigilante", label: "Vigilante Legal", icon: <Scale size={22} />, tooltip: "Panel centralizado de alertas de cumplimiento", color: "bg-amber-500" },
+        { key: "vigilante", label: "Vigilante Legal", icon: <Scale size={22} />, tooltip: "Panel centralizado de alertas de cumplimiento", color: "bg-amber-500", dataTooltipId: "vigilante" },
         { key: "auditoria", label: "Auditoria y DGI", icon: <History size={22} />, tooltip: "Calendario fiscal, simulador de multas y checklist DGI", color: "bg-blue-600" },
         { key: "libro_actas", label: "Libro de Actas", icon: <ClipboardList size={22} />, tooltip: "Registro de actas societarias", color: "bg-slate-600" },
       ],
@@ -1628,8 +1642,8 @@ export default function Dashboard() {
   // ===== HUB VIEW =====
   if (dashboardView === "hub") {
     return (
-      <>
-        <HubView onSelectModule={handleSelectModule} onOpenAsistente={() => setAsistenteOpen(true)} onNavigateToFabrica={handleNavigateToFabrica} />
+      <OnboardingProvider>
+        <HubView onSelectModule={handleSelectModule} onOpenAsistente={() => setAsistenteOpen(true)} onNavigateToFabrica={handleNavigateToFabrica} currentRecord={currentRecord} />
         {/* Mi Asistente — opens via org chart node click */}
         <MiAsistente
           societyId={societyId}
@@ -1642,12 +1656,13 @@ export default function Dashboard() {
             }
           }}
         />
-      </>
+      </OnboardingProvider>
     );
   }
 
   // ===== MODULE VIEW (Full Dashboard) =====
   return (
+    <OnboardingProvider>
     <main className="min-h-screen bg-slate-50">
       {/* ====== TOP BAR ====== */}
       <header className="bg-white border-b border-slate-200 px-4 py-3 lg:px-6 lg:py-4">
@@ -1696,11 +1711,13 @@ export default function Dashboard() {
                 {diagnosis.verdict}
               </div>
             )}
-            <AlertBellButton
-              alertCount={nonGreenAlerts.length}
-              hasRed={alertCounts.red > 0}
-              onClick={handleOpenAlertsSidebar}
-            />
+            <span data-tooltip="alertas">
+              <AlertBellButton
+                alertCount={nonGreenAlerts.length}
+                hasRed={alertCounts.red > 0}
+                onClick={handleOpenAlertsSidebar}
+              />
+            </span>
           </div>
         </div>
       </header>
@@ -1755,6 +1772,40 @@ export default function Dashboard() {
                 <Shield size={14} />
                 Espejo de Declaracion de Renta
               </button>
+              <button
+                onClick={() => setDatosMode("ventas")}
+                data-tooltip="venta-rapida"
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+                  datosMode === "ventas"
+                    ? "bg-amber-600 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-50"
+                }`}
+              >
+                <Receipt size={14} />
+                Libro de Ventas
+              </button>
+              <button
+                onClick={() => setDatosMode("forecast")}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+                  datosMode === "forecast"
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-50"
+                }`}
+              >
+                <TrendingUp size={14} />
+                Forecast 12M
+              </button>
+              <button
+                onClick={() => setDatosMode("reportes")}
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
+                  datosMode === "reportes"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-50"
+                }`}
+              >
+                <FileBarChart size={14} />
+                Cierre Mensual
+              </button>
             </div>
 
             {datosMode === "flash" && (
@@ -1798,6 +1849,24 @@ export default function Dashboard() {
             {datosMode === "espejo_dgi" && (
               <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6 min-h-[400px]">
                 <EspejoDGI societyId={societyId} financialRecord={currentRecord} />
+              </div>
+            )}
+
+            {datosMode === "ventas" && (
+              <div className="space-y-4">
+                <LibroVentas societyId={societyId} />
+              </div>
+            )}
+
+            {datosMode === "forecast" && (
+              <div className="space-y-4">
+                <ForecastPL societyId={societyId} record={currentRecord} />
+              </div>
+            )}
+
+            {datosMode === "reportes" && (
+              <div className="space-y-4">
+                <ListaReportes societyId={societyId} record={currentRecord} />
               </div>
             )}
           </div>
@@ -1895,9 +1964,11 @@ export default function Dashboard() {
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2"><WaterfallChart steps={diagnosis.cascada.waterfall_steps} /></div>
                         <div className="space-y-4">
-                          <DiagnosticCard title="Potencia (EBITDA)" icon={<Zap size={20} />} value={`${ebitdaMargin.toFixed(1)}%`}
-                            description={ebitdaMargin < 10 ? "Motor Debil. Margen operativo muy bajo." : ebitdaMargin < 15 ? "Motor Estable. Flujo positivo." : "Motor Potente. Capacidad de reinversion."}
-                            status={ebitdaMargin < 10 ? "danger" : ebitdaMargin < 15 ? "warning" : "ok"} />
+                          <div data-tooltip="ebitda">
+                            <DiagnosticCard title="Potencia (EBITDA)" icon={<Zap size={20} />} value={`${ebitdaMargin.toFixed(1)}%`}
+                              description={ebitdaMargin < 10 ? "Motor Debil. Margen operativo muy bajo." : ebitdaMargin < 15 ? "Motor Estable. Flujo positivo." : "Motor Potente. Capacidad de reinversion."}
+                              status={ebitdaMargin < 10 ? "danger" : ebitdaMargin < 15 ? "warning" : "ok"} />
+                          </div>
                           <DiagnosticCard title="Mandibula" icon={<Skull size={20} />} value={isMordida ? "ZONA DE MORDIDA" : "Zona Segura"}
                             description={isMordida ? "Cada dolar que vendes te cuesta mas. Ve al Lab de Precios." : "Tus ventas cubren costos. Manten la vigilancia."}
                             status={isMordida ? "critical" : "ok"} />
@@ -1921,7 +1992,7 @@ export default function Dashboard() {
                   ) : (<EmptyState text="Carga datos en 'Mi Contabilidad' para ver la cascada." />)}
                 </div>
               )}
-              {activeNegocioTab === "mandibulas" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-6 flex items-center">Mandibulas: Ventas vs Costos<SmartTooltip term="mandibulas" size={16} /></h2>{mandibulasData ? <MandibulasChart data={mandibulasData} /> : <EmptyState text="Ingresa datos de multiples meses en 'Mi Contabilidad' para ver el grafico de Mandibulas." />}</div>)}
+              {activeNegocioTab === "mandibulas" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-6 flex items-center">Brecha de Rentabilidad: Ventas vs Costos<SmartTooltip term="mandibulas" size={16} /></h2>{mandibulasData ? <MandibulasChart data={mandibulasData} /> : <EmptyState text="Ingresa datos de multiples meses en 'Mi Contabilidad' para ver la Grafica de Tijeras." />}</div>)}
               {activeNegocioTab === "semaforo" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-6">Semaforo Integral</h2>{diagnosis?.ratios ? <RatioGauges ratios={diagnosis.ratios} /> : <EmptyState text="Carga datos para ver el semaforo." />}</div>)}
               {activeNegocioTab === "equilibrio" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-6">Mapa de Supervivencia</h2>{breakeven ? <BreakevenChart breakevenMonthly={breakeven.breakeven_monthly} currentSales={breakeven.current_sales} marginOfSafety={breakeven.margin_of_safety} zone={breakeven.zone} contributionMarginPct={breakeven.contribution_margin_pct} targetSales={breakeven.target_sales} /> : <EmptyState text="Carga datos para ver el punto de equilibrio." />}</div>)}
               {activeNegocioTab === "oxigeno" && (hasData ? <OxigenoTab record={currentRecord!} /> : <EmptyState text="Ingresa datos en 'Mi Contabilidad' para ver el analisis de Oxigeno." />)}
@@ -2047,6 +2118,7 @@ export default function Dashboard() {
                 { key: "vigilante" as LegalTab, label: "Vigilante", icon: <Scale size={14} />, activeColor: "bg-amber-600 text-white" },
                 { key: "auditoria" as LegalTab, label: "Auditoria", icon: <History size={14} />, activeColor: "bg-blue-600 text-white" },
                 { key: "libro_actas" as LegalTab, label: "Actas", icon: <ClipboardList size={14} />, activeColor: "bg-slate-600 text-white" },
+                { key: "traductor" as LegalTab, label: "Traductor Legal", icon: <BookOpen size={14} />, activeColor: "bg-indigo-600 text-white" },
               ]).map((t) => (
                 <button
                   key={t.key}
@@ -2071,6 +2143,7 @@ export default function Dashboard() {
               {activeLegalTab === "vigilante" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Vigilante Legal: Alertas de Cumplimiento</h2><WatchdogDashboard /></div>)}
               {activeLegalTab === "auditoria" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Auditoria y Cumplimiento DGI</h2><AuditTimeline limit={30} /></div>)}
               {activeLegalTab === "libro_actas" && (<div><h2 className="text-lg lg:text-xl font-bold text-slate-800 mb-4">Libro de Actas</h2><LibroActas societyId={societyId} /></div>)}
+              {activeLegalTab === "traductor" && (<div><h2 className="text-lg lg:text-xl font-bold text-indigo-800 mb-4">Traductor Legal</h2><TraductorLegal /></div>)}
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 p-4 lg:p-6">
               <h3 className="text-sm font-bold text-slate-600 mb-3 flex items-center gap-2">
@@ -2103,6 +2176,7 @@ export default function Dashboard() {
         }}
       />
     </main>
+    </OnboardingProvider>
   );
 }
 

@@ -157,9 +157,9 @@ export const GLOSARIO: Record<string, { titulo: string; explicacion: string; par
 
   // --- Reportes y Graficos ---
   mandibulas: {
-    titulo: "Mandibulas: Ventas vs Costos",
-    explicacion: "Grafico que compara la tendencia de tus ventas contra la tendencia de tus costos totales a lo largo del tiempo. Cuando las lineas se separan como mandibulas abriendose, tu negocio mejora.",
-    paraQueSirve: "Te muestra si tu negocio esta ganando o perdiendo eficiencia mes a mes. Mandibulas abiertas (ventas arriba, costos abajo) = salud. Mandibulas cerrandose = peligro: tus costos crecen mas rapido que tus ventas.",
+    titulo: "Brecha de Rentabilidad: Ventas vs Costos",
+    explicacion: "Grafico que compara la tendencia de tus ventas contra la tendencia de tus costos totales a lo largo del tiempo. Cuando las lineas se separan (la brecha se abre), tu negocio mejora.",
+    paraQueSirve: "Te muestra si tu negocio esta ganando o perdiendo eficiencia mes a mes. Brecha abierta (ventas arriba, costos abajo) = salud. Brecha cerrandose = peligro: tus costos crecen mas rapido que tus ventas.",
     ejemplo: "Si las lineas se abren hacia arriba, vas bien — tu ganancia crece. Si se cierran o se cruzan, es alerta roja: tus costos estan alcanzando (o superando) tus ventas. Actua antes de que se crucen.",
   },
   balance_general: {

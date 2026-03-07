@@ -12,7 +12,7 @@ import { computeCascada, computeOxigeno } from "@/lib/calculations";
 // ============================================
 
 export type AlertPriority = "red" | "orange" | "yellow" | "green";
-export type AlertCategory = "dgi" | "capital_humano" | "liquidez" | "rentabilidad" | "legal" | "inventario";
+export type AlertCategory = "dgi" | "capital_humano" | "liquidez" | "rentabilidad" | "legal" | "inventario" | "facturacion";
 
 export interface StrategicAlert {
   id: string;
@@ -313,6 +313,7 @@ export function countByCategory(alerts: StrategicAlert[]): Record<AlertCategory,
     rentabilidad: 0,
     legal: 0,
     inventario: 0,
+    facturacion: 0,
   };
   for (const a of alerts) {
     counts[a.category]++;
@@ -505,4 +506,52 @@ export function computePayrollAlerts(
   }
 
   return alerts;
+}
+
+// ============================================
+// FACTURACION ELECTRONICA ALERTS
+// ============================================
+
+/**
+ * Genera alertas de facturacion basadas en el segmento DGI.
+ * Usa detectarSegmentoLocal() del modulo ventas para determinar
+ * si la sociedad debe migrar a facturacion electronica (PAC).
+ */
+export function computeFacturacionAlerts(societyId: string): StrategicAlert[] {
+  // Importacion dinamica para evitar dependencia circular
+  // En runtime, ventas-segmento.ts no depende de alerts.ts
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { detectarSegmentoLocal } = require("@/lib/ventas-segmento");
+    const resultado = detectarSegmentoLocal(societyId);
+
+    const alerts: StrategicAlert[] = [];
+
+    if (resultado.alertaNivel === "rojo") {
+      alerts.push({
+        id: "facturacion-pac-obligatorio",
+        priority: "red",
+        category: "facturacion",
+        title: "Migracion a PAC Obligatoria",
+        message: resultado.mensajeAlerta || `Has superado los limites DGI (B/.36,000/ano o 100 facturas/mes). Debes activar facturacion electronica con un PAC certificado.`,
+        emoji: "🧾",
+        promptHint: "URGENTE: Debes activar facturacion electronica PAC",
+      });
+    } else if (resultado.alertaNivel === "amarillo") {
+      alerts.push({
+        id: "facturacion-pac-preventivo",
+        priority: "yellow",
+        category: "facturacion",
+        title: "Acercandote al Limite de Facturacion",
+        message: resultado.mensajeAlerta || `Estas al ${Math.max(resultado.pctIngresos, resultado.pctFacturas).toFixed(0)}% del limite DGI. Considera preparar la migracion a facturacion electronica.`,
+        emoji: "📋",
+        promptHint: "Estas cerca del limite para facturacion electronica",
+      });
+    }
+
+    return alerts;
+  } catch {
+    // Si ventas-segmento no esta disponible, no generar alertas
+    return [];
+  }
 }

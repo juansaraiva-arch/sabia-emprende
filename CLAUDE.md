@@ -99,6 +99,7 @@ demo/
 5. **Mi Asistente** — Chat AI con GPT-4o como CFO virtual
 6. **Nomina** — Payroll engine con ley laboral Panama (CSS 12.25%, RP 1.50%, SE 1.50%, Factor ~1.36x)
 7. **Onboarding Diferenciado** — 4 perfiles (PYME, Emprendedor, Silver Economy, Migrante)
+8. **Libro de Ventas** — 3 segmentos DGI (Res. 201-6299): manual, CSV DGI/SFEP, PAC Gosocket
 
 ---
 
@@ -346,7 +347,7 @@ demo/
 
 ---
 
-## Estado del Roadmap (actualizado 2026-03-06)
+## Estado del Roadmap (actualizado 2026-03-07)
 
 | GAP | Modulo | Estado | Commit |
 |-----|--------|--------|--------|
@@ -357,6 +358,216 @@ demo/
 | — | NPS (Delighted) | ⚠️ Codigo listo, cuenta pendiente (sitio en mantenimiento) | `53e91aa` |
 | — | Analytics (PostHog) | ✅ Integrado | `53e91aa` |
 | — | RRHH Expansion (6 modulos) | ✅ Completo — Paridad Practisoft | `7aad04e` |
+| — | Libro de Ventas (3 segmentos) | ✅ Build OK — Segmento 3 PAC sandbox pendiente | (pending commit) |
+| GAP-2 | CB Insights 6 Causas de Fracaso | ✅ Completo — Detector + Dashboard Hub | (pending commit) |
+| GAP-3 | Widget Beta NPS | ✅ Completo — Copiar link + ver resultados | (pending commit) |
+| GAP-3B | Simulador Nomina Desglose | ✅ Completo — Empleador + Empleado + ISR | (pending commit) |
+| GAP-4 | Forecast P&L 12 Meses | ✅ Completo — Regresion lineal + supuestos editables | (pending commit) |
+| GAP-5 | Churn Rate y Retencion | ✅ Completo — KPIs admin + cohortes | (pending commit) |
+| GAP-6 | Traductor de Jerga Legal | ✅ Completo — GPT-4o con fallback demo | (pending commit) |
+| GAP-7 | Branding Mandibulas→Brecha | ✅ Completo — Renombrado en UI | (pending commit) |
+| GAP-8 | Cierre Mensual y Reportes | ✅ Completo — Generacion + cierre periodo | (pending commit) |
+| GAP-9 | Onboarding Guiado | ✅ Completo — Tour 5 pasos + tooltips | (pending commit) |
+
+### 2026-03-07 — Libro de Ventas (Opcion C — Modelo Hibrido)
+
+**Build:** Verificado (22.8s, 0 errores)
+
+#### Arquitectura: 3 Segmentos segun Resolucion DGI 201-6299
+- **Segmento 1 (Manual):** Boton de venta rapida ($) flotante + formulario modal con auto-calculo ITBMS 7%
+- **Segmento 2 (CSV DGI):** Importacion de facturas desde facturador gratuito SFEP con parser tolerante + deduplicacion
+- **Segmento 3 (PAC):** Integracion Gosocket para facturacion electronica obligatoria (>B/.36K o >100 facturas/mes)
+
+#### Umbrales de segmentacion
+- `LIMITE_INGRESOS = 36,000` (B/. anuales)
+- `LIMITE_FACTURAS = 100` (mensuales)
+- `UMBRAL_ALERTA_PCT = 80%` (alerta temprana)
+- Deteccion automatica via `detectarSegmentoLocal()` sobre datos en localStorage
+
+#### Archivos creados (24 nuevos)
+**Foundation:**
+- `lib/ventas-types.ts` — Tipos: Venta, VentaInput, SegmentoFacturacion, OrigenVenta, MetodoPagoVenta, EstadoFacturaPAC
+- `lib/ventas-storage.ts` — CRUD localStorage (`midf_ventas`), ITBMS_RATE=0.07, batch import con deduplicacion
+- `lib/ventas-segmento.ts` — `detectarSegmentoLocal()`, `ResultadoSegmento`
+- `supabase/migrations/20260302_libro_ventas.sql` — Tabla `ventas` con monto_total GENERATED, 8 indices, RLS, vistas
+- `supabase/migrations/20260303_configuracion_pac.sql` — `society_segmento_historial`, funcion `calcular_segmento_society()`
+
+**Segmento 1 — Venta Manual:**
+- `components/ventas/BotonVentaRapida.tsx` — FAB dorado fixed bottom-24 right-4
+- `components/ventas/FormVentaRapida.tsx` — Modal 7 campos + toggle ITBMS + overlay exito
+- `components/ventas/TablaVentas.tsx` — Tabla con badges origen (Manual=gray, DGI=blue, PAC=green), two-tap anular
+- `components/ventas/ResumenVentas.tsx` — 3 KPIs + desglose por origen y metodo pago
+
+**Segmento 2 — CSV DGI:**
+- `lib/parsers/dgi-csv-parser.ts` — Parser zero-dependency, BOM, auto-delimitador, 20+ variantes header
+- `components/ventas/ImportadorDGI.tsx` — Flujo 4 pasos con highlight duplicados
+- `components/ventas/GuiaDGI.tsx` — 5 pasos descarga CSV desde SFEP
+
+**Segmento 3 — PAC (sandbox pendiente):**
+- `lib/pac/types.ts` — ConfiguracionPAC, FacturaElectronica, RespuestaPAC, ErrorPAC
+- `lib/pac/pac-client.ts` — Clase abstracta PACClient + createPACClient() factory
+- `lib/pac/gosocket.ts` — GosocketClient extends PACClient (⚠️ PENDING SANDBOX VERIFICATION)
+- `lib/pac/xml-builder.ts` — buildXMLFactura() + buildXMLAnulacion() para FE-DGI
+- `components/ventas/PanelPAC.tsx` — Dashboard PAC con test conexion, emision, historial
+- `components/ventas/OnboardingPAC.tsx` — Wizard 4 pasos configuracion PAC
+- `components/ventas/AlertaMigracionPAC.tsx` — Banner obligatorio cuando se superan umbrales
+
+**API Routes:**
+- `app/api/ventas/route.ts` — GET/POST ventas (Supabase bridge)
+- `app/api/ventas/importar-dgi/route.ts` — POST batch import con deduplicacion
+- `app/api/ventas/pac/emitir/route.ts` — POST emision factura electronica (⚠️ simulacion hasta sandbox)
+- `app/api/ventas/pac/webhook/route.ts` — POST receptor webhook PAC
+
+**Container + Dashboard:**
+- `components/ventas/LibroVentas.tsx` — Container con tabs: Registro, Importar DGI, PAC, Resumen
+- `dashboard/page.tsx` — DatosMode +"ventas", pill "Libro de Ventas" (amber-600), import LibroVentas
+
+**Alertas:**
+- `lib/alerts.ts` — AlertCategory +"facturacion", `computeFacturacionAlerts()` con 4 alertas
+- `components/AlertsSidebar.tsx` — Icono Receipt + label "Facturacion"
+- `components/WatchdogDashboard.tsx` — AlertType +"facturacion_electronica"
+
+#### Integracion con arquitectura PAC existente
+- Los archivos en `lib/pac/` son especificos del Libro de Ventas
+- La arquitectura PACProvider en `services/facturacion/pac/` (ManualEntryAdapter, PACFactory) sigue intacta
+- Futuro: GosocketClient puede registrarse en PACFactory para unificar ambos sistemas
+
+#### ⚠️ Pendiente: Gosocket Sandbox
+- Codigo de Segmento 3 completo pero marcado `PENDING SANDBOX VERIFICATION`
+- Requiere cuenta sandbox en gosocket.net
+- Endpoints sandbox asumidos: `https://sandbox-api.gosocket.net/v1/`
+- Una vez verificado: remover flags de simulacion, activar emision real
+
+### 2026-03-07 — GAP Analysis: 8 Mejoras en 3 Fases
+
+**Build:** Verificado (0 errores, 19 rutas)
+
+#### 🔴 FASE 1 — GAP-2: CB Insights 6 Causas de Fracaso
+- Detector client-side que evalua 6 causas desde FinancialRecord
+- Causas: Sin mercado, Sin caja, Equipo incorrecto, Competencia, Precios, Modelo no escalable
+- Scoring: 16pts en_orden, 8pts precaucion, 0pts critico, 10pts sin_datos (max 96→normalizado 100)
+- Widget SVG donut en Hub con indicadores por causa + slide-over drawer
+
+**Archivos creados:**
+- `lib/analytics/cb-insights-detector.ts` — Detector con 6 evaluaciones
+- `components/dashboard/Widget6CausasCB.tsx` — Widget Hub con donut chart
+- `components/dashboard/CausaCard.tsx` — Card individual por causa
+- `components/dashboard/CausaDetalle.tsx` — Drawer lateral con detalle
+
+#### 🔴 FASE 1 — GAP-3: Widget Beta NPS en Hub
+- Boton "Copiar link encuesta" con clipboard API
+- Boton "Ver resultados" → /admin/beta-resultados
+
+**Archivos creados:**
+- `components/dashboard/WidgetBetaNPS.tsx` — Widget con 2 acciones
+
+#### 🔴 FASE 1 — GAP-3B: Simulador Nomina con Desglose Completo
+- Motor de calculo con tasas corregidas: CSS_PATRONAL=12.25% (NO 13.25%)
+- Vista individual: desglose empleador (14 lineas) + empleado (ISR paso a paso)
+- Vista consolidada: tabla multi-empleado + salida real de caja vs provisiones
+- ISR verificado: B/.1,500 bruto → B/.62.75/mes retencion
+
+**Archivos creados:**
+- `lib/rrhh/nomina-types.ts` — EmpleadoInput, ResultadoNomina, etc.
+- `lib/rrhh/nomina-calculator.ts` — TASAS_NOMINA, calcularNominaEmpleado(), calcularISR()
+- `components/rrhh/SimuladorNomina.tsx` — UI individual + consolidada
+- `components/rrhh/DesglosePagoEmpleador.tsx` — Tabla costos patronales
+- `components/rrhh/DesglosePagoEmpleado.tsx` — Tabla deducciones + ISR
+- `components/rrhh/ResumenNominaTotal.tsx` — Resumen multi-empleado
+
+**Archivos modificados:**
+- `components/rrhh/MiRRHH.tsx` — +"simulador" tab, Calculator icon, SimuladorNomina render
+
+#### 🟡 FASE 2 — GAP-4: Forecasting Financiero 12 Meses
+- Motor de regresion lineal client-side para proyectar ingresos/gastos
+- 4 supuestos editables: crecimiento ingresos, crecimiento gastos, ITBMS, ISR
+- Tabla P&L con celdas click-to-edit para Revenue
+- Recharts LineChart con 4 lineas (ingresos, gastos, EBITDA, utilidad neta)
+- 4 KPI cards: revenue anual, EBITDA, margen neto, meses runway
+
+**Archivos creados:**
+- `lib/analytics/forecast-engine.ts` — Regresion lineal + buildHistorialFromVentas()
+- `components/forecast/ForecastPL.tsx` — Tabla + chart + KPIs
+- `components/forecast/ForecastSupuestos.tsx` — 4 sliders de supuestos
+- `supabase/migrations/20260304_forecast.sql` — forecast_proyecciones + forecast_supuestos
+
+**Archivos modificados:**
+- `dashboard/page.tsx` — DatosMode +"forecast", pill "Forecast 12M" (emerald-600)
+
+#### 🟡 FASE 2 — GAP-5: Churn Rate y Retencion de Usuarios
+- Dashboard admin en /admin/metricas (protegido)
+- KPIs: MAU, churn rate, DAU/MAU ratio, avg session
+- Tabla cohortes con retencion M1-M6
+- Grafico barras uso por modulo
+- Lista usuarios at-risk (>14d sin actividad)
+- Definicion: Activo = login 30d + 1 accion. Churned = registrado >60d, sin actividad 60d
+
+**Archivos creados:**
+- `supabase/migrations/20260305_engagement_tracking.sql` — user_sessions + user_acciones
+- `lib/analytics/churn-detector.ts` — generateMockKPIs(), calcularChurnMetrics()
+- `components/admin/KPISoraya.tsx` — Dashboard admin con 4 KPIs + cohortes
+- `app/admin/metricas/page.tsx` — Page wrapper
+
+#### 🟡 FASE 2 — GAP-6: Traductor de Jerga Legal (GPT-4o)
+- API route con GPT-4o system prompt especializado en derecho panameno
+- Fallback demo si OPENAI_API_KEY no configurado (demo de alta calidad)
+- UI: textarea + contador caracteres + 4 secciones resultado
+- Secciones: EN SIMPLE, PARA TU NEGOCIO, ACCION REQUERIDA, DATOS IMPORTANTES
+
+**Archivos creados:**
+- `app/api/herramientas/traductor-legal/route.ts` — POST GPT-4o con fallback
+- `components/herramientas/TraductorLegal.tsx` — UI completa
+
+**Archivos modificados:**
+- `dashboard/page.tsx` — LegalTab +"traductor", pill + TraductorLegal render
+
+#### 🟢 FASE 3 — GAP-7: Correccion Branding "Mandibulas"
+- Renombrado todas las apariciones user-facing de "Mandibulas"
+- Pill tab: "Mandibulas" → "Brecha"
+- Card titulo: → "Brecha de Rentabilidad"
+- Heading seccion: → "Brecha de Rentabilidad: Ventas vs Costos"
+- Grafico: → "Grafica de Tijeras"
+- Tooltips actualizados con nueva terminologia
+
+**Archivos modificados:**
+- `dashboard/page.tsx` — Tab label, card label, heading
+- `components/charts/MandibulasChart.tsx` — Empty state, status badges
+- `components/SmartTooltip.tsx` — Titulo y explicaciones
+
+#### 🟢 FASE 3 — GAP-8: Cierre Mensual y Reportes
+- Generador de reportes mensuales con snapshots de 5 secciones
+- Secciones: KPIs financieros, cascada P&L, ventas, alertas, estado cierre
+- Cierre de periodo con proteccion contra re-apertura (trigger SQL)
+- UI: lista de reportes + selector periodo + crear/ver/eliminar borrador
+- Nuevo DatosMode "reportes" con pill "Cierre Mensual" (indigo-600)
+
+**Archivos creados:**
+- `supabase/migrations/20260306_reportes_cierres.sql` — reportes_cierres + trigger
+- `lib/reportes/reporte-engine.ts` — generarReporteMensual(), CRUD localStorage
+- `components/reportes/ReporteMensual.tsx` — Vista reporte completo (6 KPIs + tabla)
+- `components/reportes/CierreMensual.tsx` — Dialogo confirmacion cierre
+- `components/reportes/ListaReportes.tsx` — Lista + creacion + eliminacion
+
+**Archivos modificados:**
+- `dashboard/page.tsx` — DatosMode +"reportes", pill "Cierre Mensual", ListaReportes render
+
+#### 🟢 FASE 3 — GAP-9: Onboarding Guiado
+- Tour modal de 5 pasos con texto grande (Silver Economy friendly)
+- Tooltips flotantes via createPortal posicionados con getBoundingClientRect
+- Provider con MutationObserver para detectar nuevos elementos tooltipeables
+- Pasos: Mi Negocio, Datos Financieros, Mis Finanzas, Alertas, Mi Asistente
+- Auto-skip si `midf_setup_complete` = true
+
+**Archivos creados:**
+- `supabase/migrations/20260307_onboarding_progress.sql` — onboarding_progress table
+- `lib/onboarding-guide.ts` — 5 tooltip configs + 5 tour steps + CRUD
+- `components/onboarding/OnboardingTour.tsx` — Modal 5 pasos
+- `components/onboarding/OnboardingTooltip.tsx` — Floating tooltip via Portal
+- `components/onboarding/OnboardingProvider.tsx` — Context provider + MutationObserver
+
+**Archivos modificados:**
+- `dashboard/page.tsx` — OnboardingProvider wrapping, data-tooltip attributes
+- `components/ModuleCardGrid.tsx` — +dataTooltipId prop
 
 ### localStorage keys (registro completo)
 
@@ -388,3 +599,9 @@ demo/
 | `midf_rrhh_prestamos` | JSON | RRHH — Prestamos a empleados |
 | `midf_rrhh_contratos` | JSON | RRHH — Contratos laborales |
 | `midf_rrhh_asistencia` | JSON | RRHH — Control de asistencia |
+| `midf_ventas` | JSON | Libro de Ventas — Registro de ventas |
+| `midf_onboarding_pac_{societyId}` | JSON | Libro de Ventas — Estado onboarding PAC |
+| `midf_forecast_edits` | JSON | GAP-4 — Ediciones manuales al forecast |
+| `midf_reportes_cierres` | JSON | GAP-8 — Reportes mensuales y cierres |
+| `midf_onboarding_tour_done` | "true" | GAP-9 — Tour completado |
+| `midf_onboarding_tooltips_seen` | JSON | GAP-9 — Tooltips vistos |

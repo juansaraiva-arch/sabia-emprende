@@ -11,6 +11,7 @@ export interface ModuleCard {
   icon: React.ReactNode;
   tooltip?: string;
   color: string; // Tailwind bg class: "bg-blue-600", "bg-red-600", etc.
+  dataTooltipId?: string; // ID para onboarding tooltips contextuales
 }
 
 export interface CardGridSection {
@@ -43,6 +44,7 @@ export default function ModuleCardGrid({ sections, onSelect }: ModuleCardGridPro
               <button
                 key={card.key}
                 onClick={() => onSelect(card.key)}
+                data-tooltip={card.dataTooltipId || undefined}
                 className={`group relative p-5 rounded-2xl text-white transition-all
                   hover:scale-[1.03] hover:shadow-xl cursor-pointer text-left
                   active:scale-[0.98] ${card.color}`}

@@ -45,7 +45,8 @@ type AlertType =
   | "mupa_declaracion_jurada"
   | "mupa_recargos_morosidad"
   | "mupa_tasa_municipal"
-  | "mupa_publicidad";
+  | "mupa_publicidad"
+  | "facturacion_electronica";
 
 interface WatchdogAlert {
   id: string;
@@ -606,6 +607,7 @@ const ALERT_TOOLTIP_MAP: Record<AlertType, string | undefined> = {
   mupa_recargos_morosidad: undefined,
   mupa_tasa_municipal: undefined,
   mupa_publicidad: undefined,
+  facturacion_electronica: undefined,
 };
 
 function AlertCard({ alert }: { alert: WatchdogAlert }) {

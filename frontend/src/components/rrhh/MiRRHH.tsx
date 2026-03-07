@@ -23,12 +23,14 @@ import {
   CreditCard,
   ScrollText,
   CalendarDays,
+  Calculator,
 } from "lucide-react";
 import HorasExtrasTab from "./HorasExtrasTab";
 import BonificacionesTab from "./BonificacionesTab";
 import PrestamosTab from "./PrestamosTab";
 import ContratosTab from "./ContratosTab";
 import AsistenciaTab from "./AsistenciaTab";
+import SimuladorNomina from "@/components/rrhh/SimuladorNomina";
 import {
   type PersonalRecord,
   type TipoPersonal,
@@ -104,7 +106,7 @@ const MODALIDAD_PAGO_FREELANCE_LABELS: Record<ModalidadPagoFreelance, string> = 
   por_hora: "Por Hora",
 };
 
-type TabKey = "registro" | "planilla" | "pagos_freelancers" | "horas_extras" | "bonificaciones" | "prestamos" | "contratos" | "asistencia";
+type TabKey = "registro" | "planilla" | "pagos_freelancers" | "horas_extras" | "bonificaciones" | "prestamos" | "contratos" | "asistencia" | "simulador";
 
 // ============================================
 // HELPERS
@@ -204,6 +206,7 @@ export default function MiRRHH({ societyId }: MiRRHHProps) {
     { key: "prestamos", label: "Prestamos", icon: <CreditCard className="w-4 h-4" /> },
     { key: "contratos", label: "Contratos", icon: <ScrollText className="w-4 h-4" /> },
     { key: "asistencia", label: "Asistencia", icon: <CalendarDays className="w-4 h-4" /> },
+    { key: "simulador" as TabKey, label: "Simulador", icon: <Calculator size={14} /> },
   ];
 
   return (
@@ -262,6 +265,7 @@ export default function MiRRHH({ societyId }: MiRRHHProps) {
         {activeTab === "prestamos" && <PrestamosTab personal={personal} />}
         {activeTab === "contratos" && <ContratosTab personal={personal} />}
         {activeTab === "asistencia" && <AsistenciaTab personal={personal} />}
+        {activeTab === "simulador" && <SimuladorNomina societyId={societyId} />}
       </div>
     </div>
   );

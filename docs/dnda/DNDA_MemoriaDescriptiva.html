@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Memoria Descriptiva - Mi Director Financiero PTY</title>
+<style>
+  @page {
+    size: letter;
+    margin: 2.5cm 2cm 3cm 2cm;
+    @bottom-center {
+      content: "Pagina " counter(page) " de " counter(pages);
+      font-size: 9pt;
+      color: #666;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #222;
+    counter-reset: page;
+  }
+  .page-break { page-break-after: always; }
+  .no-break { page-break-inside: avoid; }
+
+  /* PORTADA */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 90vh;
+    padding: 4cm 2cm;
+  }
+  .cover .doc-type {
+    font-size: 14pt;
+    font-weight: bold;
+    letter-spacing: 4pt;
+    text-transform: uppercase;
+    color: #1A242F;
+    border-top: 3px solid #C5A059;
+    border-bottom: 3px solid #C5A059;
+    padding: 12pt 24pt;
+    margin-bottom: 40pt;
+  }
+  .cover .app-name {
+    font-size: 22pt;
+    font-weight: bold;
+    color: #1A242F;
+    margin-bottom: 8pt;
+  }
+  .cover .subtitle {
+    font-size: 12pt;
+    color: #555;
+    margin-bottom: 6pt;
+  }
+  .cover .version {
+    font-size: 11pt;
+    color: #888;
+    margin-bottom: 40pt;
+  }
+  .cover .author-block {
+    font-size: 11pt;
+    color: #333;
+    margin-bottom: 40pt;
+    line-height: 1.8;
+  }
+  .cover .author-block strong { color: #1A242F; }
+  .cover .location {
+    font-size: 11pt;
+    color: #555;
+    margin-bottom: 30pt;
+  }
+  .cover .registry {
+    font-size: 9pt;
+    color: #888;
+    border-top: 1px solid #ccc;
+    padding-top: 12pt;
+    max-width: 400pt;
+  }
+
+  /* CONTENIDO */
+  h1 {
+    font-size: 16pt;
+    color: #1A242F;
+    border-bottom: 2px solid #C5A059;
+    padding-bottom: 6pt;
+    margin: 24pt 0 12pt 0;
+    page-break-after: avoid;
+  }
+  h2 {
+    font-size: 13pt;
+    color: #1A242F;
+    margin: 18pt 0 8pt 0;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 11pt;
+    font-weight: bold;
+    color: #333;
+    margin: 12pt 0 6pt 0;
+  }
+  p { margin-bottom: 8pt; text-align: justify; }
+  ul, ol { margin: 6pt 0 10pt 20pt; }
+  li { margin-bottom: 4pt; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10pt 0 14pt 0;
+    font-size: 10pt;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 5pt 8pt;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #f0f0f0; font-weight: bold; color: #1A242F; }
+  .mono { font-family: 'Courier New', monospace; font-size: 9pt; }
+  .ascii-diagram {
+    font-family: 'Courier New', monospace;
+    font-size: 8pt;
+    line-height: 1.4;
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    padding: 12pt;
+    margin: 10pt 0;
+    white-space: pre;
+    page-break-inside: avoid;
+  }
+  /* FIGURAS */
+  .figure-container {
+    text-align: center;
+    margin: 16pt 0;
+    page-break-inside: avoid;
+  }
+  .figure-container img {
+    max-width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 4pt;
+  }
+  .figure-container .caption {
+    font-style: italic;
+    color: #555;
+    font-size: 9pt;
+    margin-top: 6pt;
+  }
+  /* FORMULAS */
+  .formula-block {
+    font-family: 'Courier New', monospace;
+    font-size: 9.5pt;
+    line-height: 1.5;
+    background: #faf8f5;
+    border-left: 3px solid #C5A059;
+    padding: 10pt 14pt;
+    margin: 10pt 0 14pt 0;
+    page-break-inside: avoid;
+  }
+  .formula-block .formula-title {
+    font-family: 'Georgia', serif;
+    font-weight: bold;
+    font-size: 10pt;
+    color: #1A242F;
+    margin-bottom: 6pt;
+  }
+  .footer-legal {
+    margin-top: 40pt;
+    padding-top: 12pt;
+    border-top: 2px solid #C5A059;
+    font-size: 10pt;
+    text-align: center;
+    color: #555;
+    line-height: 1.8;
+  }
+  .page-number {
+    position: fixed;
+    bottom: 1cm;
+    right: 2cm;
+    font-size: 9pt;
+    color: #999;
+  }
+  @media print {
+    .page-number { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== PORTADA ==================== -->
+<div class="cover">
+  <div class="doc-type">MEMORIA DESCRIPTIVA</div>
+  <div class="app-name">MI DIRECTOR FINANCIERO PTY</div>
+  <div class="subtitle">Programa de Ordenador (Software)</div>
+  <div class="version">Version 0.1.0</div>
+  <div class="author-block">
+    <strong>Autora:</strong> Soraya Dayan Gutierrez Perez<br>
+    <strong>Titular:</strong> Soraya Dayan Gutierrez Perez (Persona Natural)
+  </div>
+  <div class="location">Panama, marzo de 2026</div>
+  <div class="registry">
+    Registro ante la Direccion Nacional de Derecho de Autor<br>
+    Ministerio de Cultura &mdash; Republica de Panama
+  </div>
+</div>
+<div class="page-break"></div>
+
+<!-- ==================== 1. DESCRIPCION GENERAL ==================== -->
+<h1>1. Descripcion General del Programa</h1>
+
+<table>
+  <tr><th style="width:35%">Campo</th><th>Detalle</th></tr>
+  <tr><td><strong>Titulo de la obra</strong></td><td>Mi Director Financiero PTY</td></tr>
+  <tr><td><strong>Tipo de obra</strong></td><td>Programa de Ordenador (Software)</td></tr>
+  <tr><td><strong>Naturaleza</strong></td><td>Aplicacion web de gestion financiera, contable, fiscal, de nomina e inventario</td></tr>
+  <tr><td><strong>Publico objetivo</strong></td><td>Emprendedores panamenos, Sociedades de Emprendimiento (Ley 186 de 2020), Micro, Pequenas y Medianas Empresas (MiPYMES) de la Republica de Panama</td></tr>
+  <tr><td><strong>Entorno operativo</strong></td><td>Aplicacion web (navegador), responsive para dispositivos moviles y de escritorio</td></tr>
+  <tr><td><strong>Ano de creacion</strong></td><td>2026</td></tr>
+  <tr><td><strong>Fecha de inicio</strong></td><td>18 de febrero de 2026</td></tr>
+  <tr><td><strong>Version actual</strong></td><td>0.1.0</td></tr>
+</table>
+
+<h2>1.1 Problema que resuelve</h2>
+<p>
+  Los emprendedores panamenos enfrentan una complejidad fiscal, contable y laboral significativa que tradicionalmente requiere la contratacion de multiples profesionales (contador, abogado, asesor fiscal). Mi Director Financiero PTY centraliza la gestion financiera, contable, de recursos humanos, de inventario y de cumplimiento tributario en una sola plataforma digital, adaptada integralmente a la legislacion de la Republica de Panama, incluyendo el Codigo Fiscal, la Ley 186 de 2020 (Sociedades de Emprendimiento), la Ley 462 de 2025 (reformas CSS), y las normativas del Ministerio de Trabajo y Desarrollo Laboral.
+</p>
+
+<h2>1.2 Descripcion breve</h2>
+<p>
+  Mi Director Financiero PTY es una aplicacion web integral que ofrece modulos de contabilidad formal (Plan de Cuentas, Libro Diario, Libro Mayor, Balance de Comprobacion), espejos de formularios oficiales de la DGI (Form 430, Form 03, F2 V10, Form 20), gestion de nomina con calculos automaticos de retenciones (ISR, CSS, Seguro Educativo), gestion de inventario con alertas de reorden, facturacion electronica, simuladores financieros, y un asistente de inteligencia artificial que actua como director financiero virtual. Toda la interfaz esta en idioma espanol y adaptada al contexto fiscal y comercial panameno.
+</p>
+
+<div class="figure-container">
+  <img src="screenshots/fig_01_hub.png" alt="Hub Principal de Mi Director Financiero PTY">
+  <p class="caption">Figura 1. Hub Principal &mdash; Vista general del dashboard con resumen ejecutivo, acceso a modulos y branding corporativo.</p>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ==================== 2. CARACTERISTICAS TECNICAS ==================== -->
+<h1>2. Caracteristicas Tecnicas</h1>
+
+<h2>2.1 Lenguajes de programacion</h2>
+<table>
+  <tr><th>Lenguaje</th><th>Uso</th><th>Version</th></tr>
+  <tr><td>TypeScript</td><td>Frontend: componentes, logica de negocio, tipos</td><td>5.7.0</td></tr>
+  <tr><td>JavaScript (JSX/TSX)</td><td>Componentes React, configuracion</td><td>ES2022+</td></tr>
+  <tr><td>Python</td><td>Backend: API, motores de calculo, generacion de reportes</td><td>3.11+</td></tr>
+  <tr><td>SQL</td><td>Esquemas de base de datos, migraciones</td><td>PostgreSQL 15</td></tr>
+  <tr><td>CSS</td><td>Estilos globales, hojas de estilo</td><td>CSS3 / Tailwind 4.0</td></tr>
+</table>
+
+<h2>2.2 Frameworks y librerias principales</h2>
+<table>
+  <tr><th>Tecnologia</th><th>Version</th><th>Proposito</th></tr>
+  <tr><td>Next.js</td><td>15.1.0</td><td>Framework React con SSR y App Router</td></tr>
+  <tr><td>React</td><td>19.0.0</td><td>Libreria de interfaces de usuario</td></tr>
+  <tr><td>Tailwind CSS</td><td>4.0.0</td><td>Framework de estilos utilitarios</td></tr>
+  <tr><td>Recharts</td><td>2.15.0</td><td>Visualizacion de datos y graficos</td></tr>
+  <tr><td>Lucide React</td><td>0.468.0</td><td>Sistema de iconos</td></tr>
+  <tr><td>Supabase</td><td>2.47.0</td><td>Base de datos, autenticacion, almacenamiento</td></tr>
+  <tr><td>FastAPI</td><td>0.109+</td><td>Framework backend (Python)</td></tr>
+  <tr><td>Vitest</td><td>4.0.18</td><td>Testing framework (frontend)</td></tr>
+  <tr><td>Pytest</td><td>8.0+</td><td>Testing framework (backend)</td></tr>
+</table>
+
+<h2>2.3 Arquitectura del sistema</h2>
+<p>
+  La aplicacion sigue una arquitectura de tres capas:
+</p>
+<ul>
+  <li><strong>Frontend (Cliente):</strong> Aplicacion Next.js 15 con App Router. Renderizado del lado del cliente para la mayoria de las funcionalidades. Los datos de configuracion, catalogo de inventario, registros de personal y movimientos se almacenan en <span class="mono">localStorage</span> del navegador con prefijo <span class="mono">midf_</span>.</li>
+  <li><strong>Backend (API):</strong> Servidor FastAPI en Python desplegado en Railway. Proporciona endpoints RESTful para calculos complejos, generacion de reportes PDF, procesamiento de lenguaje natural (NLP) y comunicacion con la API de OpenAI.</li>
+  <li><strong>Base de datos:</strong> Supabase (PostgreSQL) con Row Level Security (RLS). Gestiona autenticacion, almacenamiento de documentos legales y persistencia de datos financieros historicos.</li>
+</ul>
+
+<h2>2.4 Metricas del codigo fuente</h2>
+<table>
+  <tr><th>Metrica</th><th>Valor</th></tr>
+  <tr><td>Total de archivos de codigo fuente</td><td>112 archivos</td></tr>
+  <tr><td>Lineas de codigo aproximadas</td><td>46,917 lineas</td></tr>
+  <tr><td>Componentes frontend (React/TSX)</td><td>65 componentes</td></tr>
+  <tr><td>Modulos backend (Python)</td><td>43 archivos</td></tr>
+  <tr><td>Librerias/utilidades (TypeScript)</td><td>21 archivos</td></tr>
+  <tr><td>Archivos de pruebas automatizadas</td><td>16 archivos</td></tr>
+  <tr><td>Rutas/paginas de la aplicacion</td><td>9 rutas</td></tr>
+  <tr><td>Migraciones de base de datos</td><td>3 archivos SQL</td></tr>
+</table>
+
+<h2>2.5 Despliegue</h2>
+<table>
+  <tr><th>Componente</th><th>Plataforma</th></tr>
+  <tr><td>Frontend</td><td>Vercel (https://midirectorfinancieropty.vercel.app)</td></tr>
+  <tr><td>Backend API</td><td>Railway</td></tr>
+  <tr><td>Base de datos</td><td>Supabase (PostgreSQL)</td></tr>
+  <tr><td>Autenticacion</td><td>Supabase GoTrue (Magic Link / JWT)</td></tr>
+  <tr><td>Inteligencia artificial</td><td>OpenAI API (GPT-4o)</td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<!-- ==================== 3. DESCRIPCION FUNCIONAL ==================== -->
+<h1>3. Descripcion Funcional de los Modulos</h1>
+
+<h2>3.1 Modulo: Mi Contabilidad</h2>
+<p>Centro contable formal con los siguientes sub-modulos:</p>
+
+<h3>3.1.1 Plan de Cuentas</h3>
+<p>Catalogo jerarquico de cuentas contables adaptado a Panama con mas de 62 cuentas predeterminadas en 5 tipos (Activo, Pasivo, Patrimonio, Ingreso, Costo/Gasto). Permite creacion, edicion y desactivacion de cuentas.</p>
+
+<h3>3.1.2 Libro Diario</h3>
+<p>Registro de asientos contables de partida doble con validacion automatica (Debe = Haber), filtros por mes/ano, busqueda, y soporte para documentos adjuntos.</p>
+
+<h3>3.1.3 Libro Mayor</h3>
+<p>Vista por cuenta individual con movimientos debito/credito y saldo acumulado. Permite filtrado por periodo.</p>
+
+<h3>3.1.4 Balance de Comprobacion</h3>
+<p>Reporte de todas las cuentas con sus saldos deudores y acreedores, validacion de ecuacion patrimonial.</p>
+
+<h3>3.1.5 Libro de Inventarios y Balances</h3>
+<p>Libro formal requerido por el Codigo de Comercio de Panama. Registra activos, pasivos y patrimonio con saldos de apertura y cierre por ano fiscal.</p>
+
+<h3>3.1.6 Cierre de Periodo</h3>
+<p>Flujo de trabajo para cierre contable mensual con lista de verificacion, asientos de ajuste y bloqueo de periodo.</p>
+
+<h3>3.1.7 Espejo de Formularios DGI</h3>
+<p>Sistema de mapeo que pre-llena 5 formularios oficiales de la Direccion General de Ingresos: Formulario F2 V10 (regimen S.E.P.), Formulario 03 (Renta), Formulario 430 (ITBMS), Formulario 20 (Pagos a Terceros) y Planilla CSS (Caja de Seguro Social). Incluye calendario fiscal con obligaciones mensuales.</p>
+
+<h3>3.1.8 Mi RRHH</h3>
+<p>Gestion integral de recursos humanos con 3 secciones: Registro de Personal (datos de empleados y freelancers), Planilla Mensual (calculo automatico de retenciones ISR, CSS 9.75%, Seguro Educativo 1.25%, aportes patronales CSS 12.25%, SE 1.50%, Riesgos Profesionales), y Pagos a Freelancers (con retencion ITBMS 7% e ISR).</p>
+
+<h3>3.1.9 Mi Inventario</h3>
+<p>Sistema de gestion de inventario con catalogo de productos/materias primas (SKU, categorias, unidades de medida, costo, precio de venta, punto de reorden automatico), registro de movimientos (9 tipos de entrada/salida con trazabilidad), y dashboard con metricas y graficos. Implementado en <span class="mono">inventario-types.ts</span>:</p>
+<div class="formula-block">
+<div class="formula-title">Formulas del Modulo de Inventario:</div>
+Valor Total = &Sigma; (Cantidad &times; Costo Unitario)  para cada item
+
+ROP (Punto de Reorden) = (Lead Time &times; Consumo Diario) + Stock Seguridad
+
+Costo Promedio Ponderado:
+  Nuevo Costo = (Qty Existente &times; Costo Existente + Qty Nueva &times; Costo Nuevo)
+              / (Qty Existente + Qty Nueva)
+
+9 tipos de movimiento: Compra, Venta, Ajuste+, Ajuste-,
+  Devolucion, Merma, Produccion, Consumo, Transferencia.
+</div>
+
+<div class="figure-container">
+  <img src="screenshots/fig_20_mi_inventario.png" alt="Mi Inventario">
+  <p class="caption">Figura 4. Mi Inventario &mdash; Catalogo de productos con SKU, alertas de reorden y trazabilidad de movimientos.</p>
+</div>
+
+<h2>3.2 Modulo: Mis Finanzas</h2>
+
+<h3>3.2.1 Cascada Financiera</h3>
+<p>Visualizacion tipo waterfall del estado de resultados con margenes porcentuales automaticos. Implementada en <span class="mono">calculations.ts &rarr; computeCascada()</span>:</p>
+<div class="formula-block">
+<div class="formula-title">Formulas de la Cascada (extraidas del codigo fuente):</div>
+Utilidad Bruta    = Ingresos &minus; COGS
+Margen Bruto (%)  = (Utilidad Bruta / Ingresos) &times; 100
+
+OPEX Total = opex_rent + opex_payroll + opex_services
+           + opex_marketing + opex_other + opex_insurance
+
+EBITDA          = Utilidad Bruta &minus; OPEX Total
+Margen EBITDA   = (EBITDA / Ingresos) &times; 100
+
+EBIT            = EBITDA &minus; Depreciacion &minus; Amortizacion
+EBT             = EBIT &minus; Gastos Financieros
+Utilidad Neta   = EBT &minus; Impuestos
+Margen Neto (%) = (Utilidad Neta / Ingresos) &times; 100
+</div>
+
+<div class="figure-container">
+  <img src="screenshots/fig_03_cascada.png" alt="Cascada Financiera">
+  <p class="caption">Figura 2. Cascada Financiera &mdash; Desglose del estado de resultados con margenes automaticos.</p>
+</div>
+
+<h3>3.2.2 Punto de Equilibrio</h3>
+<p>Analisis de break-even con visualizacion grafica. Implementado en <span class="mono">calculations.ts &rarr; computeCascada()</span>:</p>
+<div class="formula-block">
+<div class="formula-title">Formulas de Punto de Equilibrio:</div>
+Break-Even Revenue = Costos Fijos / (1 &minus; COGS / Revenue)
+Break-Even Unidades = Break-Even Revenue / Precio Unitario
+ITBMS = Base Imponible &times; 7%   (Ley 8 de 2010)
+</div>
+
+<h3>3.2.3 Mandibulas de Cocodrilo (Apalancamiento Operativo)</h3>
+<p>Grafico que superpone la linea de ingresos contra la de costos totales a lo largo del tiempo. Cuando los costos superan los ingresos, las &ldquo;mandibulas&rdquo; se abren, indicando apalancamiento operativo peligroso.</p>
+
+<h3>3.2.4 Semaforo de Salud Empresarial</h3>
+<p>Indicador visual (verde/amarillo/rojo) de la salud general del negocio basado en multiples metricas de rentabilidad, liquidez, solvencia y eficiencia.</p>
+
+<h3>3.2.3 Oxigeno (Liquidez)</h3>
+<p>Analisis de salud de flujo de caja. Implementado en <span class="mono">calculations.ts &rarr; computeOxigeno()</span>:</p>
+<div class="formula-block">
+<div class="formula-title">Formulas de Oxigeno Empresarial:</div>
+Cash Runway (meses) = Saldo Bancario / Gasto Mensual Promedio
+
+CCC (Ciclo Conversion Efectivo) = Dias Inventario + Dias CxC &minus; Dias CxP
+
+Dinero Atrapado = (CCC / 30) &times; Gasto Mensual
+
+Prueba Acida = (Activos Corrientes &minus; Inventarios) / Pasivos Corrientes
+
+&bull; Si Cash Runway &lt; 3 meses &rarr; Alerta critica
+&bull; Si Cash Runway &lt; 6 meses &rarr; Alerta preventiva
+</div>
+
+<h3>3.2.4 Simulador Estrategico</h3>
+<p>Herramienta de escenarios what-if con sliders para variaciones de precio, costo y volumen. Implementado en <span class="mono">calculations.ts &rarr; computeSimulation()</span>:</p>
+<div class="formula-block">
+<div class="formula-title">Logica del Simulador What-If:</div>
+Para cada variable (precio, costo, volumen):
+  nuevoValor = valorBase &times; (1 + delta/100)
+
+Recalcula cascada completa con valores modificados.
+Resultado: nuevo EBITDA, utilidad neta y margenes en tiempo real.
+</div>
+
+<h3>3.2.5 Lab de Precios</h3>
+<p>Motor avanzado de costeo con desglose de ingredientes, mano de obra, gastos fijos y comisiones. Implementado en <span class="mono">calculations.ts &rarr; computePricing()</span>:</p>
+<div class="formula-block">
+<div class="formula-title">Formulas del Laboratorio de Precios:</div>
+Costo por Unidad     = Costo Total / Unidades Producidas
+Precio Sugerido      = Costo por Unidad &times; (1 + Margen Deseado / 100)
+Margen Real (%)      = ((Precio &minus; Costo por Unidad) / Precio) &times; 100
+
+Precio Legado:
+  precioLegado = Costo Historico &times; Factor Ajuste &times; (1 + Margen / 100)
+
+Perdida Max Clientes = &lfloor;(Revenue &minus; Break-Even Revenue) / Revenue por Cliente&rfloor;
+</div>
+
+<h3>3.2.6 Valoracion Empresarial</h3>
+<p>Herramienta de valoracion mediante DCF simplificado. Implementado en <span class="mono">calculations.ts &rarr; computeValoracion()</span>:</p>
+<div class="formula-block">
+<div class="formula-title">Formula DCF (Flujo de Caja Descontado):</div>
+Flujos Descontados = &Sigma; (Flujo Anual / (1 + Tasa Descuento)^t)  para t = 1..5
+
+Valor Terminal = Flujo Ano 5 &times; Multiplo Salida / (1 + Tasa Descuento)^5
+
+Valor Empresa  = Flujos Descontados + Valor Terminal
+
+Ajustes: ocupacion del dueno, propiedad de inmueble, deuda neta.
+</div>
+
+<h3>3.2.7 Simulador de Costos de Planilla</h3>
+<p>Calculadora completa de costos laborales con deducciones automaticas. Implementada en <span class="mono">PayrollEngine.tsx</span>:</p>
+
+<div class="formula-block">
+<div class="formula-title">Tabla ISR Panama (Art. 700 Codigo Fiscal) &mdash; Tramos Quincenales:</div>
+Tramo 1: B/.0.00 &ndash; B/.846.15       &rarr; 0%
+Tramo 2: B/.846.16 &ndash; B/.1,538.46   &rarr; 15%
+Tramo 3: Mayor a B/.1,538.46         &rarr; 25%
+
+Equivalentes anuales:
+  B/.0 &ndash; B/.11,000         &rarr; Exento
+  B/.11,001 &ndash; B/.50,000    &rarr; 15%
+  Mayor a B/.50,000           &rarr; 25%
+</div>
+
+<div class="formula-block">
+<div class="formula-title">Deducciones del Empleado:</div>
+Seguro Social (CSS):       9.75% del salario bruto
+Seguro Educativo:          1.25% del salario bruto
+SIACAP:                    B/.5.00 por quincena (solo planilla, no freelance)
+</div>
+
+<div class="formula-block">
+<div class="formula-title">Aportes del Empleador (cargas patronales):</div>
+CSS Patronal:              12.25% del salario bruto
+Riesgo Profesional:        1.62% (promedio industria general)
+Seguro Educativo Patronal: 1.50% del salario bruto
+
+Factor Costo Empleador = 1.36&times;
+(Salario Bruto &times; 1.36 = Costo Total para el empleador)
+
+Neto Empleado = Bruto &minus; ISR &minus; CSS(9.75%) &minus; SE(1.25%) &minus; SIACAP
+</div>
+
+<div class="figure-container">
+  <img src="screenshots/fig_11_nomina.png" alt="Simulador de Nomina">
+  <p class="caption">Figura 3. Simulador de Costos de Planilla &mdash; Calculo automatico de ISR, CSS, cargas patronales y neto del empleado.</p>
+</div>
+
+<h3>3.2.8 Analisis de Tendencias y Comparativos</h3>
+<p>Graficos multi-periodo de tendencias de ingresos, costos, margenes y EBITDA. Comparacion lado a lado de dos periodos con analisis de variaciones.</p>
+
+<h3>3.2.9 Presupuesto y Pronostico</h3>
+<p>Gestion presupuestaria con entrada de metas por categoria, comparacion presupuesto vs. real, y proyeccion de flujo de caja a 6 meses.</p>
+
+<h3>3.2.10 Generador de Reportes</h3>
+<p>Exportacion de estados financieros en formato PDF y CSV: Estado de Resultados, Balance General, Flujo de Caja, Resumen Ejecutivo.</p>
+
+<h2>3.3 Modulo: Mi Empresa</h2>
+
+<h3>3.3.1 Boveda Legal</h3>
+<p>Repositorio seguro de documentos legales con carga, estado de seguimiento y categorizacion (Cedula, RUC, Pacto Social, Aviso de Operacion, Registro Mercantil, etc.).</p>
+
+<h3>3.3.2 Vigilante (Monitor de Cumplimiento)</h3>
+<p>Dashboard de monitoreo de 18 obligaciones regulatorias con niveles de alerta, fechas limite, montos de multas y acciones recomendadas. Incluye simulador de tiempo para pruebas.</p>
+
+<h3>3.3.3 Fabrica Empresa</h3>
+<p>Tracker de 6 pasos para la formalizacion de una nueva empresa en Panama: Registro AMPYME, Estatutos S.E., Inscripcion Registro Publico, RUC/NIT, Aviso de Operacion, Inscripcion Municipal.</p>
+
+<h3>3.3.4 Panel MUPA</h3>
+<p>Calculadora de impuestos municipales (MUPA - Acuerdo Municipal 40 de 2011) con simulador de recargos, tasas de mora y matriz de sanciones.</p>
+
+<h3>3.3.5 Socios</h3>
+<p>Gestion de la estructura accionaria: nombre, cedula, porcentaje de participacion, fechas de entrada/salida y estado.</p>
+
+<h3>3.3.6 Configuracion de Empresa</h3>
+<p>Datos legales y fiscales (RUC, DV, tipo de entidad, fecha de constitucion, direccion fiscal) y datos CSS (numero patronal, tasa de riesgos profesionales).</p>
+
+<h2>3.4 Funcionalidades Transversales</h2>
+
+<h3>3.4.1 Mi Asistente (IA)</h3>
+<p>Chatbot conversacional impulsado por GPT-4o que actua como Director Financiero y Consultor Legal Senior. Tiene acceso contextual a los datos del negocio y ofrece analisis, recomendaciones estrategicas y orientacion fiscal.</p>
+
+<h3>3.4.2 Sistema de Alertas</h3>
+<p>Motor centralizado implementado en <span class="mono">alerts.ts</span> (684 lineas). 6 categorias, 4 niveles de prioridad, 18 obligaciones monitoreadas:</p>
+
+<div class="formula-block">
+<div class="formula-title">Umbrales del Motor de Alertas (extraidos del codigo):</div>
+<strong>Fiscales (DGI):</strong>
+ &bull; ITBMS pendiente: ventas gravadas sin ITBMS declarado
+ &bull; Declaracion de Renta: vencimiento anual
+ &bull; Patente Comercial: renovacion anual MICI
+ &bull; Aviso de Operaciones: verificacion DGI
+ &bull; Ley 186 SEP: revenue &lt; B/.75,000 (tope ingresos)
+   - Alertas progresivas: 60%, 80%, 90%, 100% del tope
+
+<strong>Capital Humano:</strong>
+ &bull; Planilla CSS: empleados sin CSS reportado
+ &bull; Sobrecosto Laboral: nomina &gt; 30% de utilidad bruta
+ &bull; Decimo Tercer Mes: provisiones mensuales requeridas
+
+<strong>Liquidez:</strong>
+ &bull; Oxigeno bajo: cash runway &lt; 3 meses (critico)
+ &bull; Cash runway &lt; 6 meses (preventivo)
+
+<strong>Rentabilidad:</strong>
+ &bull; Margen critico: margen neto &lt; 5%
+ &bull; Quiebre tecnico: patrimonio negativo
+
+<strong>Legal:</strong>
+ &bull; Documentos vencidos en Boveda Legal
+ &bull; Obligaciones del Vigilante incumplidas
+
+<strong>Inventario:</strong>
+ &bull; Items bajo punto de reorden (ROP)
+ &bull; Items con stock en cero
+</div>
+
+<div class="figure-container">
+  <img src="screenshots/fig_22_vigilante.png" alt="Vigilante Legal">
+  <p class="caption">Figura 5. Vigilante Legal &mdash; Monitor de cumplimiento con 18 obligaciones regulatorias y niveles de alerta.</p>
+</div>
+
+<h3>3.4.3 Glosario Inteligente</h3>
+<p>Mas de 100 terminos financieros definidos en espanol con explicaciones, proposito practico y ejemplos, accesibles mediante iconos de ayuda contextuales.</p>
+
+<h3>3.4.4 Facturacion Electronica</h3>
+<p>Integracion con Proveedores Autorizados Certificados (PAC) para emision de facturas electronicas conforme a la normativa DGI de Panama.</p>
+
+<div class="page-break"></div>
+
+<!-- ==================== 4. ASPECTOS ORIGINALES ==================== -->
+<h1>4. Aspectos Originales y Diferenciadores</h1>
+
+<p>Mi Director Financiero PTY se distingue por los siguientes aspectos de originalidad:</p>
+
+<ol>
+  <li><strong>Adaptacion integral a la legislacion fiscal panamena:</strong> Todos los calculos, formularios y alertas estan disenados especificamente para las leyes de Panama (Codigo Fiscal, Ley 186 de 2020, Ley 462 de 2025, Codigo de Trabajo), no es una adaptacion generica de software extranjero.</li>
+  <li><strong>Espejos de formularios oficiales DGI:</strong> Pre-llenado automatico de formularios F2 V10, 03, 430, 20 y Planilla CSS a partir de datos contables y de nomina ingresados en la app, reduciendo errores de transcripcion.</li>
+  <li><strong>Calculos automaticos de retenciones ISR:</strong> Implementacion completa del Articulo 700 del Codigo Fiscal con tablas progresivas (0% hasta B/.11,000; 15% B/.11,001-50,000; 25% excedente), incluyendo deducciones personales (conyugal, hipotecaria, escolares, seguro, CSS/SE).</li>
+  <li><strong>Monitor de topes Ley 186:</strong> Sistema de alertas progresivas (60%, 80%, 90%, 100%) para el tope de ingresos de B/.75,000 de las Sociedades de Emprendimiento, con cuenta regresiva de los 24 meses de exoneracion y control del facturador gratuito DGI.</li>
+  <li><strong>Punto de reorden automatico:</strong> Calculo inteligente del ROP (Reorder Point) basado en la formula: (Lead Time x Consumo Diario Promedio) + Safety Stock, con recalculo automatico desde el historial de movimientos.</li>
+  <li><strong>Costo promedio ponderado:</strong> Actualizacion automatica del costo unitario de inventario al registrar compras con precio diferente, usando la formula de promedio ponderado.</li>
+  <li><strong>Asistente de IA contextual:</strong> Chatbot que actua como CFO virtual con acceso a los datos reales del negocio (contabilidad, finanzas, documentos legales), proporcionando analisis y recomendaciones personalizadas en espanol panameno.</li>
+  <li><strong>Glosario financiero interactivo:</strong> Mas de 100 terminos financieros explicados en lenguaje accesible para emprendedores no financieros, integrado contextualmente en toda la interfaz.</li>
+  <li><strong>Calendario fiscal panameno integrado:</strong> Calendario con todas las obligaciones fiscales mensuales, trimestrales y anuales de Panama, con alertas proactivas de vencimiento.</li>
+  <li><strong>Simulador de multas DGI:</strong> Calculadora de recargos, tasas de mora e intereses por incumplimiento fiscal basada en la normativa panamena vigente.</li>
+</ol>
+
+<div class="page-break"></div>
+
+<!-- ==================== 5. DIAGRAMA DE MODULOS ==================== -->
+<h1>5. Diagrama de Modulos</h1>
+
+<div class="ascii-diagram">
++===========================================================================+
+|                    MI DIRECTOR FINANCIERO PTY                             |
+|                    Aplicacion Web (Next.js + React)                       |
++===========================================================================+
+|                                                                           |
+|  +-- AUTENTICACION ---------------------------------------------------+  |
+|  |  Login (Magic Link) | Setup Wizard (4 pasos) | Auth Provider       |  |
+|  +--------------------------------------------------------------------+  |
+|                                                                           |
+|  +-- DASHBOARD HUB ---------------------------------------------------+  |
+|  |  Organigrama Visual | Widget Ejecutivo | Barra de Alertas          |  |
+|  +--------------------------------------------------------------------+  |
+|                                                                           |
+|  +-- MI CONTABILIDAD (DATOS) ----+  +-- MIS FINANZAS (NEGOCIO) ------+  |
+|  |                               |  |                                 |  |
+|  |  Plan de Cuentas              |  |  Cascada Financiera             |  |
+|  |  Libro Diario                 |  |  Semaforo de Salud              |  |
+|  |  Libro Mayor                  |  |  Oxigeno (Liquidez)             |  |
+|  |  Balance de Comprobacion      |  |  Simulador Estrategico          |  |
+|  |  Libro Inventarios y Balances |  |  Lab de Precios                 |  |
+|  |  Libro de Actas               |  |  Valoracion Empresarial         |  |
+|  |  Cierre de Periodo            |  |  Simulador Costo Planilla       |  |
+|  |  Espejo de Formularios DGI    |  |  Tendencias y Comparativos      |  |
+|  |    - F2 V10 (S.E.P.)         |  |  Presupuesto y Pronostico       |  |
+|  |    - Form 03 (Renta)         |  |  Generador de Reportes          |  |
+|  |    - Form 430 (ITBMS)        |  |  Punto de Equilibrio            |  |
+|  |    - Form 20 (Pagos)         |  |  Mandibulas (Apal. Operativo)   |  |
+|  |    - Planilla CSS            |  |  Ratios Financieros             |  |
+|  |    - Calendario DGI          |  |                                 |  |
+|  |  Mi RRHH                      |  +-- MI EMPRESA (LEGAL) ----------+  |
+|  |    - Registro de Personal    |  |                                 |  |
+|  |    - Planilla Mensual        |  |  Boveda Legal                   |  |
+|  |    - Pagos a Freelancers     |  |  Vigilante (Cumplimiento)       |  |
+|  |  Mi Inventario                |  |  Auditoria y Checklist DGI     |  |
+|  |    - Dashboard               |  |  Monitor Topes Ley 186         |  |
+|  |    - Catalogo (CRUD)         |  |  Fabrica Empresa (6 pasos)     |  |
+|  |    - Movimientos             |  |  Panel MUPA                    |  |
+|  |                               |  |  Socios                        |  |
+|  +-------------------------------+  |  Configuracion Legal           |  |
+|                                      +--------------------------------+  |
+|                                                                           |
+|  +-- FUNCIONALIDADES TRANSVERSALES -----------------------------------+  |
+|  |  Mi Asistente (GPT-4o)  |  Alertas (6 cat.)  |  Glosario (100+)  |  |
+|  |  Facturacion Electronica |  Calendario Fiscal  |  Exportar CSV/PDF |  |
+|  +--------------------------------------------------------------------+  |
+|                                                                           |
+|  +-- BACKEND (FastAPI + Python) --------------------------------------+  |
+|  |  Motores: Financiero | Contable | Nomina | NLP | PDF | Email      |  |
+|  |  API: 9 routers RESTful | Autenticacion JWT                       |  |
+|  |  Base de datos: Supabase (PostgreSQL) con RLS                      |  |
+|  +--------------------------------------------------------------------+  |
++===========================================================================+
+</div>
+
+<div class="page-break"></div>
+
+<!-- ==================== 6. HISTORIAL DE DESARROLLO ==================== -->
+<h1>6. Historial de Desarrollo</h1>
+
+<table>
+  <tr><th>Fecha</th><th>Hito</th></tr>
+  <tr><td>18 de febrero de 2026</td><td>Inicio del desarrollo. Primer commit del repositorio. Estructura base con Next.js 15, React 19, TypeScript y Tailwind CSS.</td></tr>
+  <tr><td>Febrero 2026</td><td>Implementacion de modulos core: Dashboard Hub, Diagnostico Flash, Cascada Financiera, Simulador Estrategico, Lab de Precios, Oxigeno, Valoracion.</td></tr>
+  <tr><td>Febrero 2026</td><td>Modulo de contabilidad formal: Plan de Cuentas, Libro Diario, Libro Mayor, Balance de Comprobacion, Libro de Inventarios.</td></tr>
+  <tr><td>Febrero 2026</td><td>Modulo legal: Boveda Legal, Vigilante, Fabrica Empresa, MUPA, Socios.</td></tr>
+  <tr><td>27 de febrero de 2026</td><td>Rebranding completo: de "Savia Emprende" a "Mi Director Financiero PTY". Cambio de logo, componentes y prefijo localStorage.</td></tr>
+  <tr><td>28 de febrero de 2026</td><td>Espejo de Formularios DGI con F2 V10, Form 03, Form 430. Sistema de alertas centralizado con Ley 186.</td></tr>
+  <tr><td>1 de marzo de 2026</td><td>Mi RRHH completo (Registro de Personal, Planilla Mensual, Pagos a Freelancers). Form 20 y Planilla CSS en Espejo de Formularios.</td></tr>
+  <tr><td>1 de marzo de 2026</td><td>Mi Inventario completo (Catalogo, Movimientos, Dashboard con graficos). Alertas de inventario integradas en el sistema central.</td></tr>
+  <tr><td>Marzo 2026</td><td>Version actual: 0.1.0. Despliegue en produccion en Vercel.</td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<!-- ==================== PAGINA FINAL ==================== -->
+<div class="footer-legal">
+  <p>
+    Esta memoria descriptiva es parte de la documentacion presentada ante la<br>
+    <strong>Direccion Nacional de Derecho de Autor</strong><br>
+    del <strong>Ministerio de Cultura de la Republica de Panama</strong><br>
+    para el registro de la obra <em>&ldquo;Mi Director Financiero PTY&rdquo;</em> como programa de ordenador.
+  </p>
+  <br>
+  <p>
+    &copy; 2026 &mdash; Soraya Dayan Gutierrez Perez. Todos los derechos reservados.
+  </p>
+</div>
+
+</body>
+</html>

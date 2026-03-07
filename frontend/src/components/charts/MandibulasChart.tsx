@@ -37,7 +37,7 @@ export default function MandibulasChart({ data }: MandibulasChartProps) {
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-slate-500 text-sm">
-        Carga datos de 12 meses (Modo Estratega) para ver las Mandibulas.
+        Carga datos de 12 meses (Modo Estratega) para ver la Grafica de Tijeras.
       </div>
     );
   }
@@ -97,17 +97,17 @@ export default function MandibulasChart({ data }: MandibulasChartProps) {
         ) : mandibulasAbren ? (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
             <TrendingUp size={14} />
-            Las mandibulas se abren — Tendencia positiva
+            La brecha se abre — Tendencia positiva
           </div>
         ) : mandibulasEstables ? (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
             <TrendingDown size={14} />
-            Mandibulas estables — Sin mejora significativa
+            Brecha estable — Sin mejora significativa
           </div>
         ) : (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100 text-red-700 text-xs font-bold">
             <TrendingDown size={14} />
-            Las mandibulas se cierran — Peligro
+            La brecha se cierra — Peligro
           </div>
         )}
       </div>

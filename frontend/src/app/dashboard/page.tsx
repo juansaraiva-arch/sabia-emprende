@@ -2157,8 +2157,6 @@ export default function Dashboard() {
         )}
       </div>
 
-      <BottomNavBar active={activeSection} onNavigate={setActiveSection} silverMode={isSilverMode} />
-
       {/* Panel de Alertas Estrategicas (sidebar derecho) */}
       <AlertsSidebar
         alerts={strategicAlerts}

@@ -77,7 +77,7 @@ const TABS: TabConfig[] = [
     icon: <FileSpreadsheet size={14} />,
     activeColor: "text-white",
     activeBg: "bg-blue-600",
-    minSegment: 2,
+    minSegment: 1,
   },
   {
     id: "pac",

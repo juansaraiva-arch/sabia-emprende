@@ -23,11 +23,11 @@ export default function BotonVentaRapida({
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-24 right-4 z-40 lg:bottom-6 lg:right-6
+        className="fixed bottom-40 right-4 z-50 lg:bottom-20 lg:right-6
           flex items-center justify-center w-14 h-14 min-h-[44px]
-          rounded-full shadow-md
+          rounded-full shadow-lg
           transition-all duration-200
-          hover:scale-110 hover:shadow-lg
+          hover:scale-110 hover:shadow-xl
           active:scale-95"
         style={{ backgroundColor: "#C5A059" }}
         aria-label="Registrar venta rapida"

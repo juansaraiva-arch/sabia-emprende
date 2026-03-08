@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Camera,
   Film,
@@ -25,10 +25,16 @@ import { nlpApi, aiApi, accountingApi } from "@/lib/api";
 // TIPOS
 // ============================================
 
+export type FlashAction = "text" | "voice" | "camera" | null;
+
 interface DataEntryWizardProps {
   onRecordSaved: (record: FinancialRecord, autoJournal?: boolean) => void;
   onBulkRecordsSaved: (records: FinancialRecord[]) => void;
   onNavigateHome?: () => void;
+  /** Trigger an action from global FloatingActionBar (Option B navigation) */
+  initialAction?: FlashAction;
+  /** Callback to clear the action after it's been consumed */
+  onActionConsumed?: () => void;
 }
 
 type Mode = "flash" | "estratega" | null;
@@ -64,6 +70,8 @@ export default function DataEntryWizard({
   onRecordSaved,
   onBulkRecordsSaved,
   onNavigateHome,
+  initialAction,
+  onActionConsumed,
 }: DataEntryWizardProps) {
   const [mode, setMode] = useState<Mode>(null);
   const [showAiToast, setShowAiToast] = useState<string | null>(null);
@@ -281,6 +289,28 @@ export default function DataEntryWizard({
       setTimeout(() => textInputRef.current?.focus(), 200);
     }
   };
+
+  // --- Trigger initial action from global FloatingActionBar ---
+  useEffect(() => {
+    if (!initialAction) return;
+    // Small delay to ensure component is mounted
+    const timer = setTimeout(() => {
+      switch (initialAction) {
+        case "text":
+          if (!showTextInput) handleToggleTextInput();
+          break;
+        case "voice":
+          handleDictarGasto();
+          break;
+        case "camera":
+          handleEscanearFactura();
+          break;
+      }
+      onActionConsumed?.();
+    }, 300);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAction]);
 
   const handleTextSubmit = async () => {
     const text = textInput.trim();
@@ -543,50 +573,7 @@ export default function DataEntryWizard({
         </div>
       )}
 
-      {/* ====== FLOATING AI BUTTONS ====== */}
-      <div className="fixed flex flex-col gap-3 z-40" style={{ bottom: "100px", right: "16px" }}>
-        <button
-          onClick={handleToggleTextInput}
-          disabled={isProcessing}
-          className={`flex items-center gap-2 px-5 py-3.5 rounded-full font-bold text-sm shadow-lg hover:scale-105 active:scale-95 transition-all min-h-[48px] ${
-            showTextInput
-              ? "bg-blue-600 text-white shadow-blue-500/30 hover:bg-blue-700"
-              : "bg-blue-500 text-white shadow-blue-500/30 hover:bg-blue-600"
-          } disabled:opacity-50 disabled:cursor-wait`}
-          aria-label="Escribir gasto manualmente"
-        >
-          <Keyboard size={20} />
-          <span className="hidden sm:inline">Escribir Gasto</span>
-        </button>
-
-        <button
-          onClick={handleDictarGasto}
-          disabled={isProcessing}
-          className={`flex items-center gap-2 px-5 py-3.5 rounded-full font-bold text-sm shadow-lg hover:scale-105 active:scale-95 transition-all min-h-[48px] ${
-            isListening
-              ? "bg-red-500 text-white shadow-red-500/30 hover:bg-red-600 animate-pulse"
-              : isProcessing
-                ? "bg-slate-400 text-white cursor-wait"
-                : "bg-amber-500 text-white shadow-amber-500/30 hover:bg-amber-600"
-          }`}
-          aria-label={isListening ? "Detener dictado" : "Dictar gasto por voz"}
-        >
-          {isProcessing ? <Loader2 size={20} className="animate-spin" /> : isListening ? <MicOff size={20} /> : <Mic size={20} />}
-          <span className="hidden sm:inline">
-            {isProcessing ? "Procesando..." : isListening ? "Detener" : "Dictar Gasto"}
-          </span>
-        </button>
-
-        <button
-          onClick={handleEscanearFactura}
-          disabled={isProcessing}
-          className="flex items-center gap-2 px-5 py-3.5 rounded-full bg-violet-600 text-white font-bold text-sm shadow-lg shadow-violet-500/30 hover:bg-violet-700 hover:scale-105 active:scale-95 transition-all min-h-[48px] disabled:opacity-50 disabled:cursor-wait"
-          aria-label="Escanear factura con camara"
-        >
-          {isProcessing ? <Loader2 size={20} className="animate-spin" /> : <ScanLine size={20} />}
-          <span className="hidden sm:inline">Escanear Factura</span>
-        </button>
-      </div>
+      {/* Floating buttons moved to global FloatingActionBar */}
 
       {/* ====== VOICE TRANSCRIPT ====== */}
       {isListening && voiceTranscript && (

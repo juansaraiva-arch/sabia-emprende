@@ -89,6 +89,8 @@ import TraductorLegal from "@/components/herramientas/TraductorLegal";
 import ComparativoSociedades from "@/components/ComparativoSociedades";
 import MupaPanel from "@/components/MupaPanel";
 import LibroVentas from "@/components/ventas/LibroVentas";
+import FloatingActionBar from "@/components/FloatingActionBar";
+import type { FlashAction } from "@/components/DataEntryWizard";
 import ForecastPL from "@/components/forecast/ForecastPL";
 import ListaReportes from "@/components/reportes/ListaReportes";
 import MiRRHH from "@/components/rrhh/MiRRHH";
@@ -1289,6 +1291,7 @@ export default function Dashboard() {
   const [activeContabilidadTab, setActiveContabilidadTab] = useState<ContabilidadTab>("libro_diario");
   const [activeNegocioTab, setActiveNegocioTab] = useState<NegocioTab>("cascada");
   const [activeLegalTab, setActiveLegalTab] = useState<LegalTab>("boveda");
+  const [flashAction, setFlashAction] = useState<FlashAction>(null);
 
   // Grid toggle states (true = show grid, false = show content panel)
   const [showFinanzasGrid, setShowFinanzasGrid] = useState(true);
@@ -1421,6 +1424,29 @@ export default function Dashboard() {
     }
     setActiveSection("negocio");
     setActiveNegocioTab("mandibulas");
+  };
+
+  // --- FloatingActionBar: navegar a Diagnostico Flash + disparar accion ---
+  const handleEscribirGasto = () => {
+    setActiveSection("datos");
+    setDatosMode("flash");
+    setFlashAction("text");
+  };
+  const handleDictarGasto = () => {
+    setActiveSection("datos");
+    setDatosMode("flash");
+    setFlashAction("voice");
+  };
+  const handleEscanearFactura = () => {
+    setActiveSection("datos");
+    setDatosMode("flash");
+    setFlashAction("camera");
+  };
+  const handleFlashActionConsumed = () => {
+    setFlashAction(null);
+  };
+  const handleVentaRegistered = () => {
+    // Refresh ventas data if needed
   };
 
   // Setup wizard (primera vez — onboarding)
@@ -1810,7 +1836,7 @@ export default function Dashboard() {
 
             {datosMode === "flash" && (
               <div className="bg-white rounded-2xl border border-slate-200 p-5 lg:p-6">
-                <DataEntryWizard onRecordSaved={handleRecordSaved} onBulkRecordsSaved={handleBulkRecordsSaved} onNavigateHome={handleBackToHub} />
+                <DataEntryWizard onRecordSaved={handleRecordSaved} onBulkRecordsSaved={handleBulkRecordsSaved} onNavigateHome={handleBackToHub} initialAction={flashAction} onActionConsumed={handleFlashActionConsumed} />
               </div>
             )}
 
@@ -2156,6 +2182,15 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* ====== FLOATING ACTION BAR (global — visible en todas las secciones) ====== */}
+      <FloatingActionBar
+        societyId={societyId}
+        onVentaRegistered={handleVentaRegistered}
+        onEscribirGasto={handleEscribirGasto}
+        onDictarGasto={handleDictarGasto}
+        onEscanearFactura={handleEscanearFactura}
+      />
 
       {/* Panel de Alertas Estrategicas (sidebar derecho) */}
       <AlertsSidebar

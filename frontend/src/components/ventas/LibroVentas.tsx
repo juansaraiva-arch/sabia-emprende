@@ -275,9 +275,9 @@ export default function LibroVentas({ societyId }: LibroVentasProps) {
                   className="font-bold"
                   style={{ color: "#C5A059" }}
                 >
-                  $
+                  Registrar Venta
                 </span>{" "}
-                flotante.
+                en la barra lateral derecha.
               </p>
               {segmento === 1 && (
                 <p className="text-xs text-slate-400 mt-1">
@@ -286,10 +286,6 @@ export default function LibroVentas({ societyId }: LibroVentasProps) {
                 </p>
               )}
             </div>
-            <BotonVentaRapida
-              societyId={societyId}
-              onVentaRegistered={handleVentaCreated}
-            />
           </div>
         )}
 

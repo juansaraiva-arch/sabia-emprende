@@ -534,7 +534,7 @@ export default function DataEntryWizard({
 
       {/* ====== MANUAL TEXT INPUT PANEL ====== */}
       {showTextInput && !pendingMerge && (
-        <div className="fixed bottom-28 right-4 z-40 w-[calc(100%-2rem)] sm:w-96">
+        <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] sm:w-96">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-4">
             <div className="flex items-center gap-2 mb-3">
               <Keyboard size={16} className="text-blue-600" />

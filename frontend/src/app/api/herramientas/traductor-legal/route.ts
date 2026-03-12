@@ -1,28 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 
 // ============================================================
 // Traductor Legal — GAP-6 MDF PTY
-// Traduce jerga legal panameña a lenguaje simple para MiPYMES
+// Traduce jerga legal panamena a lenguaje simple para MiPYMES
+// Ahora llama al backend FastAPI (Claude) en vez de OpenAI directo.
 // ============================================================
-
-const SYSTEM_PROMPT = `Eres un asesor legal panameno especializado en derecho comercial,
-laboral y tributario de Panama. Tu funcion es traducir textos legales complejos a
-lenguaje simple y directo para duenos de MiPYMES.
-
-Al traducir, debes:
-1. Explicar que dice el texto en maximo 3 oraciones simples
-2. Indicar QUE SIGNIFICA ESTO PARA EL NEGOCIO (impacto practico)
-3. Indicar SI HAY ALGO QUE EL EMPRESARIO DEBE HACER y en que plazo
-4. Si el texto menciona montos, fechas o porcentajes, destacarlos claramente
-5. Si el texto hace referencia a leyes o articulos, mencionar el nombre completo
-
-Leyes que conoces de Panama: Codigo de Trabajo, Ley 186 de S.E.P., Ley 462 de 2025 (CSS),
-Codigo Fiscal, resoluciones DGI, ITBMS (7%), ISR Art. 700.
-
-Responde SIEMPRE en espanol. Se claro, directo y nunca uses tecnicismos sin explicarlos.
-Usa formato con secciones: EN SIMPLE, PARA TU NEGOCIO, ACCION REQUERIDA, DATOS IMPORTANTES.
-Si el texto no es legal o esta vacio, indicalo amablemente.`;
 
 const MOCK_TRADUCCION = `EN SIMPLE:
 Este texto legal describe obligaciones relacionadas con el tema mencionado.
@@ -35,6 +17,9 @@ Consulta con un contador o abogado para verificar si aplica a tu situacion.
 
 DATOS IMPORTANTES:
 Revisa las fechas limite mencionadas en el texto original.`;
+
+const backendUrl =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function POST(req: NextRequest) {
   try {
@@ -57,9 +42,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    // Forwarding auth header from the original request
+    const authHeader = req.headers.get("authorization");
 
-    if (!apiKey) {
+    if (!authHeader) {
       // Modo demo: retornar traduccion mock
       return NextResponse.json({
         ok: true,
@@ -68,26 +54,47 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const openai = new OpenAI({ apiKey });
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      max_tokens: 800,
-      temperature: 0.3,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Traduce este texto legal:\n\n${texto}` },
-      ],
+    // Llamar al backend FastAPI (que ahora usa Claude)
+    const response = await fetch(`${backendUrl}/api/ai-agents/simplify-legal`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authHeader,
+      },
+      body: JSON.stringify({
+        text: texto,
+        context: "texto legal panameno para MiPYMES",
+      }),
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const detail = errorData?.detail || "Error al procesar la traduccion";
+      return NextResponse.json({ ok: false, error: detail }, { status: response.status });
+    }
+
+    const data = await response.json();
+
+    // Transformar respuesta del backend al formato esperado por el frontend
+    const resultado = data.data || {};
+    const traduccion = [
+      `EN SIMPLE:\n${resultado.simple || "No disponible"}`,
+      `RIESGO: ${resultado.riesgo || "N/A"} ${resultado.emoji || ""}`,
+      `CONSEJO:\n${resultado.tip || "Consulta con un profesional."}`,
+    ].join("\n\n");
 
     return NextResponse.json({
       ok: true,
-      traduccion: completion.choices[0].message.content ?? "",
+      traduccion,
     });
   } catch (err) {
     console.error("[traductor-legal]", err);
-    return NextResponse.json(
-      { ok: false, error: "Error al procesar la traduccion" },
-      { status: 500 }
-    );
+
+    // Fallback a mock si el backend no esta disponible
+    return NextResponse.json({
+      ok: true,
+      traduccion: MOCK_TRADUCCION,
+      demo: true,
+    });
   }
 }

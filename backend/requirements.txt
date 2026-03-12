@@ -5,5 +5,7 @@ pydantic
 python-dotenv
 httpx[http2]
 openai
+anthropic
 python-multipart
 reportlab
+openpyxl

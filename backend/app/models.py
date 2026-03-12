@@ -200,7 +200,7 @@ class ChatMessage(BaseModel):
 
 
 class NLPChatQuery(BaseModel):
-    """Input para el chat conversacional con GPT-4o."""
+    """Input para el chat conversacional con Claude."""
     query: str = Field(
         min_length=1,
         max_length=2000,
@@ -220,11 +220,11 @@ class NLPChatQuery(BaseModel):
 
 
 class NLPChatResponse(BaseModel):
-    """Respuesta del chat conversacional GPT-4o."""
+    """Respuesta del chat conversacional Claude."""
     reply: str
     action: Optional[str] = None
     data: Optional[dict] = None
-    source: str = "gpt-4o"
+    source: str = "claude"
 
 
 # --- Audit ---

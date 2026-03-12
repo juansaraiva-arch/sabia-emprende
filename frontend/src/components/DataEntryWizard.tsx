@@ -209,7 +209,7 @@ export default function DataEntryWizard({
       showToast(`Escaneando factura: ${file.name}...`, 0);
 
       try {
-        // Fase 1: OCR con GPT-4o Vision
+        // Fase 1: OCR con Claude Vision
         const scanResult = await aiApi.scanReceipt(file);
 
         // Demo mode: scanResult.data es [] vacio

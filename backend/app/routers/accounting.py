@@ -3,7 +3,7 @@ Router: Sistema Contable Completo
 Plan de Cuentas + Libro Diario + Libro Mayor + Balance de Comprobacion + Cierre de Periodo.
 Puente: asientos → financial_records para alimentar dashboards existentes.
 """
-from fastapi import APIRouter, HTTPException, Header, Depends, Query
+from fastapi import APIRouter, HTTPException, Header, Depends, Query, UploadFile, File
 from app.database import get_supabase
 from app.auth import AuthenticatedUser, get_current_user
 from app.models import AccountCreate, JournalEntryCreate, PeriodCloseRequest
@@ -173,7 +173,7 @@ async def create_journal_entry(body: JournalEntryCreate, user: AuthenticatedUser
     # 3c. Marcar si no tiene sustento legal (sin factura/adjunto)
     has_legal_support = bool(body.attachment_url) or bool(body.reference)
 
-    # 4. Insert journal entry header
+    # 4. Insert journal entry header + lines (con rollback si falla)
     entry_data = {
         "society_id": body.society_id,
         "entry_date": body.entry_date.isoformat(),
@@ -187,10 +187,22 @@ async def create_journal_entry(body: JournalEntryCreate, user: AuthenticatedUser
         "total_haber": validation["total_haber"],
         "created_by": user.id,
     }
-    entry_result = db.table("journal_entries").insert(entry_data).execute()
-    entry_id = entry_result.data[0]["id"]
 
-    # 5. Insert journal lines
+    entry_id = None
+    try:
+        entry_result = db.table("journal_entries").insert(entry_data).execute()
+        if not entry_result.data:
+            raise HTTPException(status_code=500, detail="Error al crear el asiento: no se recibio respuesta de la BD.")
+        entry_id = entry_result.data[0]["id"]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al guardar el asiento en la BD: {str(e)[:200]}"
+        )
+
+    # 5. Insert journal lines (con rollback del header si falla)
     lines_to_insert = []
     for i, line in enumerate(lines_data):
         lines_to_insert.append({
@@ -202,10 +214,44 @@ async def create_journal_entry(body: JournalEntryCreate, user: AuthenticatedUser
             "haber": line.get("haber", 0),
             "line_order": i,
         })
-    db.table("journal_lines").insert(lines_to_insert).execute()
 
-    # 6. Auto-aggregate to financial_records
-    _aggregate_period(db, body.society_id, period_year, period_month)
+    try:
+        lines_result = db.table("journal_lines").insert(lines_to_insert).execute()
+        if not lines_result.data or len(lines_result.data) != len(lines_to_insert):
+            raise Exception("Cantidad de lineas insertadas no coincide con las esperadas")
+    except Exception as e:
+        # Rollback: eliminar el header que ya se inserto
+        try:
+            db.table("journal_entries").delete().eq("id", entry_id).execute()
+        except Exception:
+            pass  # Best-effort rollback
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al guardar las lineas del asiento (asiento revertido): {str(e)[:200]}"
+        )
+
+    # 6. Verificar integridad del insert
+    verify = db.table("journal_lines") \
+        .select("id") \
+        .eq("journal_entry_id", entry_id) \
+        .execute()
+    if not verify.data or len(verify.data) != len(lines_to_insert):
+        # Rollback completo
+        try:
+            db.table("journal_lines").delete().eq("journal_entry_id", entry_id).execute()
+            db.table("journal_entries").delete().eq("id", entry_id).execute()
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=500,
+            detail="Verificacion post-insert fallo: las lineas no se guardaron correctamente. Asiento revertido."
+        )
+
+    # 7. Auto-aggregate to financial_records
+    try:
+        _aggregate_period(db, body.society_id, period_year, period_month)
+    except Exception:
+        pass  # Aggregation failure should not block the entry creation
 
     return {
         "success": True,
@@ -508,6 +554,42 @@ async def trigger_monthly_tasks(
 
     result = await run_monthly_tasks(db, society_id, emails)
     return result
+
+
+# ============================================
+# IMPORTADOR EXCEL
+# ============================================
+
+@router.post("/import-excel/{society_id}")
+async def import_excel(
+    society_id: str,
+    file: UploadFile = File(...),
+    user: AuthenticatedUser = Depends(get_current_user),
+):
+    """
+    Importa transacciones desde un archivo .xlsx al Libro Diario.
+    Agrupa filas por (fecha, descripcion, referencia) y crea asientos atomicos.
+    """
+    # Validar extension
+    filename = file.filename or ""
+    if not filename.lower().endswith((".xlsx", ".xls")):
+        raise HTTPException(
+            status_code=400,
+            detail="Solo se aceptan archivos Excel (.xlsx). Recibido: " + filename,
+        )
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:  # 10MB max
+        raise HTTPException(status_code=400, detail="Archivo demasiado grande (max 10MB).")
+
+    from app.engines.excel_importer import importar_excel
+
+    try:
+        result = importar_excel(content, society_id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return {"success": True, **result}
 
 
 # ============================================

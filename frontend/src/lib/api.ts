@@ -197,7 +197,7 @@ export const nlpApi = {
       body: JSON.stringify({ query, society_id: societyId }),
     }),
 
-  /** Chat conversacional con GPT-4o como motor inteligente */
+  /** Chat conversacional con Claude como motor inteligente */
   chat: (
     query: string,
     societyId: string,
@@ -453,7 +453,7 @@ export const budgetApi = {
 
 // --- Inteligencia Artificial (Vision, Whisper, Data Merging) ---
 export const aiApi = {
-  /** Escanear factura con GPT-4o Vision */
+  /** Escanear factura con Claude Vision */
   scanReceipt: async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -484,7 +484,7 @@ export const aiApi = {
     return res.json();
   },
 
-  /** Transcribir audio con Whisper + GPT-4o intent extraction */
+  /** Transcribir audio con Whisper + Claude intent extraction */
   voiceExpense: async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -515,7 +515,7 @@ export const aiApi = {
     return res.json();
   },
 
-  /** Simplificar texto legal con GPT-4o */
+  /** Simplificar texto legal con Claude */
   simplifyLegal: (text: string, context = "contrato de sociedad anonima en Panama") =>
     apiFetch<{ data: { simple: string; riesgo: "bajo" | "medio" | "alto"; emoji: string; tip: string } }>("/ai/simplify-legal", {
       method: "POST",
@@ -540,6 +540,14 @@ export const aiApi = {
       method: "POST",
       body: JSON.stringify({ fingerprint, society_id: societyId }),
     }),
+};
+
+// --- Mi Precio Justo ---
+export const precioApi = {
+  getEmpleadosDisponibles: (societyId: string, horasMes = 200) =>
+    apiFetch<{ empleados: any[]; horas_mes_default: number }>(
+      `/precio/empleados-disponibles?society_id=${societyId}&horas_mes=${horasMes}`
+    ),
 };
 
 // --- Reportes Ejecutivos (Fase 11) ---

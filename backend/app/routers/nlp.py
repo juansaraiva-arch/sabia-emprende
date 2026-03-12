@@ -2,7 +2,7 @@
 Router: Capa de Lenguaje Natural
 El usuario escribe en español plano y el sistema interpreta la acción financiera.
 Fase 5: Para intents contables, genera asientos de doble partida.
-Fase 6: Chat conversacional con GPT-4o como motor NLP inteligente.
+Fase 6: Chat conversacional con Claude como motor NLP inteligente.
 """
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
@@ -18,7 +18,7 @@ from app.engines.financial_engine import (
 )
 from app.engines.account_mapping import CONCEPT_TO_ACCOUNTS
 from app.engines.accounting_engine import validate_journal_entry, aggregate_to_financial_record
-from app.routers.ai_agents import get_openai, safe_json_parse
+from app.engines.ai_engine import claude_text
 
 router = APIRouter()
 
@@ -362,7 +362,7 @@ async def interpret_natural_language(body: NLPQuery, user: AuthenticatedUser = D
 
 
 # ============================================
-# CHAT CONVERSACIONAL — GPT-4o como motor NLP
+# CHAT CONVERSACIONAL — Claude como motor NLP
 # ============================================
 
 # System prompt base cuando el frontend no envía uno
@@ -377,8 +377,8 @@ DEFAULT_SYSTEM_PROMPT = (
 
 def _build_financial_context(society_id: str) -> str:
     """
-    Extrae datos financieros reales del usuario para inyectar como contexto en GPT-4o.
-    Esto permite que GPT-4o responda con datos reales del negocio.
+    Extrae datos financieros reales del usuario para inyectar como contexto en Claude.
+    Esto permite que Claude responda con datos reales del negocio.
     """
     try:
         db = get_supabase()
@@ -433,12 +433,12 @@ def _build_financial_context(society_id: str) -> str:
 @router.post("/chat", response_model=NLPChatResponse)
 async def chat_with_assistant(body: NLPChatQuery, user: AuthenticatedUser = Depends(get_current_user)):
     """
-    Chat conversacional con GPT-4o.
+    Chat conversacional con Claude.
 
     Flujo:
     1. Intenta primero interpretar con regex (acciones financieras estructuradas)
-    2. Si regex entiende → ejecuta la accion y retorna el resultado (como antes)
-    3. Si regex NO entiende → envía a GPT-4o con contexto financiero real
+    2. Si regex entiende -> ejecuta la accion y retorna el resultado (como antes)
+    3. Si regex NO entiende -> envia a Claude con contexto financiero real
 
     El frontend envia el system prompt completo + historial de conversacion.
     """
@@ -570,54 +570,40 @@ async def chat_with_assistant(body: NLPChatQuery, user: AuthenticatedUser = Depe
                     },
                 )
 
-    # --- Paso 2: Regex no entendio → GPT-4o como motor inteligente ---
-    try:
-        client = get_openai()
-    except HTTPException:
-        # OpenAI no disponible — retornar respuesta amigable
-        return NLPChatResponse(
-            reply=(
-                "Lo siento, mi motor de inteligencia artificial no esta disponible en este momento. "
-                "Puedes intentar frases mas especificas como:\n"
-                "• 'Pague la luz $200'\n"
-                "• 'Mis ventas de enero fueron 50 mil'\n"
-                "• 'Como esta mi negocio?'\n"
-                "• 'Si subo el precio un 10%, que pasa?'"
-            ),
-            source="fallback",
-        )
+    # --- Paso 2: Regex no entendio → Claude como motor inteligente ---
 
     # Construir system prompt con contexto financiero real
     system_prompt = body.system_prompt or DEFAULT_SYSTEM_PROMPT
     financial_context = _build_financial_context(body.society_id)
     full_system = system_prompt + financial_context
 
-    # Construir mensajes para GPT-4o
-    messages = [{"role": "system", "content": full_system}]
-
-    # Agregar historial de conversacion (ultimos mensajes)
+    # Construir historial para Claude
+    history = []
     for msg in body.history[-10:]:  # Max 10 mensajes de contexto
         if msg.role in ("user", "assistant"):
-            messages.append({"role": msg.role, "content": msg.content})
+            history.append({"role": msg.role, "content": msg.content})
 
-    # Agregar el mensaje actual del usuario
-    messages.append({"role": "user", "content": raw_query})
-
-    # Llamar a GPT-4o
+    # Llamar a Claude
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=messages,
-            temperature=0.4,
-            max_tokens=1500,
+        reply = claude_text(
+            system_prompt=full_system,
+            user_content=raw_query,
+            history=history,
         )
-        reply = response.choices[0].message.content.strip()
+    except HTTPException:
+        # Claude no disponible — retornar respuesta amigable
+        reply = (
+            "Lo siento, mi motor de inteligencia artificial no esta disponible en este momento. "
+            "Puedes intentar frases mas especificas como:\n"
+            "- 'Pague la luz $200'\n"
+            "- 'Mis ventas de enero fueron 50 mil'\n"
+            "- 'Como esta mi negocio?'\n"
+            "- 'Si subo el precio un 10%, que pasa?'"
+        )
     except Exception as e:
         error_msg = str(e)
         if "rate_limit" in error_msg.lower() or "429" in error_msg:
             reply = "He alcanzado el limite de consultas por minuto. Por favor intenta de nuevo en unos segundos."
-        elif "insufficient_quota" in error_msg.lower():
-            reply = "El servicio de IA no esta disponible temporalmente. Intenta mas tarde."
         else:
             reply = f"Ocurrio un error al procesar tu consulta. Intenta reformularla. (Error: {error_msg[:100]})"
 
@@ -625,16 +611,16 @@ async def chat_with_assistant(body: NLPChatQuery, user: AuthenticatedUser = Depe
     try:
         db.table("audit_logs").insert({
             "user_id": user.id,
-            "action_type": "nlp_chat_gpt4o",
-            "action_description": f"Chat GPT-4o: {raw_query[:100]}",
+            "action_type": "nlp_chat_claude",
+            "action_description": f"Chat Claude: {raw_query[:100]}",
             "nlp_raw_input": raw_query,
-            "nlp_interpreted_action": "gpt4o_chat",
+            "nlp_interpreted_action": "claude_chat",
         }).execute()
     except Exception:
         pass
 
     return NLPChatResponse(
         reply=reply,
-        action="gpt4o_chat",
-        source="gpt-4o",
+        action="claude_chat",
+        source="claude",
     )

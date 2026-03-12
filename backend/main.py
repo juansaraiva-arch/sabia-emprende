@@ -9,7 +9,8 @@ from contextlib import asynccontextmanager
 
 from app.database import get_supabase
 from app.middleware import RateLimitMiddleware, get_cors_origins
-from app.routers import financial, societies, nlp, audit, ai_agents, payroll, accounting, reports, budget
+from app.routers import financial, societies, nlp, audit, ai_agents, payroll, accounting, reports, budget, precio
+from app.utils.errors import AccountingError, accounting_error_handler
 
 
 @asynccontextmanager
@@ -26,6 +27,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_exception_handler(AccountingError, accounting_error_handler)
 app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
 app.add_middleware(
     CORSMiddleware,
@@ -44,6 +46,7 @@ app.include_router(payroll.router, prefix="/api/payroll", tags=["Nómina"])
 app.include_router(accounting.router, prefix="/api/accounting", tags=["Contabilidad"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reportes PDF"])
 app.include_router(budget.router, prefix="/api/budget", tags=["Presupuesto"])
+app.include_router(precio.router, prefix="/api/precio", tags=["Mi Precio Justo"])
 
 
 @app.get("/")

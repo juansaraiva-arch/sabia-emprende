@@ -3,6 +3,7 @@ Tests unitarios para accounting_engine.py
 Motor Contable — Plan de Cuentas, Validacion, Libro Mayor, Balance
 """
 import pytest
+from unittest.mock import patch, MagicMock
 from app.engines.accounting_engine import (
     get_default_chart_of_accounts,
     validate_journal_entry,
@@ -303,3 +304,72 @@ class TestAggregateToFinancialRecord:
         assert result["source"] == "accounting"
         assert result["period_year"] == 2026
         assert result["period_month"] == 1
+
+
+# ============================================================
+# Principio 2: Guardado NO depende de la IA
+# ============================================================
+
+class TestGuardadoNoDependeDeIA:
+    """
+    PRINCIPIO CRITICO: El guardado en Supabase JAMAS depende de que Claude responda.
+    Si la IA falla, el flujo manual sigue funcionando.
+    """
+
+    def test_validacion_funciona_sin_ia(self):
+        """validate_journal_entry es pura logica — no llama a Claude."""
+        # Asiento valido de 3 lineas (venta con ITBMS)
+        lines = [
+            {"account_code": "1.1.1", "debe": 107.0, "haber": 0},
+            {"account_code": "4.1.1", "debe": 0, "haber": 100.0},
+            {"account_code": "2.1.7", "debe": 0, "haber": 7.0},
+        ]
+        result = validate_journal_entry(lines)
+        assert result["valid"] is True
+        assert result["total_debe"] == 107.0
+        assert result["total_haber"] == 107.0
+
+    def test_validate_no_importa_ai_engine(self):
+        """accounting_engine.py no debe importar ai_engine — son independientes."""
+        import inspect
+        import app.engines.accounting_engine as mod
+        source = inspect.getsource(mod)
+        assert "ai_engine" not in source, \
+            "accounting_engine.py no debe depender de ai_engine"
+
+    def test_guardado_funciona_con_ia_caida(self):
+        """
+        Simula que Claude API esta caido.
+        El guardado manual (validate + insert) debe funcionar igual.
+        """
+        # 1. La validacion es pura logica, funciona siempre
+        lines = [
+            {"account_code": "1.1.1", "debe": 500, "haber": 0},
+            {"account_code": "4.1.1", "debe": 0, "haber": 500},
+        ]
+        validation = validate_journal_entry(lines)
+        assert validation["valid"] is True
+
+        # 2. Simular que ai_engine esta roto — no afecta nada
+        with patch("app.engines.ai_engine.get_claude", side_effect=RuntimeError("Claude API down")):
+            # La validacion sigue funcionando
+            result = validate_journal_entry(lines)
+            assert result["valid"] is True
+
+            # El compute_ledger sigue funcionando
+            ledger_lines = [
+                {"debe": 500, "haber": 0, "entry_date": "2026-03-01"},
+            ]
+            ledger = compute_ledger(ledger_lines, "1.1.1", "debe")
+            assert ledger["saldo_final"] == 500
+
+    def test_aggregation_funciona_sin_ia(self):
+        """aggregate_to_financial_record es pura logica — no depende de IA."""
+        lines = [
+            {"account_code": "4.1.1", "debe": 0, "haber": 10000},
+            {"account_code": "5.1.1", "debe": 5000, "haber": 0},
+        ]
+        result = aggregate_to_financial_record(lines, 2026, 3)
+        assert result["revenue"] == 10000
+        assert result["cogs"] == 5000
+        assert result["source"] == "accounting"

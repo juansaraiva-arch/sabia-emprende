@@ -278,7 +278,7 @@ export default function SmartExpenseInput() {
   );
 
   // ============================================
-  // ESCANEO — Cámara/Archivo + GPT-4o Vision
+  // ESCANEO — Cámara/Archivo + Claude Vision
   // ============================================
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -502,7 +502,7 @@ export default function SmartExpenseInput() {
               style={{ width: "70%", animation: "loading 2s ease-in-out infinite" }} />
           </div>
           <p className="text-[11px] text-slate-400 text-center">
-            Procesando con GPT-4o... Esto puede tomar unos segundos.
+            Procesando con IA... Esto puede tomar unos segundos.
           </p>
         </div>
       )}

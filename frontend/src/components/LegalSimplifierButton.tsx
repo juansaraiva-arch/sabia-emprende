@@ -131,7 +131,7 @@ export default function LegalSimplifierButton() {
             {isLoading ? (
               <>
                 <Loader2 size={14} className="animate-spin" />
-                Traduciendo con GPT-4o...
+                Traduciendo con IA...
               </>
             ) : (
               <>

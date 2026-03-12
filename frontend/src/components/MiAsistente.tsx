@@ -225,7 +225,7 @@ export default function MiAsistente({ societyId, onResult, forceOpen, onClose, h
     }
 
     try {
-      // Build conversation history for GPT-4o context
+      // Build conversation history for Claude context
       const chatHistory = messages
         .filter((m) => m.role === "user" || m.role === "assistant")
         .slice(-10) // Last 10 messages for context
@@ -247,7 +247,7 @@ export default function MiAsistente({ societyId, onResult, forceOpen, onClose, h
           reasoning: result.data.reasoning || "",
         });
       } else {
-        // GPT-4o conversational response or regex result
+        // Claude conversational response or regex result
         const responseText = result?.reply || "Procesado correctamente.";
         addMessage("assistant", responseText);
         if (result?.data) {

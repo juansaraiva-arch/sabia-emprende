@@ -13,5 +13,5 @@ COPY . .
 ENV PORT=8000
 EXPOSE ${PORT}
 
-# Start server using shell form so $PORT is expanded at runtime
-CMD uvicorn main:app --host 0.0.0.0 --port $PORT
+# Start server — exec form with sh -c avoids CRLF issues
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]

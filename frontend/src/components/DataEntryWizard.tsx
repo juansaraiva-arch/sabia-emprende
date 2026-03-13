@@ -337,17 +337,22 @@ export default function DataEntryWizard({
       if (Array.isArray(result?.data) && result.data.length === 0) {
         showToast(`"${text}" — Motor NLP no disponible en modo demo. Usa el Libro Diario.`);
       } else if (result?.data?.requires_confirmation && result?.data?.journal_entry_preview) {
+        const merged = result.data.merged || {};
+        const lines = result.data.journal_entry_preview?.lines || [];
+        const montoFromLines = lines
+          .filter((l: any) => l.debe > 0)
+          .reduce((sum: number, l: any) => sum + Number(l.debe), 0);
         setPendingMerge({
           merged: {
-            amount: result.data.amount || 0,
-            date: result.data.journal_entry_preview.entry_date || new Date().toISOString().split("T")[0],
-            supplier: result.data.supplier || text,
-            category: result.data.category || "general",
-            type: result.data.type || "gasto",
-            description: text,
-            itbms: 0,
-            concept_key: result.data.concept_key || "gasto_general",
-            fingerprint: result.data.fingerprint || "",
+            amount: merged.amount || montoFromLines || 0,
+            date: merged.date || result.data.journal_entry_preview.entry_date || new Date().toISOString().split("T")[0],
+            supplier: merged.supplier || text,
+            category: merged.category || "general",
+            type: merged.type || "gasto",
+            description: merged.description || text,
+            itbms: merged.itbms || 0,
+            concept_key: merged.concept_key || "gasto_general",
+            fingerprint: merged.fingerprint || "",
           },
           journal_entry_preview: result.data.journal_entry_preview,
           confirm_payload: result.data.confirm_payload,

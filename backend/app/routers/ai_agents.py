@@ -381,7 +381,7 @@ class MergeRequest(BaseModel):
     receipt_data: Optional[dict] = None
     voice_data: Optional[dict] = None
     voice_transcript: Optional[str] = None
-    society_id: str = "demo-society-001"
+    society_id: str
 
 
 @router.post("/merge-transaction")
@@ -510,10 +510,10 @@ async def merge_transaction(req: MergeRequest, user: AuthenticatedUser = Depends
         "confirm_payload": {
             "society_id": req.society_id,
             "entry_date": date_str,
-            "concept": concept_key,
-            "description": description,
+            "description": description if len(description) >= 3 else f"{concept['description']} - {date_str}",
+            "reference": fingerprint,
+            "source": "ai_assistant",
             "lines": journal_lines,
-            "fingerprint": fingerprint,
         },
     }
 
@@ -524,7 +524,7 @@ async def merge_transaction(req: MergeRequest, user: AuthenticatedUser = Depends
 
 class DeduplicationCheckRequest(BaseModel):
     fingerprint: str
-    society_id: str = "demo-society-001"
+    society_id: str
 
 
 @router.post("/check-duplicate")

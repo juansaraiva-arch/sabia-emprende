@@ -54,30 +54,7 @@ async def root():
     return {"status": "ok", "app": "Mi Director Financiero PTY", "version": "0.1.0"}
 
 
-@app.get("/debug/supabase")
-async def debug_supabase():
-    """Endpoint temporal para diagnosticar conexion a Supabase. ELIMINAR despues."""
-    import traceback
-    result = {
-        "supabase_url": os.environ.get("SUPABASE_URL", "NOT SET")[:40] + "...",
-        "service_key_prefix": os.environ.get("SUPABASE_SERVICE_KEY", "NOT SET")[:20] + "...",
-        "anon_key_prefix": os.environ.get("SUPABASE_ANON_KEY", "NOT SET")[:20] + "...",
-    }
-    try:
-        db = get_supabase()
-        result["client_created"] = True
-    except Exception as e:
-        result["client_created"] = False
-        result["client_error"] = str(e)[:200]
-        return result
-
-    try:
-        records = db.table("financial_records").select("count").limit(1).execute()
-        result["query_ok"] = True
-        result["data"] = str(records.data)[:100]
-    except Exception as e:
-        result["query_ok"] = False
-        result["query_error"] = str(e)[:300]
-        result["traceback"] = traceback.format_exc()[-500:]
-
-    return result
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "ok", "app": "Mi Director Financiero PTY", "version": "0.1.0"}

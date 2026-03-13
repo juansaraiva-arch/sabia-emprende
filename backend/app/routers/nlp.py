@@ -269,15 +269,23 @@ async def interpret_natural_language(body: NLPQuery, user: AuthenticatedUser = D
 
     elif action in ("query_profit", "query_diagnosis"):
         # Obtener último registro
-        records = (
-            db.table("financial_records")
-            .select("*")
-            .eq("society_id", body.society_id)
-            .order("period_year", desc=True)
-            .order("period_month", desc=True)
-            .limit(1)
-            .execute()
-        )
+        try:
+            records = (
+                db.table("financial_records")
+                .select("*")
+                .eq("society_id", body.society_id)
+                .order("period_year", desc=True)
+                .order("period_month", desc=True)
+                .limit(1)
+                .execute()
+            )
+        except Exception:
+            return NLPResponse(
+                understood=True,
+                action=action,
+                description="No hay datos financieros registrados aún.",
+                suggestion="Primero registra tus ventas y costos. Ej: 'Mis ventas de enero fueron 50 mil'",
+            )
         if not records.data:
             return NLPResponse(
                 understood=True,
@@ -294,15 +302,23 @@ async def interpret_natural_language(body: NLPQuery, user: AuthenticatedUser = D
         )
 
     elif action == "query_breakeven":
-        records = (
-            db.table("financial_records")
-            .select("*")
-            .eq("society_id", body.society_id)
-            .order("period_year", desc=True)
-            .order("period_month", desc=True)
-            .limit(1)
-            .execute()
-        )
+        try:
+            records = (
+                db.table("financial_records")
+                .select("*")
+                .eq("society_id", body.society_id)
+                .order("period_year", desc=True)
+                .order("period_month", desc=True)
+                .limit(1)
+                .execute()
+            )
+        except Exception:
+            return NLPResponse(
+                understood=True,
+                action=action,
+                description="No hay datos para calcular punto de equilibrio.",
+                suggestion="Registra ventas y costos primero.",
+            )
         if not records.data:
             return NLPResponse(
                 understood=True,
@@ -320,15 +336,22 @@ async def interpret_natural_language(body: NLPQuery, user: AuthenticatedUser = D
 
     elif action == "simulate_price":
         pct = data.get("percent", 0)
-        records = (
-            db.table("financial_records")
-            .select("*")
-            .eq("society_id", body.society_id)
-            .order("period_year", desc=True)
-            .order("period_month", desc=True)
-            .limit(1)
-            .execute()
-        )
+        try:
+            records = (
+                db.table("financial_records")
+                .select("*")
+                .eq("society_id", body.society_id)
+                .order("period_year", desc=True)
+                .order("period_month", desc=True)
+                .limit(1)
+                .execute()
+            )
+        except Exception:
+            return NLPResponse(
+                understood=True,
+                action=action,
+                description="No hay datos para simular.",
+            )
         if not records.data:
             return NLPResponse(
                 understood=True,

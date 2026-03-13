@@ -29,7 +29,7 @@ export type FlashAction = "text" | "voice" | "camera" | null;
 
 interface DataEntryWizardProps {
   /** Society ID del usuario autenticado */
-  societyId?: string;
+  societyId: string;
   onRecordSaved: (record: FinancialRecord, autoJournal?: boolean) => void;
   onBulkRecordsSaved: (records: FinancialRecord[]) => void;
   onNavigateHome?: () => void;
@@ -69,7 +69,7 @@ interface JournalPreview {
 // ============================================
 
 export default function DataEntryWizard({
-  societyId = "demo-society-001",
+  societyId,
   onRecordSaved,
   onBulkRecordsSaved,
   onNavigateHome,
@@ -96,6 +96,13 @@ export default function DataEntryWizard({
   const [showTextInput, setShowTextInput] = useState(false);
   const [textInput, setTextInput] = useState("");
   const textInputRef = useRef<HTMLInputElement>(null);
+
+  // --- Cleanup on unmount: prevent stale pendingMerge on remount ---
+  useEffect(() => {
+    return () => {
+      setPendingMerge(null);
+    };
+  }, []);
 
   // --- Toast helper ---
   const showToast = (msg: string, duration = 3000) => {
@@ -275,6 +282,7 @@ export default function DataEntryWizard({
       onRecordSaved({} as FinancialRecord, true);
     } catch (err: any) {
       showToast(`Error al guardar: ${err.message}`);
+      setPendingMerge(null);
     } finally {
       setIsConfirming(false);
     }
@@ -298,6 +306,7 @@ export default function DataEntryWizard({
     if (!initialAction) return;
     // Small delay to ensure component is mounted
     const timer = setTimeout(() => {
+      setPendingMerge(null);
       switch (initialAction) {
         case "text":
           if (!showTextInput) handleToggleTextInput();

@@ -28,6 +28,8 @@ import { nlpApi, aiApi, accountingApi } from "@/lib/api";
 export type FlashAction = "text" | "voice" | "camera" | null;
 
 interface DataEntryWizardProps {
+  /** Society ID del usuario autenticado */
+  societyId?: string;
   onRecordSaved: (record: FinancialRecord, autoJournal?: boolean) => void;
   onBulkRecordsSaved: (records: FinancialRecord[]) => void;
   onNavigateHome?: () => void;
@@ -67,6 +69,7 @@ interface JournalPreview {
 // ============================================
 
 export default function DataEntryWizard({
+  societyId = "demo-society-001",
   onRecordSaved,
   onBulkRecordsSaved,
   onNavigateHome,
@@ -148,7 +151,7 @@ export default function DataEntryWizard({
       showToast(`Procesando: "${text}"`, 0);
 
       try {
-        const result = await nlpApi.interpret(text, "demo-society-001");
+        const result = await nlpApi.interpret(text, societyId);
         // Demo mode: API retorna { data: [], success: true }
         if (Array.isArray(result?.data) && result.data.length === 0) {
           showToast(`Dictado: "${text}" — Motor NLP no disponible en modo demo. Usa el Libro Diario para crear asientos.`);
@@ -218,7 +221,7 @@ export default function DataEntryWizard({
         } else if (scanResult?.data) {
           const mergeResult = await aiApi.mergeTransaction({
             receipt_data: scanResult.data,
-            society_id: "demo-society-001",
+            society_id: societyId,
           });
 
           if (mergeResult?.merged && mergeResult?.journal_entry_preview) {
@@ -254,7 +257,7 @@ export default function DataEntryWizard({
       if (pendingMerge.merged.fingerprint) {
         const dupCheck = await aiApi.checkDuplicate(
           pendingMerge.merged.fingerprint,
-          "demo-society-001"
+          societyId
         );
         if (dupCheck?.is_duplicate) {
           showToast(`Duplicado detectado: ${dupCheck.message}`);
@@ -320,7 +323,7 @@ export default function DataEntryWizard({
     showToast(`Procesando: "${text}"`, 0);
 
     try {
-      const result = await nlpApi.interpret(text, "demo-society-001");
+      const result = await nlpApi.interpret(text, societyId);
       // Demo mode: API retorna { data: [], success: true }
       if (Array.isArray(result?.data) && result.data.length === 0) {
         showToast(`"${text}" — Motor NLP no disponible en modo demo. Usa el Libro Diario.`);

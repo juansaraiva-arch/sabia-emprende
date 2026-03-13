@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   BarChart3,
   TrendingUp,
@@ -100,6 +100,7 @@ import { trackModuleOpened, trackTabChanged, trackDataSaved, trackSetupCompleted
 import { DOC_CATEGORY_TO_STEP, updateStepStatus, checkFormalizationStatus, pushDocSyncEvent } from "@/lib/formalizacion";
 import { computeAlerts, computeComplianceAlerts, getTopAlert, countByPriority } from "@/lib/alerts";
 import { playAlertSound, isSoundEnabled } from "@/lib/sounds";
+import { societiesApi } from "@/lib/api";
 import OnboardingProvider from "@/components/onboarding/OnboardingProvider";
 import { periodLabel, getPresetRange } from "@/lib/calculations";
 import type { PeriodKey, PeriodPreset } from "@/lib/calculations";
@@ -1319,7 +1320,23 @@ export default function Dashboard() {
   const [budgetPeriod, setBudgetPeriod] = useState<PeriodKey>({ year: 2026, month: 6 });
   const [budgetSaving, setBudgetSaving] = useState(false);
 
-  const societyId = "demo-society-001";
+  // Society ID — cargado desde Supabase (fallback a demo para modo local)
+  const [societyId, setSocietyId] = useState("demo-society-001");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await societiesApi.list();
+        if (!cancelled && res?.data?.length > 0) {
+          setSocietyId(res.data[0].id);
+        }
+      } catch {
+        // En modo demo o sin backend, mantener el fallback
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // User profile (GAP #4 — Onboarding Diferenciado)
   const [userProfile] = useState(() => {
@@ -1836,7 +1853,7 @@ export default function Dashboard() {
 
             {datosMode === "flash" && (
               <div className="bg-white rounded-2xl border border-slate-200 p-5 lg:p-6">
-                <DataEntryWizard onRecordSaved={handleRecordSaved} onBulkRecordsSaved={handleBulkRecordsSaved} onNavigateHome={handleBackToHub} initialAction={flashAction} onActionConsumed={handleFlashActionConsumed} />
+                <DataEntryWizard societyId={societyId} onRecordSaved={handleRecordSaved} onBulkRecordsSaved={handleBulkRecordsSaved} onNavigateHome={handleBackToHub} initialAction={flashAction} onActionConsumed={handleFlashActionConsumed} />
               </div>
             )}
 

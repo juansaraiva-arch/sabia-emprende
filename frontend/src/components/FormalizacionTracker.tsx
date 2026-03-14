@@ -33,8 +33,16 @@ const STEP_ICONS: Record<string, React.ReactNode> = {
   registro_ampyme: <Award size={20} />,
 };
 
-const GOLD = "#C5A059";
-const NAVY = "#1A242F";
+const THEME = {
+  heading: "#1A242F",
+  label: "#374151",
+  body: "#4B5563",
+  muted: "#9CA3AF",
+  accent: "#1D9E75",
+  accentBg: "#E1F5EE",
+  border: "#E5E7EB",
+  cardBg: "#FFFFFF",
+};
 
 // ============================================
 // STATUS BADGE
@@ -49,8 +57,8 @@ function StatusBadge({ status }: { status: StepStatus }) {
       icon: <Circle size={12} />,
     },
     en_proceso: {
-      bg: "rgba(197, 160, 89, 0.2)",
-      color: GOLD,
+      bg: "rgba(29, 158, 117, 0.15)",
+      color: THEME.accent,
       label: "En Proceso",
       icon: <Clock size={12} />,
     },
@@ -97,11 +105,11 @@ function StepCard({
     step.status === "completado"
       ? { backgroundColor: "#10b981", borderColor: "#10b981" }
       : step.status === "en_proceso"
-        ? { backgroundColor: "rgba(197, 160, 89, 0.3)", borderColor: GOLD }
+        ? { backgroundColor: "rgba(29, 158, 117, 0.15)", borderColor: THEME.accent }
         : { backgroundColor: "rgba(148, 163, 184, 0.1)", borderColor: "rgba(148, 163, 184, 0.3)" };
 
   const circleTextColor =
-    step.status === "completado" ? "#fff" : step.status === "en_proceso" ? GOLD : "#94a3b8";
+    step.status === "completado" ? "#fff" : step.status === "en_proceso" ? THEME.accent : "#94a3b8";
 
   return (
     <div className="flex gap-4 lg:gap-6">
@@ -120,7 +128,7 @@ function StepCard({
               backgroundColor:
                 step.status === "completado"
                   ? "rgba(16, 185, 129, 0.4)"
-                  : "rgba(197, 160, 89, 0.2)",
+                  : THEME.border,
             }}
           />
         )}
@@ -133,11 +141,11 @@ function StepCard({
           className="w-full text-left rounded-xl border-2 p-4 lg:p-5 transition-all hover:border-opacity-60"
           style={{
             backgroundColor: isExpanded
-              ? "rgba(197, 160, 89, 0.08)"
-              : "rgba(197, 160, 89, 0.03)",
+              ? THEME.accentBg
+              : THEME.cardBg,
             borderColor: isExpanded
-              ? "rgba(197, 160, 89, 0.35)"
-              : "rgba(197, 160, 89, 0.12)",
+              ? THEME.accent
+              : THEME.border,
           }}
         >
           {/* Header row */}
@@ -146,8 +154,8 @@ function StepCard({
               <div
                 className="p-2 rounded-lg shrink-0"
                 style={{
-                  backgroundColor: "rgba(197, 160, 89, 0.1)",
-                  color: step.status === "completado" ? "#10b981" : GOLD,
+                  backgroundColor: THEME.accentBg,
+                  color: step.status === "completado" ? "#10b981" : THEME.accent,
                 }}
               >
                 {icon}
@@ -156,14 +164,14 @@ function StepCard({
                 <h3
                   className="text-sm lg:text-base font-bold truncate"
                   style={{
-                    color: step.status === "completado" ? "#10b981" : GOLD,
+                    color: step.status === "completado" ? "#10b981" : THEME.heading,
                   }}
                 >
                   {step.title}
                 </h3>
                 <p
                   className="text-[10px] lg:text-xs font-medium"
-                  style={{ color: "rgba(197, 160, 89, 0.5)" }}
+                  style={{ color: THEME.muted }}
                 >
                   {step.entity}
                 </p>
@@ -172,9 +180,9 @@ function StepCard({
             <div className="flex items-center gap-2 shrink-0">
               <StatusBadge status={step.status} />
               {isExpanded ? (
-                <ChevronUp size={16} style={{ color: GOLD, opacity: 0.5 }} />
+                <ChevronUp size={16} style={{ color: THEME.muted }} />
               ) : (
-                <ChevronDown size={16} style={{ color: GOLD, opacity: 0.5 }} />
+                <ChevronDown size={16} style={{ color: THEME.muted }} />
               )}
             </div>
           </div>
@@ -190,14 +198,14 @@ function StepCard({
               {/* Beneficio */}
               <div
                 className="flex items-start gap-2 p-3 rounded-lg"
-                style={{ backgroundColor: "rgba(197, 160, 89, 0.08)" }}
+                style={{ backgroundColor: THEME.accentBg }}
               >
                 <Rocket
                   size={14}
                   className="mt-0.5 shrink-0"
-                  style={{ color: GOLD }}
+                  style={{ color: THEME.accent }}
                 />
-                <p className="text-xs font-semibold" style={{ color: GOLD }}>
+                <p className="text-xs font-semibold" style={{ color: THEME.accent }}>
                   {step.benefit}
                 </p>
               </div>
@@ -211,17 +219,17 @@ function StepCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all hover:opacity-80"
-                style={{ backgroundColor: "rgba(197, 160, 89, 0.15)", color: GOLD }}
+                style={{ backgroundColor: THEME.accentBg, color: THEME.accent }}
               >
                 <ExternalLink size={14} />
                 Ir a {step.entity}
               </a>
 
               {/* Botones de estado */}
-              <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: "rgba(197, 160, 89, 0.1)" }}>
+              <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: THEME.border }}>
                 <p
                   className="text-[10px] font-medium w-full mb-1"
-                  style={{ color: "rgba(197, 160, 89, 0.4)" }}
+                  style={{ color: THEME.muted }}
                 >
                   Cambiar estado:
                 </p>
@@ -237,7 +245,7 @@ function StepCard({
                             ? s === "completado"
                               ? "rgba(16, 185, 129, 0.25)"
                               : s === "en_proceso"
-                                ? "rgba(197, 160, 89, 0.25)"
+                                ? "rgba(29, 158, 117, 0.15)"
                                 : "rgba(148, 163, 184, 0.2)"
                             : "rgba(148, 163, 184, 0.08)",
                         color:
@@ -245,12 +253,12 @@ function StepCard({
                             ? s === "completado"
                               ? "#10b981"
                               : s === "en_proceso"
-                                ? GOLD
+                                ? THEME.accent
                                 : "#94a3b8"
                             : "rgba(148, 163, 184, 0.5)",
                         border:
                           step.status === s
-                            ? `1px solid ${s === "completado" ? "rgba(16,185,129,0.4)" : s === "en_proceso" ? "rgba(197,160,89,0.4)" : "rgba(148,163,184,0.3)"}`
+                            ? `1px solid ${s === "completado" ? "rgba(16,185,129,0.4)" : s === "en_proceso" ? "rgba(29,158,117,0.4)" : "rgba(148,163,184,0.3)"}`
                             : "1px solid transparent",
                       }}
                     >
@@ -308,17 +316,17 @@ export default function FormalizacionTracker() {
   );
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-[#1A242F] via-[#1A242F] to-[#0F171E]">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100">
       {/* Decorative accent lines */}
-      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#C5A059] to-transparent opacity-40" />
-      <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#C5A059] to-transparent opacity-40" />
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#1D9E75] to-transparent opacity-40" />
+      <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#1D9E75] to-transparent opacity-40" />
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 pt-6 pb-20 lg:pt-10 lg:pb-24">
         {/* Back button */}
         <button
           onClick={() => router.push("/dashboard")}
           className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-all hover:opacity-80 mb-6"
-          style={{ color: GOLD, backgroundColor: "rgba(197, 160, 89, 0.08)" }}
+          style={{ color: THEME.accent, backgroundColor: THEME.accentBg }}
         >
           <ArrowLeft size={16} />
           Volver al Inicio
@@ -328,19 +336,19 @@ export default function FormalizacionTracker() {
         <div className="text-center mb-8 lg:mb-10">
           <div
             className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
-            style={{ backgroundColor: "rgba(197, 160, 89, 0.15)" }}
+            style={{ backgroundColor: THEME.accentBg }}
           >
-            <Rocket size={32} style={{ color: GOLD }} />
+            <Rocket size={32} style={{ color: THEME.accent }} />
           </div>
           <h1
             className="text-2xl lg:text-3xl font-extrabold tracking-tight font-heading"
-            style={{ color: GOLD }}
+            style={{ color: THEME.heading }}
           >
             Ruta de Formalizacion S.E.
           </h1>
           <p
             className="text-sm mt-1"
-            style={{ color: "rgba(197, 160, 89, 0.6)" }}
+            style={{ color: THEME.body }}
           >
             Sociedad de Emprendimiento &mdash; Panama
           </p>
@@ -348,28 +356,28 @@ export default function FormalizacionTracker() {
           {/* Progress bar */}
           <div className="mt-6 max-w-sm mx-auto">
             <div className="flex items-center justify-between text-xs mb-2">
-              <span style={{ color: "rgba(197, 160, 89, 0.5)" }}>Progreso</span>
-              <span className="font-bold" style={{ color: GOLD }}>
+              <span style={{ color: THEME.muted }}>Progreso</span>
+              <span className="font-bold" style={{ color: THEME.heading }}>
                 {completedCount} de {trackerState.steps.length} pasos
               </span>
             </div>
             <div
               className="h-3 rounded-full overflow-hidden"
-              style={{ backgroundColor: "rgba(197, 160, 89, 0.1)" }}
+              style={{ backgroundColor: THEME.border }}
             >
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
                   width: `${percentComplete}%`,
                   backgroundColor:
-                    percentComplete === 100 ? "#10b981" : GOLD,
+                    percentComplete === 100 ? "#10b981" : THEME.accent,
                 }}
               />
             </div>
             <p
               className="text-right text-[11px] mt-1 font-bold"
               style={{
-                color: percentComplete === 100 ? "#10b981" : GOLD,
+                color: percentComplete === 100 ? "#10b981" : THEME.accent,
               }}
             >
               {percentComplete}%
@@ -421,7 +429,7 @@ export default function FormalizacionTracker() {
         {/* Footer */}
         <p
           className="mt-10 text-[10px] text-center"
-          style={{ color: "rgba(197, 160, 89, 0.25)" }}
+          style={{ color: THEME.muted }}
         >
           Basado en la Ley de Sociedades de Emprendimiento de Panama
         </p>

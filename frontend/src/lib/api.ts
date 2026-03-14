@@ -140,6 +140,16 @@ export function downloadBlob(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+// --- Usuarios ---
+export const usersApi = {
+  getMe: () => apiFetch<any>("/users/me"),
+  updateMe: (body: { full_name?: string; cedula?: string; phone?: string }) =>
+    apiFetch<any>("/users/me", {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+};
+
 // --- Sociedades ---
 export const societiesApi = {
   list: () => apiFetch<{ data: any[] }>("/societies"),

@@ -36,7 +36,7 @@ CREATE TABLE public.societies (
     user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
 
     -- Datos legales
-    entity_type TEXT NOT NULL CHECK (entity_type IN ('SA', 'SRL', 'SE')),
+    entity_type TEXT NOT NULL CHECK (entity_type IN ('SA', 'SRL', 'SE', 'EIRL', 'persona_natural', 'fundacion', 'otro')),
     legal_name TEXT NOT NULL,
     trade_name TEXT,
     tax_id TEXT,                    -- RUC / NIT
@@ -48,7 +48,8 @@ CREATE TABLE public.societies (
 
     -- Datos operativos (del motor SG Consulting)
     industry TEXT,
-    fiscal_regime TEXT DEFAULT 'general' CHECK (fiscal_regime IN ('general', 'simplified', 'se_exempt')),
+    fiscal_regime TEXT DEFAULT 'general' CHECK (fiscal_regime IN ('general', 'simplified', 'se_exempt', 'renta_estimada', 'renta_declarada', 'regimen_especial')),
+    onboarding_flag TEXT DEFAULT NULL,
 
     -- Metadata
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

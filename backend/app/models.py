@@ -12,6 +12,10 @@ class EntityType(str, Enum):
     SA = "SA"
     SRL = "SRL"
     SE = "SE"
+    EIRL = "EIRL"
+    PERSONA_NATURAL = "persona_natural"
+    FUNDACION = "fundacion"
+    OTRO = "otro"
 
 
 class ContractType(str, Enum):
@@ -23,6 +27,9 @@ class FiscalRegime(str, Enum):
     GENERAL = "general"
     SIMPLIFIED = "simplified"
     SE_EXEMPT = "se_exempt"
+    RENTA_ESTIMADA = "renta_estimada"
+    RENTA_DECLARADA = "renta_declarada"
+    REGIMEN_ESPECIAL = "regimen_especial"
 
 
 # --- Societies ---
@@ -35,12 +42,30 @@ class SocietyCreate(BaseModel):
     governing_law: Optional[str] = None
     industry: Optional[str] = None
     fiscal_regime: FiscalRegime = FiscalRegime.GENERAL
+    onboarding_flag: Optional[str] = None
 
 
 class SocietyResponse(SocietyCreate):
     id: str
     user_id: str
     status: str
+
+
+# --- User Profile ---
+class UserProfileUpdate(BaseModel):
+    full_name: Optional[str] = Field(None, min_length=2, max_length=200)
+    cedula: Optional[str] = Field(None, max_length=30)
+    phone: Optional[str] = Field(None, max_length=30)
+
+
+class UserProfileResponse(BaseModel):
+    id: str
+    email: str
+    full_name: Optional[str] = None
+    role: str = "owner"
+    kyc_status: str = "pending"
+    cedula: Optional[str] = None
+    phone: Optional[str] = None
 
 
 # --- Financial Records ---

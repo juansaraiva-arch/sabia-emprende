@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Montserrat, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
+import { SocietyProvider } from "@/components/SocietyProvider";
+import { SocietyGuard } from "@/components/SocietyGuard";
 import { AccessGate } from "@/components/AccessGate";
 import AnalyticsProvider from "@/components/AnalyticsProvider";
 
@@ -36,7 +38,11 @@ export default function RootLayout({
       >
         <AccessGate>
           <AnalyticsProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <SocietyProvider>
+                <SocietyGuard>{children}</SocietyGuard>
+              </SocietyProvider>
+            </AuthProvider>
           </AnalyticsProvider>
         </AccessGate>
       </body>
